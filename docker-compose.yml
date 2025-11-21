@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # Servicio de MongoDB
+  mongodb:
+    image: mongo:7.0
+    container_name: secureflow-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=secureflow
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - secureflow-network
+    restart: unless-stopped
+
+  # Servicio del Backend (Express.js)
+  backend:
+    build: ./backend
+    container_name: secureflow-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/secureflow
+      - NODE_ENV=development
+      - CORS_ORIGIN=http://localhost:3000
+      - API_PREFIX=/api
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - mongodb
+    networks:
+      - secureflow-network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  # Servicio del Frontend (Next.js/React)
+  frontend:
+    build: ./frontend
+    container_name: secureflow-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
+    depends_on:
+      - backend
+    networks:
+      - secureflow-network
+    stdin_open: true
+    tty: true
+
+networks:
+  secureflow-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
