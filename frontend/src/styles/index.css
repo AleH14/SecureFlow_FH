@@ -1,0 +1,7 @@
+/* Import all style files */
+@import './variables.css';
+@import './buttons.css';
+@import './forms.css';
+@import './components.css';
+@import './layouts.css';
+@import './responsive.css';

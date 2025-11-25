@@ -1,0 +1,31 @@
+/* Coolors Exported Palette - https://coolors.co/000000-000080-2c75ff-c6bfbf-ffffff */
+
+- CSV
+
+000000,000080,2c75ff,c6bfbf,ffffff
+
+- With #
+
+#000000, #000080, #2c75ff, #c6bfbf, #ffffff
+
+- Array
+
+["000000","000080","2c75ff","c6bfbf","ffffff"]
+
+- Object
+
+{"Black":"000000","Navy":"000080","Crayola Blue":"2c75ff","Silver":"c6bfbf","White":"ffffff"}
+
+- Extended Array
+
+[{"name":"Black","hex":"000000","rgb":[0,0,0],"cmyk":[0,0,0,100],"hsb":[0,0,0],"hsl":[0,0,0],"lab":[0,0,0]},{"name":"Navy","hex":"000080","rgb":[0,0,128],"cmyk":[100,100,0,50],"hsb":[240,100,50],"hsl":[240,100,25],"lab":[13,48,-65]},{"name":"Crayola Blue","hex":"2c75ff","rgb":[44,117,255],"cmyk":[83,54,0,0],"hsb":[219,83,100],"hsl":[219,100,59],"lab":[52,28,-75]},{"name":"Silver","hex":"c6bfbf","rgb":[198,191,191],"cmyk":[0,4,4,22],"hsb":[0,4,78],"hsl":[0,6,76],"lab":[78,2,1]},{"name":"White","hex":"ffffff","rgb":[255,255,255],"cmyk":[0,0,0,0],"hsb":[0,0,100],"hsl":[0,0,100],"lab":[100,0,0]}]
+
+- XML
+
+<palette>
+  <color name="Black" hex="000000" r="0" g="0" b="0" />
+  <color name="Navy" hex="000080" r="0" g="0" b="128" />
+  <color name="Crayola Blue" hex="2c75ff" r="44" g="117" b="255" />
+  <color name="Silver" hex="c6bfbf" r="198" g="191" b="191" />
+  <color name="White" hex="ffffff" r="255" g="255" b="255" />
+</palette>

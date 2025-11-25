@@ -1,0 +1,36 @@
+/* Animation for better UX */
+.custom-card {
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .custom-card {
+    min-width: unset;
+  }
+  
+  .custom-card-body {
+    padding: 2rem;
+  }
+  
+  .login-container {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .custom-card-body {
+    padding: 1.5rem;
+  }
+}
