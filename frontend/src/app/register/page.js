@@ -2,8 +2,8 @@ import React from 'react';
 import RegisterForm from '../../components/RegisterForm';
 
 export const metadata = {
-  title: 'Register User - SecureFlow FH',
-  description: 'Administrator panel for creating new users in SecureFlow FH',
+  title: 'Registrar Usuario - SecureFlow FH',
+  description: 'Panel de administrador para crear nuevos usuarios en SecureFlow FH',
 };
 
 const RegisterPage = () => {

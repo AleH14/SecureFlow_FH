@@ -32,15 +32,15 @@ const LoginForm = () => {
     const newErrors = {};
     
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'El correo electrónico es requerido';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = 'Por favor ingresa un correo electrónico válido';
     }
     
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'La contraseña es requerida';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
     }
     
     return newErrors;
@@ -86,16 +86,16 @@ const LoginForm = () => {
                 <h1 className="text-navy fw-bold mb-4 app-title">
                   SecureFlow FH
                 </h1>
-                <h2 className="text-navy fw-bold mb-2">Welcome Back</h2>
-                <p className="text-muted">Sign in to your account</p>
+                <h2 className="text-navy fw-bold mb-2">Bienvenido de Nuevo</h2>
+                <p className="text-muted">Inicia sesión en tu cuenta</p>
               </div>
               
               <form onSubmit={handleSubmit}>
                 <Input
                   type="email"
                   name="email"
-                  label="Email Address"
-                  placeholder="Enter your email"
+                  label="Correo Electrónico"
+                  placeholder="Ingresa tu correo electrónico"
                   value={formData.email}
                   onChange={handleChange}
                   error={errors.email}
@@ -105,8 +105,8 @@ const LoginForm = () => {
                 <Input
                   type="password"
                   name="password"
-                  label="Password"
-                  placeholder="Enter your password"
+                  label="Contraseña"
+                  placeholder="Ingresa tu contraseña"
                   value={formData.password}
                   onChange={handleChange}
                   error={errors.password}
@@ -121,12 +121,10 @@ const LoginForm = () => {
                       id="rememberMe"
                     />
                     <label className="form-check-label text-sm" htmlFor="rememberMe">
-                      Remember me
+                      Recuérdame
                     </label>
                   </div>
-                  <a href="#" className="text-decoration-none text-primary-custom">
-                    Forgot password?
-                  </a>
+
                 </div>
                 
                 <Button
@@ -137,13 +135,14 @@ const LoginForm = () => {
                   loading={loading}
                   disabled={loading}
                 >
-                  Sign In
+                  Iniciar Sesión
                 </Button>
                 
                 <div className="text-center">
-                  <span className="text-muted">Don&#39;t have an account? </span>
+                  <span className="text-muted"> ¿Olvidaste tu contraseña? ¿No tienes cuenta?  </span>
+                  <br></br>
                   <a href="#" className="text-decoration-none text-primary-custom fw-semibold">
-                    Contact administration
+                    Contacta con la administración
                   </a>
                 </div>
               </form>

@@ -3,7 +3,7 @@ import { Form } from 'react-bootstrap';
 
 const Select = forwardRef(({ 
   options = [], 
-  placeholder = 'Select an option', 
+  placeholder = 'Selecciona una opción', 
   label, 
   error, 
   className = '', 

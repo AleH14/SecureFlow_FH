@@ -22,20 +22,20 @@ const RegisterForm = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   const userRoles = [
-    { value: 'administrator', label: 'Administrator' },
-    { value: 'security_officer', label: 'Security Officer' },
-    { value: 'internal_auditor', label: 'Internal Auditor' },
-    { value: 'user', label: 'User' }
+    { value: 'administrator', label: 'Administrador' },
+    { value: 'security_officer', label: 'Oficial de Seguridad' },
+    { value: 'internal_auditor', label: 'Auditor Interno' },
+    { value: 'user', label: 'Usuario' }
   ];
 
   const departments = [
-    { value: 'it', label: 'Information Technology' },
-    { value: 'security', label: 'Security' },
-    { value: 'audit', label: 'Internal Audit' },
-    { value: 'hr', label: 'Human Resources' },
-    { value: 'finance', label: 'Finance' },
-    { value: 'operations', label: 'Operations' },
-    { value: 'legal', label: 'Legal & Compliance' }
+    { value: 'it', label: 'Tecnología de la Información' },
+    { value: 'security', label: 'Seguridad' },
+    { value: 'audit', label: 'Auditoría Interna' },
+    { value: 'hr', label: 'Recursos Humanos' },
+    { value: 'finance', label: 'Finanzas' },
+    { value: 'operations', label: 'Operaciones' },
+    { value: 'legal', label: 'Legal y Cumplimiento' }
   ];
 
   const handleChange = (e) => {
@@ -61,49 +61,49 @@ const RegisterForm = () => {
     const newErrors = {};
     
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = 'El nombre es requerido';
     } else if (formData.firstName.length < 2) {
-      newErrors.firstName = 'First name must be at least 2 characters';
+      newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
     }
     
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = 'El apellido es requerido';
     } else if (formData.lastName.length < 2) {
-      newErrors.lastName = 'Last name must be at least 2 characters';
+      newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
     }
     
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'El correo electrónico es requerido';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Por favor ingresa un correo electrónico válido';
     }
     
     if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = 'Phone number is required';
+      newErrors.phoneNumber = 'El número de teléfono es requerido';
     } else if (!/^\+?[\d\s\-\(\)]+$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = 'Please enter a valid phone number';
+      newErrors.phoneNumber = 'Por favor ingresa un número de teléfono válido';
     }
     
     if (!formData.department) {
-      newErrors.department = 'Department is required';
+      newErrors.department = 'El departamento es requerido';
     }
     
     if (!formData.userRole) {
-      newErrors.userRole = 'User role is required';
+      newErrors.userRole = 'El rol de usuario es requerido';
     }
     
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'La contraseña es requerida';
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Password must contain uppercase, lowercase, and number';
+      newErrors.password = 'La contraseña debe contener mayúscula, minúscula y número';
     }
     
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = 'Por favor confirma tu contraseña';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
     
     return newErrors;
@@ -130,7 +130,7 @@ const RegisterForm = () => {
       console.log('User created:', userData);
       
       const roleLabel = userRoles.find(role => role.value === formData.userRole)?.label;
-      setSuccessMessage(`User ${formData.firstName} ${formData.lastName} has been successfully created with role: ${roleLabel}`);
+      setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido creado exitosamente con el rol: ${roleLabel}`);
       
       // Reset form after successful creation
       setFormData({
@@ -146,7 +146,7 @@ const RegisterForm = () => {
       
     } catch (error) {
       console.error('Registration error:', error);
-      setErrors({ general: 'Failed to create user. Please try again.' });
+      setErrors({ general: 'Error al crear el usuario. Por favor intenta de nuevo.' });
     } finally {
       setLoading(false);
     }
@@ -185,8 +185,8 @@ const RegisterForm = () => {
                 <h1 className="text-navy fw-bold mb-3 app-title-small">
                   SecureFlow FH
                 </h1>
-                <h2 className="text-navy fw-bold mb-2">Create New User</h2>
-                <p className="text-muted">Administrator Panel - User Registration</p>
+                <h2 className="text-navy fw-bold mb-2">Crear Nuevo Usuario</h2>
+                <p className="text-muted">Panel de Administrador - Registro de Usuario</p>
               </div>
 
               {successMessage && (
@@ -209,8 +209,8 @@ const RegisterForm = () => {
                     <Input
                       type="text"
                       name="firstName"
-                      label="First Name"
-                      placeholder="Enter first name"
+                      label="Nombre"
+                      placeholder="Ingresa el nombre"
                       value={formData.firstName}
                       onChange={handleChange}
                       error={errors.firstName}
@@ -221,8 +221,8 @@ const RegisterForm = () => {
                     <Input
                       type="text"
                       name="lastName"
-                      label="Last Name"
-                      placeholder="Enter last name"
+                      label="Apellido"
+                      placeholder="Ingresa el apellido"
                       value={formData.lastName}
                       onChange={handleChange}
                       error={errors.lastName}
@@ -236,8 +236,8 @@ const RegisterForm = () => {
                     <Input
                       type="email"
                       name="email"
-                      label="Email Address"
-                      placeholder="Enter email address"
+                      label="Correo Electrónico"
+                      placeholder="Ingresa el correo electrónico"
                       value={formData.email}
                       onChange={handleChange}
                       error={errors.email}
@@ -248,8 +248,8 @@ const RegisterForm = () => {
                     <Input
                       type="tel"
                       name="phoneNumber"
-                      label="Phone Number"
-                      placeholder="Enter phone number"
+                      label="Número de Teléfono"
+                      placeholder="Ingresa el número de teléfono"
                       value={formData.phoneNumber}
                       onChange={handleChange}
                       error={errors.phoneNumber}
@@ -262,8 +262,8 @@ const RegisterForm = () => {
                   <Col md={6}>
                     <Select
                       name="department"
-                      label="Department"
-                      placeholder="Select department"
+                      label="Departamento"
+                      placeholder="Selecciona un departamento"
                       options={departments}
                       value={formData.department}
                       onChange={handleChange}
@@ -274,8 +274,8 @@ const RegisterForm = () => {
                   <Col md={6}>
                     <Select
                       name="userRole"
-                      label="User Role"
-                      placeholder="Select user role"
+                      label="Rol de Usuario"
+                      placeholder="Selecciona un rol de usuario"
                       options={userRoles}
                       value={formData.userRole}
                       onChange={handleChange}
@@ -290,23 +290,23 @@ const RegisterForm = () => {
                     <Input
                       type="password"
                       name="password"
-                      label="Password"
-                      placeholder="Enter password"
+                      label="Contraseña"
+                      placeholder="Ingresa la contraseña"
                       value={formData.password}
                       onChange={handleChange}
                       error={errors.password}
                       required
                     />
                     <small className="text-muted">
-                      Password must contain uppercase, lowercase, and number (min 8 characters)
+                      La contraseña debe contener mayúscula, minúscula y número (mín 8 caracteres)
                     </small>
                   </Col>
                   <Col md={6}>
                     <Input
                       type="password"
                       name="confirmPassword"
-                      label="Confirm Password"
-                      placeholder="Confirm password"
+                      label="Confirmar Contraseña"
+                      placeholder="Confirma la contraseña"
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       error={errors.confirmPassword}
@@ -324,7 +324,7 @@ const RegisterForm = () => {
                     disabled={loading}
                     className="me-3"
                   >
-                    Reset Form
+                    Limpiar Formulario
                   </Button>
                   
                   <Button
@@ -335,14 +335,14 @@ const RegisterForm = () => {
                     disabled={loading}
                     className="flex-grow-1"
                   >
-                    Create User
+                    Crear Usuario
                   </Button>
                 </div>
                 
                 <div className="text-center mt-4">
                   <Link href="/login" className="text-decoration-none text-primary-custom fw-semibold">
                     <i className="bi bi-arrow-left me-2"></i>
-                    Back to Login
+                    Volver al Inicio de Sesión
                   </Link>
                 </div>
               </form>
