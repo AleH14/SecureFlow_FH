@@ -340,10 +340,6 @@ const RegisterForm = () => {
                 </div>
                 
                 <div className="text-center mt-4">
-                  <Link href="/login" className="text-decoration-none text-primary-custom fw-semibold">
-                    <i className="bi bi-arrow-left me-2"></i>
-                    Volver al Inicio de Sesión
-                  </Link>
                 </div>
               </form>
             </Card.Body>
