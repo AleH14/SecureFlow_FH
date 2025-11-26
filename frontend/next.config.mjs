@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuración para hot reload en Docker/Windows
+  // Turbopack configuration (Next.js 16 default)
+  turbopack: {
+    // Empty config to acknowledge Turbopack usage
+  },
+  // Webpack configuration for fallback/specific cases
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
       config.watchOptions = {

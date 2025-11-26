@@ -1,0 +1,44 @@
+/* Custom Button Styles */
+.btn-custom-primary {
+  background-color: var(--color-navy);
+  border-color: var(--color-navy);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-custom-primary:hover {
+  background-color: var(--color-crayola-blue);
+  border-color: var(--color-crayola-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 128, 0.2);
+}
+
+.btn-custom-primary:focus,
+.btn-custom-primary:active {
+  background-color: var(--color-navy);
+  border-color: var(--color-navy);
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 128, 0.25);
+}
+
+.btn-custom-secondary {
+  background-color: var(--color-silver);
+  border-color: var(--color-silver);
+  color: var(--color-black);
+  font-weight: 500;
+}
+
+.btn-custom-outline {
+  background-color: transparent;
+  border: 2px solid var(--color-navy);
+  color: var(--color-navy);
+  font-weight: 500;
+}
+
+.btn-custom-outline:hover {
+  background-color: var(--color-navy);
+  border-color: var(--color-navy);
+  color: white;
+}

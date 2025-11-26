@@ -1,0 +1,42 @@
+/* Custom Color Palette */
+:root {
+  --color-black: #000000;
+  --color-navy: #000080;
+  --color-crayola-blue: #2c75ff;
+  --color-silver: #c6bfbf;
+  --color-white: #ffffff;
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* Custom Classes for Color Palette */
+.text-navy {
+  color: var(--color-navy) !important;
+}
+
+.text-crayola-blue {
+  color: var(--color-crayola-blue) !important;
+}
+
+.text-silver {
+  color: var(--color-silver) !important;
+}
+
+.text-primary-custom {
+  color: var(--color-navy) !important;
+}
+
+.bg-navy {
+  background-color: var(--color-navy) !important;
+}
+
+.bg-crayola-blue {
+  background-color: var(--color-crayola-blue) !important;
+}
