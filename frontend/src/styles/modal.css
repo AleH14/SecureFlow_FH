@@ -1,0 +1,151 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 200px;
+  z-index: 1000;
+}
+
+.modalContainer {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modalFadeIn 0.3s ease-out;
+  z-index: 999999;
+  position: relative;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modalHeader {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modalTitle {
+  color: #222;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modalCloseBtn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.modalCloseBtn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.modalQuestion {
+  color: black !important;
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.modalValueBox {
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid #e0e0e0;
+}
+
+.valueBoxTitle {
+  color: black !important;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.valueBoxSubtitle {
+  color: black !important;
+  font-weight: normal;
+  font-size: 14px;
+}
+
+.modalInformativeText {
+  color: black !important;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 16px 0 0 0;
+  font-style: italic;
+}
+
+.modalFooter {
+  padding: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #fafafa;
+}
+
+.modalBtn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  color: white;
+}
+
+.modalBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.modalBtn:active {
+  transform: translateY(0);
+}
+
+.modalCancelBtn {
+  background-color: #6c757d !important;
+  opacity: 1;
+}
+
+.modalAcceptBtn {
+  /* El color se aplica via style prop - no necesita estilos adicionales */
+  opacity: 1;
+}

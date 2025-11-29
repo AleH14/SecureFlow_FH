@@ -1,0 +1,81 @@
+import React from "react";
+
+const Table = ({ 
+  columns = [],
+  data = [],
+  title,
+  icon,
+  className = "",
+  headerStyle = {},
+  rowStyle = {},
+  cellStyle = {},
+  ...props 
+}) => {
+  if (!columns || columns.length === 0) {
+    return <div className="table-error">No se han definido columnas para la tabla</div>;
+  }
+
+  return (
+    <div className={`table-container ${className}`} {...props}>
+      {(title || icon) && (
+        <div className="table-header">
+          {icon && <div className="table-icon">{icon}</div>}
+          {title && <h3 className="table-title">{title}</h3>}
+        </div>
+      )}
+      
+      <div className="table-wrapper">
+        <table className="custom-table">
+          <thead>
+            <tr style={headerStyle}>
+              {columns.map((column, index) => (
+                <th 
+                  key={column.key || index}
+                  className="table-header-cell"
+                  style={column.headerStyle || {}}
+                >
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data && data.length > 0 ? (
+              data.map((row, rowIndex) => (
+                <tr 
+                  key={row.id || rowIndex} 
+                  className="table-row"
+                  style={rowStyle}
+                >
+                  {columns.map((column, colIndex) => (
+                    <td 
+                      key={`${rowIndex}-${column.key || colIndex}`}
+                      className="table-cell"
+                      style={column.cellStyle || cellStyle}
+                    >
+                      {column.render 
+                        ? column.render(row, rowIndex) 
+                        : row[column.key] || '-'
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td 
+                  colSpan={columns.length} 
+                  className="table-empty"
+                >
+                  No hay datos disponibles
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default Table;

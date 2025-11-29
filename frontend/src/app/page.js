@@ -16,10 +16,15 @@ export default function Home() {
           <Link href="/login" className="btn btn-custom-primary btn-lg me-3">
             Ir al Inicio de Sesión
           </Link>
-          
+
           {/* Botón Registro */}
-          <Link href="/register" className="btn btn-custom-secondary btn-lg">
-            Registrar Usuario (Admin)
+          <Link href="/admin" className="btn btn-custom-secondary btn-lg ms-3">
+            Administracion (Admin)
+          </Link>
+
+                    {/* Botón Registro */}
+          <Link href="/auditor" className="btn btn-custom-secondary btn-lg ms-3">
+            Auditor 
           </Link>
         </div>
 

@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import Image from 'next/image';
-import Link from 'next/link';
-import { Input, Button, Card, Select, Alert } from './ui';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { FaArrowLeft } from 'react-icons/fa';
+import { Input, Button, Card, Select, Alert } from '../../../components/ui';
 
-const RegisterForm = () => {
+const EditUser = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -15,27 +19,58 @@ const RegisterForm = () => {
     department: '',
     userRole: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    codigo: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // useEffect para cargar datos del usuario si es modo edición
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    if (userId) {
+      setIsEditMode(true);
+      // Cargar datos desde los parámetros URL
+      const nombre = searchParams.get('nombre') || '';
+      const [firstName = '', ...lastNameParts] = nombre.split(' ');
+      const lastName = lastNameParts.join(' ');
+      
+      setFormData({
+        firstName,
+        lastName,
+        email: searchParams.get('email') || '',
+        phoneNumber: searchParams.get('telefono') || '',
+        department: searchParams.get('departamento') || '',
+        userRole: searchParams.get('rol') || '',
+        password: '',
+        confirmPassword: '',
+        codigo: searchParams.get('codigo') || ''
+      });
+    }
+  }, [searchParams]);
+
+  const handleBack = () => {
+    router.back();
+  };
 
   const userRoles = [
-    { value: 'administrator', label: 'Administrador' },
-    { value: 'security_officer', label: 'Seguridad' },
-    { value: 'internal_auditor', label: 'Auditor Interno' },
-    { value: 'user', label: 'Usuario' }
+    { value: 'Administrador', label: 'Administrador' },
+    { value: 'Usuario Lector', label: 'Usuario Lector' },
+    { value: 'Responsable de Seguridad', label: 'Responsable de Seguridad' },
+    { value: 'Auditor', label: 'Auditor' }
   ];
 
   const departments = [
-    { value: 'it', label: 'Tecnología de la Información' },
-    { value: 'security', label: 'Seguridad' },
-    { value: 'audit', label: 'Auditoría Interna' },
-    { value: 'hr', label: 'Recursos Humanos' },
-    { value: 'finance', label: 'Finanzas' },
-    { value: 'operations', label: 'Operaciones' },
-    { value: 'legal', label: 'Legal y Cumplimiento' }
+    { value: 'TI', label: 'Tecnología de la Información' },
+    { value: 'Recursos Humanos', label: 'Recursos Humanos' },
+    { value: 'Seguridad', label: 'Seguridad' },
+    { value: 'Auditoría', label: 'Auditoría' },
+    { value: 'Finanzas', label: 'Finanzas' },
+    { value: 'Operaciones', label: 'Operaciones' },
+    { value: 'Legal', label: 'Legal y Cumplimiento' }
   ];
 
   const handleChange = (e) => {
@@ -80,8 +115,8 @@ const RegisterForm = () => {
     
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = 'El número de teléfono es requerido';
-    } else if (!/^\+?[\d\s\-\(\)]+$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = 'Por favor ingresa un número de teléfono válido';
+    } else if (!/^[\d\-\s]+$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Por favor ingresa un número de teléfono válido (ej: 1234-5678)';
     }
     
     if (!formData.department) {
@@ -92,21 +127,32 @@ const RegisterForm = () => {
       newErrors.userRole = 'El rol de usuario es requerido';
     }
     
-    if (!formData.password) {
+    // En modo edición, la contraseña es opcional
+    if (formData.password && formData.password.length > 0) {
+      if (formData.password.length < 8) {
+        newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
+      } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+        newErrors.password = 'La contraseña debe contener mayúscula, minúscula y número';
+      }
+      
+      if (formData.confirmPassword !== formData.password) {
+        newErrors.confirmPassword = 'Las contraseñas no coinciden';
+      }
+    } else if (!isEditMode) {
+      // Solo requerir contraseña en modo creación
       newErrors.password = 'La contraseña es requerida';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'La contraseña debe contener mayúscula, minúscula y número';
-    }
-    
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Por favor confirma tu contraseña';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Por favor confirma tu contraseña';
+      }
     }
     
     return newErrors;
+  };
+
+  const generateUserCode = () => {
+    const initials = (formData.firstName.charAt(0) + formData.lastName.charAt(0)).toUpperCase();
+    const randomNumbers = Math.floor(100000 + Math.random() * 900000);
+    return `${initials}${randomNumbers}`;
   };
 
   const handleSubmit = async (e) => {
@@ -125,12 +171,25 @@ const RegisterForm = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      // Generate user code
+      const userCode = generateUserCode();
+      
       // Create user object without confirmPassword
       const { confirmPassword, ...userData } = formData;
-      console.log('User created:', userData);
+      const newUser = {
+        ...userData,
+        codigo: userCode,
+        nombre_completo: `${formData.firstName} ${formData.lastName}`,
+        fecha_creacion: new Date().toISOString().split('T')[0]
+      };
       
-      const roleLabel = userRoles.find(role => role.value === formData.userRole)?.label;
-      setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido creado exitosamente con el rol: ${roleLabel}`);
+      console.log('Usuario creado:', newUser);
+      
+      if (isEditMode) {
+        setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido actualizado exitosamente.`);
+      } else {
+        setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido creado exitosamente con el código: ${userCode}`);
+      }
       
       // Reset form after successful creation
       setFormData({
@@ -173,20 +232,38 @@ const RegisterForm = () => {
         <Col xs={12} sm={11} md={10} lg={8} xl={6}>
           <Card className="shadow-lg">
             <Card.Body className="p-5">
-              <div className="text-center mb-4">
-                <Image
-                  src="/icons/JPG/logo_without_name.jpg"
-                  alt="SecureFlow Logo"
-                  width={150}
-                  height={150}
-                  className="mb-3"
-                  priority
-                />
-                <h1 className="text-navy fw-bold mb-3 app-title-small">
-                  SecureFlow FH
-                </h1>
-                <h2 className="text-navy fw-bold mb-2">Crear Nuevo Usuario</h2>
-                <p className="text-muted">Panel de Administrador - Registro de Usuario</p>
+              <div className="mb-4">
+                <div className="d-flex align-items-center mb-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    className="me-3 d-flex align-items-center"
+                  >
+                    <FaArrowLeft className="me-2" />
+                    Regresar
+                  </Button>
+                </div>
+                
+                <div className="text-center">
+                  <Image
+                    src="/icons/JPG/logo_without_name.jpg"
+                    alt="SecureFlow Logo"
+                    width={150}
+                    height={150}
+                    className="mb-3"
+                    priority
+                  />
+                  <h1 className="text-navy fw-bold mb-3 app-title-small">
+                    SecureFlow FH
+                  </h1>
+                  <h2 className="text-navy fw-bold mb-2">
+                    {isEditMode ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
+                  </h2>
+                  <p className="text-muted">
+                    Panel de Administrador - {isEditMode ? `Editar Usuario ${formData.codigo}` : 'Registro de Usuario'}
+                  </p>
+                </div>
               </div>
 
               {successMessage && (
@@ -290,27 +367,30 @@ const RegisterForm = () => {
                     <Input
                       type="password"
                       name="password"
-                      label="Contraseña"
-                      placeholder="Ingresa la contraseña"
+                      label={isEditMode ? "Nueva Contraseña (Opcional)" : "Contraseña"}
+                      placeholder={isEditMode ? "Dejar vacío para mantener contraseña actual" : "Ingresa la contraseña"}
                       value={formData.password}
                       onChange={handleChange}
                       error={errors.password}
-                      required
+                      required={!isEditMode}
                     />
                     <small className="text-muted">
-                      La contraseña debe contener mayúscula, minúscula y número (mín 8 caracteres)
+                      {isEditMode 
+                        ? "Dejar vacío para mantener la contraseña actual. Si se llena, debe contener mayúscula, minúscula y número (mín 8 caracteres)"
+                        : "La contraseña debe contener mayúscula, minúscula y número (mín 8 caracteres)"
+                      }
                     </small>
                   </Col>
                   <Col md={6}>
                     <Input
                       type="password"
                       name="confirmPassword"
-                      label="Confirmar Contraseña"
-                      placeholder="Confirma la contraseña"
+                      label={isEditMode ? "Confirmar Nueva Contraseña" : "Confirmar Contraseña"}
+                      placeholder={isEditMode ? "Confirmar nueva contraseña" : "Confirma la contraseña"}
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       error={errors.confirmPassword}
-                      required
+                      required={!isEditMode && formData.password.length > 0}
                     />
                   </Col>
                 </Row>
@@ -335,7 +415,7 @@ const RegisterForm = () => {
                     disabled={loading}
                     className="flex-grow-1"
                   >
-                    Crear Usuario
+                    {isEditMode ? 'Actualizar Usuario' : 'Crear Usuario'}
                   </Button>
                 </div>
                 
@@ -350,4 +430,4 @@ const RegisterForm = () => {
   );
 };
 
-export default RegisterForm;
+export default EditUser;
