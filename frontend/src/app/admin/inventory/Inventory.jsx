@@ -1,11 +1,50 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { SearchBar, CardActivo } from "../../../components/ui";
 
 const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
-    const handleFilter = (filters) => {
+    const [filteredActivos, setFilteredActivos] = useState([]);
+    const [isFiltered, setIsFiltered] = useState(false);
+
+    const handleFilter = useCallback((filters) => {
         console.log('Filtros aplicados:', filters);
-        // Aquí irá la lógica de filtrado
-    };
+        
+        // Si no hay filtros, mostrar todos los activos
+        if (!filters.name && !filters.category && !filters.estado) {
+            setFilteredActivos([]);
+            setIsFiltered(false);
+            return;
+        }
+
+        // Aplicar filtros
+        const filtered = activos.filter(activo => {
+            // Filtro por nombre, código o responsable
+            if (filters.name) {
+                const searchTerm = filters.name.toLowerCase();
+                const matchesName = activo.nombre.toLowerCase().includes(searchTerm);
+                const matchesCode = activo.codigo.toLowerCase().includes(searchTerm);
+                const matchesResponsible = activo.responsable.toLowerCase().includes(searchTerm);
+                
+                if (!matchesName && !matchesCode && !matchesResponsible) {
+                    return false;
+                }
+            }
+
+            // Filtro por categoría
+            if (filters.category && activo.categoria !== filters.category) {
+                return false;
+            }
+
+            // Filtro por estado
+            if (filters.estado && activo.estado !== filters.estado) {
+                return false;
+            }
+
+            return true;
+        });
+
+        setFilteredActivos(filtered);
+        setIsFiltered(true);
+    }, []);
 
     const handleHistorialClick = (activo) => {
         console.log('Navegando al historial de:', activo.nombre);
@@ -66,6 +105,9 @@ const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
         }
     ];
 
+    // Usar activos filtrados o todos los activos
+    const activosToShow = isFiltered ? filteredActivos : activos;
+
     // Definir los campos de búsqueda
     const searchFields = [
         {
@@ -103,14 +145,14 @@ const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
             <div className="user-header">
                 <div className="user-header-text">
                     <h2>Inventario de Activos</h2>
-                    <h6>{activos.length} activos en total</h6>
+                    <h6>{activosToShow.length} activos en total</h6>
                 </div>
             </div>
             
             <SearchBar fields={searchFields} onFilter={handleFilter} />
             
             <div className="activos-grid">
-                {activos.map((activo, index) => (
+                {activosToShow.map((activo, index) => (
                     <CardActivo
                         key={index}
                         activo={activo}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FaUserPlus, FaEdit, FaTrash, FaUsers } from "react-icons/fa";
 import { SearchBar, Table, Modal } from "../../../components/ui";
@@ -7,16 +7,49 @@ const User = ({ className = "", ...props }) => {
     const router = useRouter();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [isFiltered, setIsFiltered] = useState(false);
     
     const handleAddUser = () => {
         console.log('Navegando a crear usuario');
         router.push('/admin/register');
     };
 
-    const handleFilter = (filters) => {
+    const handleFilter = useCallback((filters) => {
         console.log('Filtros aplicados:', filters);
-        // Aquí irá la lógica de filtrado
-    };
+        
+        // Si no hay filtros, mostrar todos los usuarios
+        if (!filters.name && !filters.role) {
+            setFilteredUsers([]);
+            setIsFiltered(false);
+            return;
+        }
+
+        // Aplicar filtros
+        const filtered = usuarios.filter(usuario => {
+            // Filtro por nombre, código o email
+            if (filters.name) {
+                const searchTerm = filters.name.toLowerCase();
+                const matchesName = usuario.nombre_completo.toLowerCase().includes(searchTerm);
+                const matchesCode = usuario.codigo.toLowerCase().includes(searchTerm);
+                const matchesEmail = usuario.email.toLowerCase().includes(searchTerm);
+                
+                if (!matchesName && !matchesCode && !matchesEmail) {
+                    return false;
+                }
+            }
+
+            // Filtro por rol
+            if (filters.role && usuario.rol !== filters.role) {
+                return false;
+            }
+
+            return true;
+        });
+
+        setFilteredUsers(filtered);
+        setIsFiltered(true);
+    }, []);
 
     const handleEdit = (user) => {
         console.log('Editar usuario:', user);
@@ -99,6 +132,9 @@ const User = ({ className = "", ...props }) => {
         }
     ];
 
+    // Usar usuarios filtrados o todos los usuarios
+    const usersToShow = isFiltered ? filteredUsers : usuarios;
+
     // Definir columnas de la tabla
     const tableColumns = [
         { key: "codigo", label: "Código" },
@@ -162,7 +198,7 @@ const User = ({ className = "", ...props }) => {
             name: 'name',
             label: 'Nombre',
             type: 'text',
-            placeholder: 'Busque por nombre, código, responsable'
+            placeholder: 'Busque por nombre, código o email'
         },
         {
             name: 'role',
@@ -182,7 +218,7 @@ const User = ({ className = "", ...props }) => {
             <div className="user-header">
                 <div className="user-header-text">
                     <h2>Gestión de Usuarios y Roles</h2>
-                    <h6>4 usuarios en total</h6>
+                    <h6>{usersToShow.length} usuarios en total</h6>
                 </div>
                 <button 
                     className="add-user-btn"
@@ -200,7 +236,7 @@ const User = ({ className = "", ...props }) => {
             
             <Table 
                 columns={tableColumns}
-                data={usuarios}
+                data={usersToShow}
             />
 
             {/* Modal de confirmación para eliminar */}
