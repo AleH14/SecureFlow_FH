@@ -1,30 +1,173 @@
 # Documentación de Componentes - SecureFlow FH
 
-Esta documentación describe todos los componentes personalizados creados para el sistema SecureFlow FH, incluyendo sus propiedades (props), ejemplos de uso y mejores prácticas.
+Esta documentación describe los componentes principales del sistema SecureFlow FH, incluyendo sus propiedades (props), ejemplos de uso con JSON y mejores prácticas.
 
 ## Índice
 
-- [Componentes UI](#componentes-ui)
-  - [Modal](#modal)
-  - [Button](#button)
-  - [Input](#input)
-  - [Table](#table)
-  - [Card](#card)
-  - [Alert](#alert)
-  - [Select](#select)
-- [Componentes de Formulario](#componentes-de-formulario)
-  - [LoginForm](#loginform)
-  - [RegisterForm](#registerform)
+- [CardActivo](#cardactivo)
+- [GradientLayout](#gradientlayout)
+- [Header](#header)
+- [Modal](#modal)
+- [SearchBar](#searchbar)
+- [SideBar](#sidebar)
+- [Table](#table)
 
 ---
 
-## Componentes UI
+## CardActivo
 
-### Modal
+Componente para mostrar información de un activo del sistema con botón de historial.
+
+### Props
+
+| Prop | Tipo | Default | Requerido | Descripción |
+|------|------|---------|-----------|-------------|
+| `activo` | `object` | - | ✅ | Objeto con información del activo |
+| `onHistorialClick` | `function` | `() => {}` | ❌ | Función ejecutada al hacer clic en historial |
+| `className` | `string` | `''` | ❌ | Clases CSS adicionales |
+
+### Estructura del JSON de Activo
+
+```javascript
+const activoExample = {
+  nombre: "Servidor Web Principal",
+  codigo: "SWP-001",
+  categoria: "Infraestructura",
+  descripcion: "Servidor web para aplicaciones corporativas con balanceador de carga",
+  responsable: "Juan Pérez",
+  version: "2.1.0",
+  ubicacion: "Sala 5 - Dep TI",
+  estado: "Activo", // "Activo", "Mantenimiento", "Inactivo", "En revision"
+  fecha_creacion: "2024-01-15"
+};
+```
+
+### Ejemplos de Uso
+
+**Uso Básico:**
+```jsx
+import { CardActivo } from '@/components/ui';
+
+const activo = {
+  nombre: "Servidor Web Principal",
+  codigo: "SWP-001",
+  categoria: "Infraestructura", 
+  descripcion: "Servidor para aplicaciones web",
+  responsable: "Juan Pérez",
+  estado: "Activo",
+  ubicacion: "Datacenter A",
+  fecha_creacion: "2024-01-15"
+};
+
+<CardActivo 
+  activo={activo}
+  onHistorialClick={(activo) => console.log('Ver historial de:', activo.nombre)}
+/>
+```
+
+**Con Navegación a SCV:**
+```jsx
+const handleHistorialClick = (activo) => {
+  setSelectedActivo(activo);
+  setShowSCV(true);
+};
+
+<CardActivo 
+  activo={activo}
+  onHistorialClick={handleHistorialClick}
+  className="mb-3"
+/>
+```
+
+---
+
+## GradientLayout
+
+Componente contenedor con diseño de fondo degradado para layouts principales.
+
+### Props
+
+| Prop | Tipo | Default | Requerido | Descripción |
+|------|------|---------|-----------|-------------|
+| `children` | `ReactNode` | - | ✅ | Contenido del layout |
+| `className` | `string` | `''` | ❌ | Clases CSS adicionales |
+
+### Ejemplos de Uso
+
+**Layout Principal:**
+```jsx
+import { GradientLayout } from '@/components/ui';
+
+<GradientLayout>
+  <div className="main-content">
+    <h1>Página Principal</h1>
+    <p>Contenido de la aplicación</p>
+  </div>
+</GradientLayout>
+```
+
+**Con Clases Personalizadas:**
+```jsx
+<GradientLayout className="admin-layout">
+  <AdminDashboard />
+</GradientLayout>
+```
+
+---
+
+## Header
+
+Componente de encabezado con título y información de usuario opcionales.
+
+### Props
+
+| Prop | Tipo | Default | Requerido | Descripción |
+|------|------|---------|-----------|-------------|
+| `children` | `ReactNode` | - | ❌ | Contenido adicional del header |
+| `className` | `string` | `''` | ❌ | Clases CSS adicionales |
+| `showTitle` | `boolean` | `true` | ❌ | Muestra/oculta el título principal |
+| `userName` | `string` | - | ❌ | Nombre del usuario logueado |
+| `userIcon` | `ReactNode` | - | ❌ | Icono del usuario |
+| `showUser` | `boolean` | `false` | ❌ | Muestra/oculta información de usuario |
+
+### Ejemplos de Uso
+
+**Header Básico:**
+```jsx
+import { Header } from '@/components/ui';
+
+<Header showTitle={true} />
+```
+
+**Header con Usuario:**
+```jsx
+import { FaUser } from 'react-icons/fa';
+
+<Header 
+  showTitle={true}
+  showUser={true}
+  userName="Juan Pérez"
+  userIcon={<FaUser />}
+/>
+```
+
+**Header con Contenido Personalizado:**
+```jsx
+<Header className="admin-header">
+  <div className="header-actions">
+    <button>Configuración</button>
+    <button>Notificaciones</button>
+  </div>
+</Header>
+```
+
+---
+
+## Modal
 
 Componente modal generalizado y reutilizable para confirmaciones, alertas y formularios.
 
-#### Props
+### Props
 
 | Prop | Tipo | Default | Requerido | Descripción |
 |------|------|---------|-----------|-------------|
@@ -43,9 +186,9 @@ Componente modal generalizado y reutilizable para confirmaciones, alertas y form
 | `headerBgColor` | `string` | `"var(--color-navy)"` | ❌ | Color de fondo del header |
 | `buttonColor` | `string` | `"var(--color-navy)"` | ❌ | Color del botón aceptar |
 
-#### Ejemplos de Uso
+### Ejemplos de Uso
 
-**Modal de Confirmación Básico:**
+**Modal de Confirmación:**
 ```jsx
 import { Modal } from '@/components/ui';
 
@@ -66,163 +209,258 @@ const [showModal, setShowModal] = useState(false);
 />
 ```
 
-**Modal con Recuadro de Valores:**
+**Modal con Información de Activo:**
 ```jsx
 <Modal
   isOpen={showModal}
   onClose={() => setShowModal(false)}
-  title="Información del Usuario"
+  title="Información del Activo"
   question="¿Deseas continuar con esta acción?"
   showValueBox={true}
-  valueBoxTitle="Usuario seleccionado:"
-  valueBoxSubtitle="Juan Pérez - juan@example.com"
-  informativeText="Esta acción no se puede deshacer."
-/>
-```
-
-**Modal Personalizado para Auditoría:**
-```jsx
-<Modal
-  isOpen={showCommentModal}
-  onClose={() => setShowCommentModal(false)}
-  title="Agregar Comentario de Auditoría"
-  question="¿Deseas agregar un comentario a este registro?"
-  headerBgColor="#17a2b8"
-  buttonColor="#17a2b8"
-  acceptText="Agregar Comentario"
-  showValueBox={true}
-  valueBoxTitle="Registro seleccionado:"
-  valueBoxSubtitle={`${selectedRecord.nombre} - ${selectedRecord.fecha}`}
+  valueBoxTitle="Activo seleccionado:"
+  valueBoxSubtitle={`${selectedActivo.nombre} - ${selectedActivo.codigo}`}
+  informativeText="Esta acción afectará el historial del activo."
 />
 ```
 
 ---
 
-### Button
+## SearchBar
 
-Componente de botón personalizable basado en Bootstrap con estados de carga.
+Componente de barra de búsqueda configurable con múltiples campos y filtros.
 
-#### Props
+### Props
 
 | Prop | Tipo | Default | Requerido | Descripción |
 |------|------|---------|-----------|-------------|
-| `children` | `ReactNode` | - | ✅ | Contenido del botón |
-| `variant` | `string` | `'primary'` | ❌ | Variante del botón: `'primary'`, `'secondary'`, `'outline'` |
-| `size` | `string` | `'md'` | ❌ | Tamaño del botón: `'sm'`, `'md'`, `'lg'` |
-| `loading` | `boolean` | `false` | ❌ | Muestra estado de carga con spinner |
-| `disabled` | `boolean` | `false` | ❌ | Desactiva el botón |
+| `fields` | `Array` | `[]` | ✅ | Configuración de campos de búsqueda |
+| `onFilter` | `function` | `() => {}` | ❌ | Función ejecutada cuando cambian los filtros |
 | `className` | `string` | `''` | ❌ | Clases CSS adicionales |
-| `onClick` | `function` | - | ❌ | Función ejecutada al hacer clic |
-| `type` | `string` | `'button'` | ❌ | Tipo de botón HTML |
 
-#### Ejemplos de Uso
+### Estructura del JSON de Fields
 
-**Botón Primario:**
-```jsx
-import { Button } from '@/components/ui';
-
-<Button 
-  variant="primary" 
-  onClick={() => handleSave()}
->
-  Guardar
-</Button>
+```javascript
+const fieldsExample = [
+  {
+    name: "nombre",
+    label: "Nombre",
+    type: "text",
+    placeholder: "Buscar por nombre..."
+  },
+  {
+    name: "categoria", 
+    label: "Categoría",
+    type: "select",
+    options: [
+      { value: "infraestructura", label: "Infraestructura" },
+      { value: "software", label: "Software" },
+      { value: "hardware", label: "Hardware" }
+    ]
+  },
+  {
+    name: "estado",
+    label: "Estado", 
+    type: "select",
+    options: [
+      { value: "activo", label: "Activo" },
+      { value: "inactivo", label: "Inactivo" },
+      { value: "mantenimiento", label: "Mantenimiento" }
+    ]
+  }
+];
 ```
 
-**Botón con Estado de Carga:**
+### Ejemplos de Uso
+
+**Búsqueda de Activos:**
 ```jsx
-<Button 
-  variant="primary"
-  size="lg"
-  loading={isLoading}
-  disabled={isLoading}
-  onClick={handleSubmit}
->
-  Enviar Formulario
-</Button>
+import { SearchBar } from '@/components/ui';
+
+const searchFields = [
+  {
+    name: "nombre",
+    label: "Nombre del Activo",
+    type: "text", 
+    placeholder: "Buscar activo..."
+  },
+  {
+    name: "responsable",
+    label: "Responsable",
+    type: "text",
+    placeholder: "Buscar responsable..."
+  },
+  {
+    name: "estado",
+    label: "Estado",
+    type: "select",
+    options: [
+      { value: "activo", label: "Activo" },
+      { value: "inactivo", label: "Inactivo" },
+      { value: "mantenimiento", label: "Mantenimiento" }
+    ]
+  }
+];
+
+const handleFilter = (filters) => {
+  console.log('Filtros aplicados:', filters);
+  // Aplicar filtros a los datos
+};
+
+<SearchBar 
+  fields={searchFields}
+  onFilter={handleFilter}
+/>
 ```
 
-**Botón de Contorno:**
+**Búsqueda de Usuarios:**
 ```jsx
-<Button 
-  variant="outline"
-  onClick={() => handleCancel()}
-  className="me-3"
->
-  <FaArrowLeft className="me-2" />
-  Regresar
-</Button>
+const userSearchFields = [
+  {
+    name: "nombre",
+    label: "Nombre",
+    type: "text",
+    placeholder: "Nombre del usuario..."
+  },
+  {
+    name: "email", 
+    label: "Email",
+    type: "email",
+    placeholder: "Correo electrónico..."
+  },
+  {
+    name: "rol",
+    label: "Rol",
+    type: "select",
+    options: [
+      { value: "admin", label: "Administrador" },
+      { value: "user", label: "Usuario" },
+      { value: "auditor", label: "Auditor" }
+    ]
+  }
+];
 ```
 
 ---
 
-### Input
+## SideBar
 
-Componente de entrada de texto personalizado con validaciones y iconos.
+Componente de barra lateral de navegación con pestañas configurables.
 
-#### Props
+### Props
 
 | Prop | Tipo | Default | Requerido | Descripción |
 |------|------|---------|-----------|-------------|
-| `type` | `string` | `'text'` | ❌ | Tipo de input HTML |
-| `placeholder` | `string` | - | ❌ | Texto placeholder |
-| `label` | `string` | - | ❌ | Etiqueta del campo |
-| `error` | `string` | - | ❌ | Mensaje de error a mostrar |
+| `tabs` | `Array` | `[]` | ✅ | Configuración de pestañas |
+| `defaultActiveTab` | `string` | `null` | ❌ | ID de la pestaña activa por defecto |
+| `onTabChange` | `function` | `() => {}` | ❌ | Función ejecutada al cambiar pestaña |
 | `className` | `string` | `''` | ❌ | Clases CSS adicionales |
-| `required` | `boolean` | `false` | ❌ | Marca el campo como requerido |
-| `icon` | `ReactNode` | - | ❌ | Icono izquierdo |
-| `rightIcon` | `ReactNode` | - | ❌ | Icono derecho |
 
-#### Ejemplos de Uso
+### Estructura del JSON de Tabs
 
-**Input Básico:**
+```javascript
+const tabsExample = [
+  {
+    id: "users",
+    name: "Gestión de Usuarios", 
+    iconName: "FaUsers"
+  },
+  {
+    id: "assets",
+    name: "Gestión de Activos",
+    iconName: "FaBoxes"
+  },
+  {
+    id: "reports", 
+    name: "Reportes",
+    iconName: "FaChartBar"
+  },
+  {
+    id: "settings",
+    name: "Configuración",
+    iconName: "FaCog"
+  }
+];
+```
+
+### Iconos Disponibles
+
+- `FaUsers` - Usuarios
+- `FaBoxes` - Activos/Inventario
+- `FaCog` - Configuración
+- `FaChartBar` - Reportes/Gráficos
+- `FaFileAlt` - Documentos
+- `FaShieldAlt` - Seguridad
+- `FaUserPlus` - Agregar Usuario
+
+### Ejemplos de Uso
+
+**SideBar de Administrador:**
 ```jsx
-import { Input } from '@/components/ui';
+import { Sidebar } from '@/components/ui';
 
-<Input
-  type="email"
-  name="email"
-  label="Correo Electrónico"
-  placeholder="Ingresa tu correo"
-  value={formData.email}
-  onChange={handleChange}
-  required
+const adminTabs = [
+  {
+    id: "users",
+    name: "Gestión de Usuarios",
+    iconName: "FaUsers"
+  },
+  {
+    id: "assets", 
+    name: "Gestión de Activos",
+    iconName: "FaBoxes"
+  },
+  {
+    id: "reports",
+    name: "Reportes",
+    iconName: "FaChartBar"
+  },
+  {
+    id: "settings",
+    name: "Configuración", 
+    iconName: "FaCog"
+  }
+];
+
+const handleTabChange = (tabId) => {
+  console.log('Pestaña seleccionada:', tabId);
+  setActiveView(tabId);
+};
+
+<Sidebar 
+  tabs={adminTabs}
+  defaultActiveTab="users"
+  onTabChange={handleTabChange}
 />
 ```
 
-**Input con Error:**
+**SideBar de Auditor:**
 ```jsx
-<Input
-  type="password"
-  name="password"
-  label="Contraseña"
-  placeholder="Ingresa tu contraseña"
-  value={formData.password}
-  onChange={handleChange}
-  error={errors.password}
-  required
-/>
-```
-
-**Input con Iconos:**
-```jsx
-import { FaUser, FaEye } from 'react-icons/fa';
-
-<Input
-  type="text"
-  placeholder="Buscar usuario"
-  icon={<FaUser />}
-  rightIcon={<FaEye />}
-/>
+const auditorTabs = [
+  {
+    id: "inventory",
+    name: "Inventario de Activos",
+    iconName: "FaBoxes"
+  },
+  {
+    id: "audit",
+    name: "Control de Versiones", 
+    iconName: "FaShieldAlt"
+  },
+  {
+    id: "reports",
+    name: "Reportes de Auditoría",
+    iconName: "FaFileAlt"
+  }
+];
 ```
 
 ---
 
-### Table
+## Table
 
 Componente de tabla flexible y personalizable para mostrar datos tabulares.
 
-#### Props
+### Props
 
 | Prop | Tipo | Default | Requerido | Descripción |
 |------|------|---------|-----------|-------------|
@@ -235,10 +473,10 @@ Componente de tabla flexible y personalizable para mostrar datos tabulares.
 | `rowStyle` | `object` | `{}` | ❌ | Estilos para las filas |
 | `cellStyle` | `object` | `{}` | ❌ | Estilos para las celdas |
 
-#### Estructura de Columnas
+### Estructura del JSON de Columns
 
 ```javascript
-const columns = [
+const columnsExample = [
   {
     key: 'nombre',           // Clave del dato
     label: 'Nombre',         // Texto del header
@@ -249,34 +487,39 @@ const columns = [
 ];
 ```
 
-#### Ejemplos de Uso
+### Estructura del JSON de Data
 
-**Tabla Básica:**
+```javascript
+const dataExample = [
+  {
+    id: 1,
+    nombre: "Juan Pérez", 
+    email: "juan@example.com",
+    rol: "Administrador",
+    estado: "Activo",
+    fecha_creacion: "2024-01-15"
+  },
+  {
+    id: 2,
+    nombre: "María García",
+    email: "maria@example.com", 
+    rol: "Usuario",
+    estado: "Activo",
+    fecha_creacion: "2024-02-20"
+  }
+];
+```
+
+### Ejemplos de Uso
+
+**Tabla de Usuarios:**
 ```jsx
 import { Table } from '@/components/ui';
 
-const columns = [
+const userColumns = [
   { key: 'nombre', label: 'Nombre' },
   { key: 'email', label: 'Email' },
-  { key: 'rol', label: 'Rol' }
-];
-
-const users = [
-  { id: 1, nombre: 'Juan Pérez', email: 'juan@example.com', rol: 'Admin' },
-  { id: 2, nombre: 'María García', email: 'maria@example.com', rol: 'Usuario' }
-];
-
-<Table
-  title="Lista de Usuarios"
-  columns={columns}
-  data={users}
-/>
-```
-
-**Tabla con Renderizado Personalizado:**
-```jsx
-const columns = [
-  { key: 'nombre', label: 'Nombre' },
+  { key: 'rol', label: 'Rol' },
   { 
     key: 'estado', 
     label: 'Estado',
@@ -285,25 +528,36 @@ const columns = [
         {row.estado}
       </span>
     )
-  },
-  {
-    key: 'acciones',
-    label: 'Acciones',
-    render: (row) => (
-      <div>
-        <Button size="sm" onClick={() => handleEdit(row.id)}>Editar</Button>
-        <Button variant="outline" size="sm" onClick={() => handleDelete(row.id)}>
-          Eliminar
-        </Button>
-      </div>
-    )
   }
 ];
+
+const users = [
+  {
+    id: 1,
+    nombre: "Juan Pérez",
+    email: "juan@example.com", 
+    rol: "Admin",
+    estado: "Activo"
+  },
+  {
+    id: 2,
+    nombre: "María García",
+    email: "maria@example.com",
+    rol: "Usuario", 
+    estado: "Inactivo"
+  }
+];
+
+<Table
+  title="Lista de Usuarios"
+  columns={userColumns}
+  data={users}
+/>
 ```
 
-**Tabla con Datos Complejos:**
+**Tabla SCV (Control de Versiones):**
 ```jsx
-const columns = [
+const scvColumns = [
   { key: 'fecha', label: 'Fecha' },
   {
     key: 'solicitud_de_cambio',
@@ -311,229 +565,40 @@ const columns = [
     render: (row) => (
       <div className="scv-cell-content">
         <span className="scv-label">Nombre:</span> 
-        <span className="scv-value">{row.solicitud.nombre}</span><br/>
+        <span className="scv-value">{row.solicitud_de_cambio.nombre}</span><br/>
         <span className="scv-label">Categoría:</span> 
-        <span className="scv-value">{row.solicitud.categoria}</span>
+        <span className="scv-value">{row.solicitud_de_cambio.categoria}</span><br/>
+        <span className="scv-label">Responsable:</span> 
+        <span className="scv-value">{row.solicitud_de_cambio.responsable}</span>
       </div>
+    )
+  },
+  { key: 'comentario', label: 'Comentario' },
+  {
+    key: 'estado',
+    label: 'Estado', 
+    render: (row) => (
+      <span className={`estado-badge estado-${row.estado.toLowerCase()}`}>
+        {row.estado}
+      </span>
     )
   }
 ];
-```
 
----
-
-### Card
-
-Componente de tarjeta basado en Bootstrap con subcomponentes.
-
-#### Props
-
-| Prop | Tipo | Default | Requerido | Descripción |
-|------|------|---------|-----------|-------------|
-| `children` | `ReactNode` | - | ✅ | Contenido de la tarjeta |
-| `className` | `string` | `''` | ❌ | Clases CSS adicionales |
-
-#### Subcomponentes
-
-- `Card.Header` - Header de la tarjeta
-- `Card.Body` - Cuerpo principal de la tarjeta  
-- `Card.Footer` - Footer de la tarjeta
-
-#### Ejemplos de Uso
-
-**Card Básica:**
-```jsx
-import { Card } from '@/components/ui';
-
-<Card>
-  <Card.Body>
-    <h5>Título de la tarjeta</h5>
-    <p>Contenido de la tarjeta</p>
-  </Card.Body>
-</Card>
-```
-
-**Card Completa:**
-```jsx
-<Card className="shadow-lg">
-  <Card.Header>
-    <h4>Dashboard</h4>
-  </Card.Header>
-  <Card.Body>
-    <p>Información del dashboard</p>
-  </Card.Body>
-  <Card.Footer>
-    <small className="text-muted">Última actualización: {new Date().toLocaleDateString()}</small>
-  </Card.Footer>
-</Card>
-```
-
----
-
-### Alert
-
-Componente de alerta personalizable basado en Bootstrap.
-
-#### Props
-
-| Prop | Tipo | Default | Requerido | Descripción |
-|------|------|---------|-----------|-------------|
-| `children` | `ReactNode` | - | ✅ | Contenido de la alerta |
-| `variant` | `string` | `'info'` | ❌ | Tipo de alerta: `'success'`, `'danger'`, `'warning'`, `'info'` |
-| `dismissible` | `boolean` | `false` | ❌ | Permite cerrar la alerta |
-| `onClose` | `function` | - | ❌ | Función llamada al cerrar |
-| `className` | `string` | `''` | ❌ | Clases CSS adicionales |
-| `show` | `boolean` | `true` | ❌ | Controla la visibilidad |
-
-#### Ejemplos de Uso
-
-**Alert de Éxito:**
-```jsx
-import { Alert } from '@/components/ui';
-
-<Alert variant="success">
-  ¡Usuario creado exitosamente!
-</Alert>
-```
-
-**Alert Dismissible:**
-```jsx
-const [showAlert, setShowAlert] = useState(true);
-
-<Alert 
-  variant="warning"
-  dismissible
-  show={showAlert}
-  onClose={() => setShowAlert(false)}
->
-  Atención: Esta acción no se puede deshacer.
-</Alert>
-```
-
----
-
-### Select
-
-Componente de selección personalizado con validaciones.
-
-#### Props
-
-| Prop | Tipo | Default | Requerido | Descripción |
-|------|------|---------|-----------|-------------|
-| `options` | `Array` | `[]` | ✅ | Opciones del select |
-| `placeholder` | `string` | `'Selecciona una opción'` | ❌ | Texto placeholder |
-| `label` | `string` | - | ❌ | Etiqueta del campo |
-| `error` | `string` | - | ❌ | Mensaje de error |
-| `className` | `string` | `''` | ❌ | Clases CSS adicionales |
-| `required` | `boolean` | `false` | ❌ | Campo requerido |
-
-#### Estructura de Opciones
-
-```javascript
-const options = [
-  { value: 'valor1', label: 'Etiqueta 1' },
-  { value: 'valor2', label: 'Etiqueta 2' }
+const scvData = [
+  {
+    id: 1,
+    fecha: "2025-11-23",
+    solicitud_de_cambio: {
+      nombre: "Servidor Web Principal",
+      categoria: "Infraestructura", 
+      responsable: "Juan Pérez"
+    },
+    comentario: "Actualización de seguridad",
+    estado: "Aprobado"
+  }
 ];
 ```
-
-#### Ejemplos de Uso
-
-**Select Básico:**
-```jsx
-import { Select } from '@/components/ui';
-
-const roles = [
-  { value: 'admin', label: 'Administrador' },
-  { value: 'user', label: 'Usuario' },
-  { value: 'auditor', label: 'Auditor' }
-];
-
-<Select
-  label="Rol del Usuario"
-  options={roles}
-  value={formData.rol}
-  onChange={handleChange}
-  placeholder="Selecciona un rol"
-  required
-/>
-```
-
-**Select con Error:**
-```jsx
-<Select
-  label="Categoría"
-  options={categorias}
-  value={formData.categoria}
-  onChange={handleChange}
-  error={errors.categoria}
-  required
-/>
-```
-
----
-
-## Componentes de Formulario
-
-### LoginForm
-
-Componente completo de formulario de inicio de sesión con validaciones.
-
-#### Props
-
-Este componente no recibe props, maneja su propio estado interno.
-
-#### Características
-
-- ✅ Validación de email y contraseña
-- ✅ Estados de carga
-- ✅ Manejo de errores
-- ✅ Diseño responsive
-- ✅ Integración con componentes UI
-
-#### Ejemplo de Uso
-
-```jsx
-import { LoginForm } from '@/components';
-
-// En tu página de login
-export default function LoginPage() {
-  return <LoginForm />;
-}
-```
-
-#### Estados Internos
-
-```javascript
-// Estados manejados internamente
-const [formData, setFormData] = useState({
-  email: '',
-  password: ''
-});
-const [errors, setErrors] = useState({});
-const [loading, setLoading] = useState(false);
-```
-
-#### Validaciones
-
-- **Email**: Requerido y formato válido
-- **Contraseña**: Requerida y mínimo 6 caracteres
-
----
-
-### RegisterForm
-
-Componente completo de formulario de registro de usuarios.
-
-#### Props
-
-Similar al LoginForm, maneja su estado interno sin props externos.
-
-#### Características
-
-- ✅ Validaciones completas
-- ✅ Estados de carga
-- ✅ Manejo de errores
-- ✅ Diseño responsive
 
 ---
 
@@ -541,28 +606,26 @@ Similar al LoginForm, maneja su estado interno sin props externos.
 
 ### Uso de Componentes
 
-1. **Importación**: Siempre importa desde el índice principal
+1. **Importación Consistente:**
    ```jsx
-   import { Modal, Button, Input } from '@/components/ui';
+   import { CardActivo, Table, Modal } from '@/components/ui';
    ```
 
-2. **Props Requeridas**: Siempre proporciona las props marcadas como requeridas
-   
-3. **Manejo de Estado**: Usa useState para controlar la visibilidad de modales
-   
-4. **Validaciones**: Implementa validaciones consistentes en todos los formularios
+2. **Estructura de JSON:** Mantén consistencia en la estructura de datos
+3. **Manejo de Estados:** Usa useState para controlar visibilidad y datos
+4. **Callbacks:** Implementa funciones de callback apropiadas
 
-### Estilos
+### Configuración JSON
 
-1. **CSS Personalizado**: Los estilos están en `/src/styles/`
-2. **Clases Bootstrap**: Se mantiene compatibilidad con Bootstrap
-3. **Variables CSS**: Usa las variables definidas en `variables.css`
+1. **Validación:** Siempre valida la estructura JSON antes de usar
+2. **Fallbacks:** Proporciona valores por defecto cuando sea necesario
+3. **Tipos:** Mantén consistencia en los tipos de datos
 
-### Accesibilidad
+### Performance
 
-1. **Labels**: Siempre proporciona labels para inputs
-2. **ARIA**: Los componentes incluyen atributos ARIA apropiados
-3. **Keyboard Navigation**: Todos los componentes son navegables por teclado
+1. **Memoización:** Usa useMemo para JSON complejos
+2. **Keys:** Siempre proporciona keys únicas en listas
+3. **Optimización:** Evita recrear objetos en cada render
 
 ---
 
@@ -571,37 +634,20 @@ Similar al LoginForm, maneja su estado interno sin props externos.
 ```
 src/
 ├── components/
-│   ├── ui/
-│   │   ├── Modal.jsx
-│   │   ├── Button.js
-│   │   ├── Input.js
-│   │   ├── Table.jsx
-│   │   ├── Card.js
-│   │   ├── Alert.js
-│   │   ├── Select.js
-│   │   └── index.js
-│   ├── LoginForm.js
-│   ├── RegisterForm.js
-│   └── index.js
+│   └── ui/
+│       ├── CardActivo.jsx
+│       ├── GradientLayout.jsx
+│       ├── Header.jsx
+│       ├── Modal.jsx
+│       ├── SearchBar.jsx
+│       ├── SideBar.jsx
+│       ├── Table.jsx
+│       └── index.js
 └── styles/
     ├── modal.css
     ├── components.css
-    ├── forms.css
     └── variables.css
 ```
-
----
-
-## Contribución
-
-Al agregar nuevos componentes:
-
-1. Sigue la estructura de props establecida
-2. Documenta todas las props con sus tipos
-3. Incluye ejemplos de uso
-4. Mantén la consistencia con el diseño existente
-5. Agrega estilos en archivos CSS separados
-6. Actualiza esta documentación
 
 ---
 
