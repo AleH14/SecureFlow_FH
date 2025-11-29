@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import Image from 'next/image';
-import Link from 'next/link';
-import { Input, Button, Card, Select, Alert } from './ui';
+import { useRouter } from 'next/navigation';
+import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaUserTag, FaLock, FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
+import { Input, Button, Card, Select, Alert } from '../../../components/ui';
 
-const RegisterForm = () => {
+const RegisterPage = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -20,22 +22,28 @@ const RegisterForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleBack = () => {
+    router.back();
+  };
 
   const userRoles = [
-    { value: 'administrator', label: 'Administrador' },
-    { value: 'security_officer', label: 'Seguridad' },
-    { value: 'internal_auditor', label: 'Auditor Interno' },
-    { value: 'user', label: 'Usuario' }
+    { value: 'Administrador', label: 'Administrador' },
+    { value: 'Usuario Lector', label: 'Usuario Lector' },
+    { value: 'Responsable de Seguridad', label: 'Responsable de Seguridad' },
+    { value: 'Auditor', label: 'Auditor' }
   ];
 
   const departments = [
-    { value: 'it', label: 'Tecnología de la Información' },
-    { value: 'security', label: 'Seguridad' },
-    { value: 'audit', label: 'Auditoría Interna' },
-    { value: 'hr', label: 'Recursos Humanos' },
-    { value: 'finance', label: 'Finanzas' },
-    { value: 'operations', label: 'Operaciones' },
-    { value: 'legal', label: 'Legal y Cumplimiento' }
+    { value: 'TI', label: 'Tecnología de la Información' },
+    { value: 'Recursos Humanos', label: 'Recursos Humanos' },
+    { value: 'Seguridad', label: 'Seguridad' },
+    { value: 'Auditoría', label: 'Auditoría' },
+    { value: 'Finanzas', label: 'Finanzas' },
+    { value: 'Operaciones', label: 'Operaciones' },
+    { value: 'Legal', label: 'Legal y Cumplimiento' }
   ];
 
   const handleChange = (e) => {
@@ -80,8 +88,8 @@ const RegisterForm = () => {
     
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = 'El número de teléfono es requerido';
-    } else if (!/^\+?[\d\s\-\(\)]+$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = 'Por favor ingresa un número de teléfono válido';
+    } else if (!/^[\d\-\s]+$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Por favor ingresa un número de teléfono válido (ej: 1234-5678)';
     }
     
     if (!formData.department) {
@@ -109,6 +117,12 @@ const RegisterForm = () => {
     return newErrors;
   };
 
+  const generateUserCode = () => {
+    const initials = (formData.firstName.charAt(0) + formData.lastName.charAt(0)).toUpperCase();
+    const randomNumbers = Math.floor(100000 + Math.random() * 900000);
+    return `${initials}${randomNumbers}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
@@ -125,12 +139,21 @@ const RegisterForm = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      // Generate user code
+      const userCode = generateUserCode();
+      
       // Create user object without confirmPassword
       const { confirmPassword, ...userData } = formData;
-      console.log('User created:', userData);
+      const newUser = {
+        ...userData,
+        codigo: userCode,
+        nombre_completo: `${formData.firstName} ${formData.lastName}`,
+        fecha_creacion: new Date().toISOString().split('T')[0]
+      };
       
-      const roleLabel = userRoles.find(role => role.value === formData.userRole)?.label;
-      setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido creado exitosamente con el rol: ${roleLabel}`);
+      console.log('Usuario creado:', newUser);
+      
+      setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido creado exitosamente con el código: ${userCode}`);
       
       // Reset form after successful creation
       setFormData({
@@ -173,20 +196,34 @@ const RegisterForm = () => {
         <Col xs={12} sm={11} md={10} lg={8} xl={6}>
           <Card className="shadow-lg">
             <Card.Body className="p-5">
-              <div className="text-center mb-4">
-                <Image
-                  src="/icons/JPG/logo_without_name.jpg"
-                  alt="SecureFlow Logo"
-                  width={150}
-                  height={150}
-                  className="mb-3"
-                  priority
-                />
-                <h1 className="text-navy fw-bold mb-3 app-title-small">
-                  SecureFlow FH
-                </h1>
-                <h2 className="text-navy fw-bold mb-2">Crear Nuevo Usuario</h2>
-                <p className="text-muted">Panel de Administrador - Registro de Usuario</p>
+              <div className="mb-4">
+                <div className="d-flex align-items-center mb-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    className="me-3 d-flex align-items-center"
+                  >
+                    <FaArrowLeft className="me-2" />
+                    Regresar
+                  </Button>
+                </div>
+                
+                <div className="text-center">
+                  <Image
+                    src="/icons/JPG/logo_without_name.jpg"
+                    alt="SecureFlow Logo"
+                    width={150}
+                    height={150}
+                    className="mb-3"
+                    priority
+                  />
+                  <h1 className="text-navy fw-bold mb-3 app-title-small">
+                    SecureFlow FH
+                  </h1>
+                  <h2 className="text-navy fw-bold mb-2">Crear Nuevo Usuario</h2>
+                  <p className="text-muted">Panel de Administrador - Registro de Usuario</p>
+                </div>
               </div>
 
               {successMessage && (
@@ -350,4 +387,4 @@ const RegisterForm = () => {
   );
 };
 
-export default RegisterForm;
+export default RegisterPage;

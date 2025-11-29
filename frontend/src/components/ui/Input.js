@@ -8,8 +8,12 @@ const Input = forwardRef(({
   error, 
   className = '', 
   required = false,
+  icon,
+  rightIcon,
   ...props 
 }, ref) => {
+  const { rightIcon: _, icon: __, ...inputProps } = props;
+  
   return (
     <Form.Group className={`mb-3 ${className}`}>
       {label && (
@@ -17,14 +21,26 @@ const Input = forwardRef(({
           {label} {required && <span className="text-danger">*</span>}
         </Form.Label>
       )}
-      <Form.Control
-        ref={ref}
-        type={type}
-        placeholder={placeholder}
-        isInvalid={!!error}
-        className="custom-input"
-        {...props}
-      />
+      <div className="input-wrapper">
+        {icon && (
+          <div className="input-icon-left">
+            {icon}
+          </div>
+        )}
+        <Form.Control
+          ref={ref}
+          type={type}
+          placeholder={placeholder}
+          isInvalid={!!error}
+          className={`custom-input ${icon ? 'has-left-icon' : ''} ${rightIcon ? 'has-right-icon' : ''}`}
+          {...inputProps}
+        />
+        {rightIcon && (
+          <div className="input-icon-right">
+            {rightIcon}
+          </div>
+        )}
+      </div>
       {error && (
         <Form.Control.Feedback type="invalid">
           {error}
