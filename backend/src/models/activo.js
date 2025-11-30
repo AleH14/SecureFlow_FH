@@ -1,0 +1,58 @@
+const mongoose = require("mongoose");
+
+const ActivoSchema = new mongoose.Schema({
+  codigo: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  },
+  nombre: { 
+    type: String, 
+    required: true 
+  },
+  categoria: { 
+    type: String, 
+    required: true,
+    enum: [
+      "Datos",
+      "Sistemas",
+      "Infraestructura",
+      "Personas"
+    ]
+  },
+  descripcion: { 
+    type: String 
+  },
+  estado: {
+    type: String,
+    enum: [
+      "Activo",
+      "Inactivo",
+      "Mantenimiento",
+      "En Revisión"
+    ],
+    default: "Activo"
+  },
+  ubicacion: { 
+    type: String 
+  },
+  fechaCreacion: { 
+    type: Date, 
+    default: Date.now 
+  },
+  responsableId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
+    required: true 
+  },
+  version: { 
+    type: String, 
+    default: "v1.0.0" 
+  },
+  idsSolicitudesDeCambio: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'SolicitudCambio' 
+  }]
+});
+
+module.exports = mongoose.model("Activo", ActivoSchema);

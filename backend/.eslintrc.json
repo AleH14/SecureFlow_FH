@@ -12,6 +12,7 @@
     "sourceType": "module"
   },
   "rules": {
+    "eol": "crlf",
     "no-console": "warn",
     "no-unused-vars": "error",
     "indent": ["error", 2],
