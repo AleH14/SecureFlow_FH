@@ -26,6 +26,11 @@ export default function Home() {
           <Link href="/auditor" className="btn btn-custom-secondary btn-lg ms-3">
             Auditor 
           </Link>
+
+                   {/* USUARIO*/}
+          <Link href="/usuario" className="btn btn-custom-secondary btn-lg ms-3">
+            Usuario
+          </Link>
         </div>
 
       </div>

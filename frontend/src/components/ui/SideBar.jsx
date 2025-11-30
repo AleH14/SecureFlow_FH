@@ -53,12 +53,34 @@ const Sidebar = ({
                 >
                   {IconComponent && <IconComponent className="sidebar-icon" />}
                   {tab.name}
+                  {/* Badge para notificaciones */}
+                  {tab.badgeCount && tab.badgeCount > 0 && (
+                    <span className="sidebar-badge">
+                      {tab.badgeCount}
+                    </span>
+                  )}
                 </button>
               </li>
             );
           })}
         </ul>
       </nav>
+
+      <style jsx>{`
+        .sidebar-badge {
+          background: #ffc107;
+          color: #000;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: bold;
+          margin-left: 8px;
+        }
+      `}</style>
     </div>
   );
 };
