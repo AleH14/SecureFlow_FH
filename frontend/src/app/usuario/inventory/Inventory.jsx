@@ -23,7 +23,7 @@ const Inventory = ({
   };
 
   const handleFilter = useCallback((filters) => {
-    console.log("Filtros aplicados:", filters);
+
 
     if (!filters.name && !filters.category && !filters.estado) {
       setFilteredActivos([]);
@@ -61,19 +61,21 @@ const Inventory = ({
   }, []);
 
   const handleHistorialClick = (activo) => {
-    console.log("Navegando al historial de:", activo.nombre);
+
     if (onNavigateToSCV) {
       onNavigateToSCV(activo);
     }
   };
 
   const handleModificarClick = (activo) => {
-    console.log("Modificando activo:", activo.nombre);
+
+
     
     if (onNavigateToModificarActivo) {
-      onNavigateToModificarActivo(activo);
+
+      onNavigateToModificarActivo(activo, "inventory");
     } else {
-      console.log("Necesitas implementar onNavigateToModificarActivo prop");
+
     }
   };
 

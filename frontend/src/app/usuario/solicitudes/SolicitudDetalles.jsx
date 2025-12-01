@@ -30,23 +30,78 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
   };
 
   // Función para navegar a Modificar Activo
-  const handleCorregirSolicitud = () => {
-    console.log("🔄 CLICK en Corregir Solicitud");
-    console.log("📋 Solicitud:", solicitud);
-    console.log("🔧 onNavigateToModificarActivo existe:", !!onNavigateToModificarActivo);
-    console.log("🆔 Activo ID:", solicitud.activoId);
+  const handleCorregirSolicitud = (e) => {
+    // Prevenir propagación del evento para evitar conflictos
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    if (onNavigateToModificarActivo && solicitud.activoId) {
-   
-      const activoParaModificar = {
+    if (onNavigateToModificarActivo && solicitud?.activoId) {
+      // Reconstruir el activo completo a partir de la solicitud
+      // Empezamos con los valores anteriores (antes de los cambios propuestos)
+      const activoCompleto = {
         id: solicitud.activoId,
+        codigo: solicitud.activoId, // Usar el ID como código si no está disponible
         nombre: solicitud.nombreActivo || "Activo por modificar",
-      
+        categoria: "",
+        descripcion: "",
+        ubicacion: "",
+        estado: "",
+        responsable: "",
+        version: "v1.0.0"
       };
-      console.log("🎯 Llamando a onNavigateToModificarActivo con:", activoParaModificar);
-      onNavigateToModificarActivo(activoParaModificar);
-    } else {
-      console.log("❌ No se puede navegar - falta función o activoId");
+
+      // Aplicar los valores anteriores de los cambios para reconstruir el estado original
+      if (solicitud.cambios && Array.isArray(solicitud.cambios)) {
+        solicitud.cambios.forEach(cambio => {
+          switch (cambio.campo.toLowerCase()) {
+            case 'nombre':
+              activoCompleto.nombre = cambio.valorAnterior;
+              break;
+            case 'codigo':
+              activoCompleto.codigo = cambio.valorAnterior;
+              break;
+            case 'categoria':
+              activoCompleto.categoria = cambio.valorAnterior;
+              break;
+            case 'descripcion':
+              activoCompleto.descripcion = cambio.valorAnterior;
+              break;
+            case 'ubicacion':
+              activoCompleto.ubicacion = cambio.valorAnterior;
+              break;
+            case 'estado':
+              activoCompleto.estado = cambio.valorAnterior;
+              break;
+            case 'responsable':
+              activoCompleto.responsable = cambio.valorAnterior;
+              break;
+            // Campos que podrían tener nombres diferentes
+            case 'configuracion':
+            case 'reglas_firewall':
+              if (!activoCompleto.descripcion) {
+                activoCompleto.descripcion = cambio.valorAnterior;
+              }
+              break;
+            default:
+              // Para campos no reconocidos, intentar mapear a descripción si está vacía
+              if (!activoCompleto.descripcion) {
+                activoCompleto.descripcion = cambio.valorAnterior;
+              }
+              break;
+          }
+        });
+      }
+
+      // Si algunos campos siguen vacíos, usar valores por defecto razonables
+      if (!activoCompleto.categoria) activoCompleto.categoria = "Infraestructura";
+      if (!activoCompleto.descripcion) activoCompleto.descripcion = "Descripción no disponible - favor completar";
+      if (!activoCompleto.ubicacion) activoCompleto.ubicacion = "No especificada";
+      if (!activoCompleto.estado) activoCompleto.estado = "Activo";
+      if (!activoCompleto.responsable) activoCompleto.responsable = "No asignado";
+
+      onNavigateToModificarActivo(activoCompleto, "solicitudes");
     }
   };
 

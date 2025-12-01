@@ -16,6 +16,7 @@ const UsuarioPage = () => {
   const [showModificarActivo, setShowModificarActivo] = useState(false);
   const [showSolicitudDetalles, setShowSolicitudDetalles] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState(null);
+  const [modificarActivoContext, setModificarActivoContext] = useState(null); // 'inventory' o 'solicitudes'
 
   const usuarioTabs = [
     {
@@ -32,20 +33,38 @@ const UsuarioPage = () => {
   ];
 
   const handleTabChange = (tabId) => {
-    console.log("🔀 Cambiando tab a:", tabId, "showSolicitudDetalles:", showSolicitudDetalles);
-
+    // Si es la misma pestaña actual, no hacer nada (evita resetear en re-renders)
+    if (tabId === activeTab) {
+      return;
+    }
+    
+    // Limpiar detalles de solicitud si cambiamos de pestaña
     if (showSolicitudDetalles && tabId !== "mis-solicitudes") {
       setShowSolicitudDetalles(false);
       setSelectedSolicitud(null);
     }
 
+    // Siempre cambiar la pestaña activa
     setActiveTab(tabId);
 
-    if (tabId !== "mis-activos" && !showSolicitudDetalles) {
-      setShowSCV(false);
-      setSelectedActivo(null);
-      setShowNuevoActivo(false);
+    // Resetear ModificarActivo cuando se cambia de pestaña manualmente
+    // Esto permite que el usuario navegue libremente entre pestañas
+    if (showModificarActivo) {
       setShowModificarActivo(false);
+      setSelectedActivo(null);
+      setModificarActivoContext(null);
+    }
+
+    // Resetear otros estados solo si no hay ModificarActivo activo
+    if (!showModificarActivo) {
+      if (showSCV) {
+        setShowSCV(false);
+        setSelectedActivo(null);
+      }
+
+      if (showNuevoActivo) {
+        setShowNuevoActivo(false);
+      }
     }
   };
 
@@ -58,11 +77,23 @@ const UsuarioPage = () => {
   };
 
   const handleNavigateBack = () => {
+    // Si estamos regresando desde ModificarActivo, considerar el contexto
+    if (showModificarActivo && modificarActivoContext === "solicitudes") {
+      // Regresar a la pestaña de solicitudes
+      setActiveTab("mis-solicitudes");
+    } else if (showModificarActivo && modificarActivoContext === "inventory") {
+      // Regresar a la pestaña de activos
+      setActiveTab("mis-activos");
+    }
+    
+    // Limpiar todos los estados
     setShowSCV(false);
     setSelectedActivo(null);
     setShowNuevoActivo(false);
     setShowModificarActivo(false);
     setShowSolicitudDetalles(false);
+    setSelectedSolicitud(null);
+    setModificarActivoContext(null);
   };
 
   const handleNavigateToNuevoActivo = () => {
@@ -77,25 +108,36 @@ const UsuarioPage = () => {
     setShowNuevoActivo(false);
   };
 
-  const handleNavigateToModificarActivo = (activo) => {
-    console.log("🔄 Navegando a ModificarActivo desde solicitud:", activo);
+  const handleNavigateToModificarActivo = (activo, context = null) => {
     setSelectedActivo(activo);
     setShowModificarActivo(true);
     setShowSCV(false);
     setShowNuevoActivo(false);
     setShowSolicitudDetalles(false);
     setSelectedSolicitud(null);
-    // NO CAMBIAR EL TAB AQUÍ - SE QUEDA EN LA TAB ACTUAL
+    
+    // Recordar el contexto desde donde se navegó
+    if (context) {
+      setModificarActivoContext(context);
+    } else {
+      // Si no se especifica contexto, inferirlo del estado actual
+      if (showSolicitudDetalles || activeTab === "mis-solicitudes") {
+        setModificarActivoContext("solicitudes");
+      } else {
+        setModificarActivoContext("inventory");
+      }
+    }
+    
+
   };
 
   const handleUpdateActivo = (activoActualizado) => {
-    console.log("Activo actualizado:", activoActualizado);
+
     setShowModificarActivo(false);
     setSelectedActivo(null);
   };
 
   const handleNavigateToSolicitudDetalles = (solicitud) => {
-    console.log("RECIBIENDO SOLICITUD EN PAGE:", solicitud);
     setSelectedSolicitud(solicitud);
     setShowSolicitudDetalles(true);
   };
@@ -106,17 +148,8 @@ const UsuarioPage = () => {
   };
 
   const renderContent = () => {
-    console.log("🔄 Renderizando contenido:", { 
-      activeTab, 
-      showSolicitudDetalles,
-      showModificarActivo,
-      selectedSolicitud: !!selectedSolicitud,
-      selectedActivo: !!selectedActivo
-    });
-
-    // MODIFICAR ACTIVO TIENE MÁXIMA PRIORIDAD - SE MUESTRA EN CUALQUIER TAB
-    if (showModificarActivo) {
-      console.log("📝 Mostrando ModificarActivo (PRIORIDAD MÁXIMA)");
+    // MODIFICAR ACTIVO TIENE MÁXIMA PRIORIDAD ABSOLUTA - SE MUESTRA EN CUALQUIER TAB
+    if (showModificarActivo && selectedActivo) {
       return (
         <div className="main-content">
           <ModificarActivo
@@ -129,7 +162,6 @@ const UsuarioPage = () => {
     }
 
     if (showSolicitudDetalles && selectedSolicitud) {
-      console.log("📄 Mostrando SolicitudDetalles");
       return (
         <div className="main-content">
           <SolicitudDetalles
@@ -172,7 +204,6 @@ const UsuarioPage = () => {
           );
         }
       case "mis-solicitudes":
-        console.log("📋 Mostrando lista de Solicitudes");
         return (
           <div className="main-content">
             <Solicitudes

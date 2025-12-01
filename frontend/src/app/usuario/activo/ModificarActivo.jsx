@@ -28,7 +28,6 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
   // Cargar datos del activo cuando el componente se monta o cuando cambia el prop 'activo'
   useEffect(() => {
     if (activo) {
-      console.log("Activo recibido:", activo); // Para debug
       setFormData({
         nombre: activo.nombre || "",
         codigo: activo.codigo || "",
