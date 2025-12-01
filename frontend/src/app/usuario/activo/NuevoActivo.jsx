@@ -106,12 +106,6 @@ const NuevoActivo = ({ onNavigateBack }) => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const nuevoActivo = {
-        ...formData,
-        version: "v1.0.0",
-        fecha_creacion: new Date().toISOString().split("T")[0],
-        acciones_disponibles: ["Historial de Versiones"],
-      };
 
       setSuccessMessage(
         `El activo "${formData.nombre}" ha sido creado exitosamente con el código: ${formData.codigo}`
