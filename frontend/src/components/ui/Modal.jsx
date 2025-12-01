@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import "../../styles/modal.css";
 
 const Modal = ({ 
@@ -17,7 +18,7 @@ const Modal = ({
   headerBgColor = "var(--color-navy)",
   buttonColor = "var(--color-navy)"
 }) => {
-  
+
   if (!isOpen) return null;
 
   const handleCancel = () => {
@@ -36,8 +37,12 @@ const Modal = ({
     }
   };
 
-  return (
-    <div className="modalOverlay" onClick={handleBackdropClick}>
+  const modalContent = (
+    <div
+      className="modalOverlay"
+      onClick={handleBackdropClick}
+      style={{ zIndex: 99999 }} // Muy alto para sobreponerse a header/sidebar
+    >
       <div className="modalContainer" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div 
@@ -55,10 +60,8 @@ const Modal = ({
 
         {/* Body */}
         <div className="modalBody">
-          {/* Pregunta principal */}
           <p className="modalQuestion">{question}</p>
 
-          {/* Recuadro de valores (opcional) */}
           {showValueBox && (
             <div className="modalValueBox">
               {valueBoxTitle && <div className="valueBoxTitle">{valueBoxTitle}</div>}
@@ -66,13 +69,12 @@ const Modal = ({
             </div>
           )}
 
-          {/* Texto informativo (opcional) */}
           {informativeText && (
             <p className="modalInformativeText">{informativeText}</p>
           )}
         </div>
 
-        {/* Footer con botones */}
+        {/* Footer */}
         <div className="modalFooter">
           <button 
             className="modalBtn modalCancelBtn"
@@ -89,12 +91,10 @@ const Modal = ({
           </button>
         </div>
       </div>
-
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default Modal;
-
-
-

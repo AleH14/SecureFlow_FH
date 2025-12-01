@@ -31,6 +31,11 @@ export default function Home() {
           <Link href="/usuario" className="btn btn-custom-secondary btn-lg ms-3">
             Usuario
           </Link>
+
+          {/* seguridad*/}
+          <Link href="/seguridad" className="btn btn-custom-secondary btn-lg ms-3">
+            Seguridad
+          </Link>
         </div>
 
       </div>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FaUsers, FaBoxes, FaCog, FaChartBar, FaFileAlt, FaShieldAlt, FaUserPlus } from "react-icons/fa";
+import { FaUsers, FaBoxes, FaCog, FaChartBar, FaFileAlt, FaShieldAlt, FaUserPlus, FaTasks } from "react-icons/fa";
 
 // Mapeo de iconos disponibles
 const iconMap = {
@@ -10,7 +10,8 @@ const iconMap = {
   FaChartBar,
   FaFileAlt,
   FaShieldAlt,
-  FaUserPlus
+  FaUserPlus,
+  FaTasks
 };
 
 const Sidebar = ({ 
