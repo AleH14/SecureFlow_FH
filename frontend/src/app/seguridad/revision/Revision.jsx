@@ -60,7 +60,7 @@ const Revision = ({
     if (checklist.informacionCompleta) {
       comments.push("✓ Información completa y clara");
     } else {
-      comments.push("✗ Información imcompleta o confusa del cambio");
+      comments.push("✗ Información incompleta o confusa del cambio");
     }
     
     if (checklist.justificacionClara) {
