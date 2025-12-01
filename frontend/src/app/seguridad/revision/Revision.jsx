@@ -66,7 +66,7 @@ const Revision = ({
     if (checklist.justificacionClara) {
       comments.push("✓ Justificación del cambio adecuada");
     } else {
-      comments.push("✗ Justificación no adecauada del cambio");
+      comments.push("✗ Justificación no adecuada del cambio");
     }
     
     if (checklist.impactoDocumentado) {
