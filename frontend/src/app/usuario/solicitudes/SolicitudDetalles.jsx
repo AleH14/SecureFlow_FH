@@ -342,8 +342,8 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
 
         @media (max-width: 576px) {
           :global(.solicitud-detalles-container .d-flex .btn) {
-            padding: '0.625rem 1.25rem';
-            font-size: '0.9rem';
+            padding: 0.625rem 1.25rem;
+            font-size: 0.9rem;
           }
         }
       `}</style>
