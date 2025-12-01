@@ -26,12 +26,14 @@ const ActivoSchema = new mongoose.Schema({
   estado: {
     type: String,
     enum: [
+      "En evaluacion",
       "Activo",
       "Inactivo",
       "Mantenimiento",
-      "En Revisión"
+      "En Revisión",
+      "Dado de Baja"
     ],
-    default: "Activo"
+    default: "En evaluacion"
   },
   ubicacion: { 
     type: String 
@@ -52,6 +54,26 @@ const ActivoSchema = new mongoose.Schema({
   idsSolicitudesDeCambio: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'SolicitudCambio' 
+  }],
+  historialComentarios: [{
+    comentario: { 
+      type: String, 
+      required: true 
+    },
+    usuario: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User', 
+      required: true 
+    },
+    fecha: { 
+      type: Date, 
+      default: Date.now 
+    },
+    tipoAccion: {
+      type: String,
+      enum: ['creacion', 'modificacion'],
+      required: true
+    }
   }]
 });
 
