@@ -6,6 +6,9 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+// Import database connection
+const { connectDB } = require('./config/database');
+
 // Import routes
 const apiRoutes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
@@ -72,12 +75,25 @@ app.use('*', (req, res) => {
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📋 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔌 API base URL: http://localhost:${PORT}${process.env.API_PREFIX || '/api'}`);
-});
+// Connect to database and start server
+const startServer = async () => {
+  try {
+    // Connect to database
+    await connectDB();
+    
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📋 Health check: http://localhost:${PORT}/health`);
+      console.log(`🔌 API base URL: http://localhost:${PORT}${process.env.API_PREFIX || '/api'}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 module.exports = app;

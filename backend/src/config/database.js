@@ -1,33 +1,40 @@
-// Database configuration and connection
-// This will be implemented when we choose a database (MongoDB, PostgreSQL, etc.)
+const mongoose = require('mongoose');
 
+// Database configuration for MongoDB
 const dbConfig = {
   development: {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'secureflow_db',
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'password',
+    uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/secureflow_dev',
   },
   production: {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/secureflow_prod',
   }
 };
 
 const connectDB = async () => {
   try {
-    console.log('📊 Database connection - Coming soon');
-    console.log('Database config:', dbConfig[process.env.NODE_ENV || 'development']);
-    // TODO: Implement database connection
-    // Example for MongoDB: await mongoose.connect(mongoURI);
-    // Example for PostgreSQL: await sequelize.authenticate();
+    const config = dbConfig[process.env.NODE_ENV || 'development'];
+    
+    console.log(`🔗 Attempting to connect to: ${config.uri}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Configurar opciones de conexión para MongoDB local
+    const options = {
+      serverSelectionTimeoutMS: 5000, // Timeout después de 5s en lugar de 30s
+      socketTimeoutMS: 45000, // Cerrar sockets después de 45s de inactividad
+    };
+    
+    const conn = await mongoose.connect(config.uri, options);
+
+    console.log(`📊 MongoDB Connected: ${conn.connection.host}`);
+    console.log(`📁 Database: ${conn.connection.name}`);
     return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
+    console.log(`❌ Attempted URI: ${dbConfig[process.env.NODE_ENV || 'development'].uri}`);
+    console.log('💡 Asegúrate de que MongoDB esté ejecutándose:');
+    console.log('   - Windows: Ejecuta "mongod" en terminal');
+    console.log('   - O verifica el servicio MongoDB en Services');
+    console.log('   - Puerto por defecto: 27017');
     process.exit(1);
   }
 };
