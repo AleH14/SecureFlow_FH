@@ -5,6 +5,7 @@ const router = express.Router();
 const authRoutes = require('./auth');
 const userRoutes = require('./users');
 const activoRoutes = require('./activos');
+const solicitudRoutes = require('./solicitudes');
 
 // Welcome message for API root
 router.get('/', (req, res) => {
@@ -16,6 +17,7 @@ router.get('/', (req, res) => {
       auth: `${process.env.API_PREFIX || '/api'}/auth`,
       users: `${process.env.API_PREFIX || '/api'}/users`,
       activos: `${process.env.API_PREFIX || '/api'}/activos`,
+      solicitudes: `${process.env.API_PREFIX || '/api'}/solicitudes`,
     },
     documentation: 'Coming soon...',
     timestamp: new Date().toISOString()
@@ -26,5 +28,6 @@ router.get('/', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/activos', activoRoutes);
+router.use('/solicitudes', solicitudRoutes);
 
 module.exports = router;

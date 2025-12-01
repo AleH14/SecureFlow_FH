@@ -38,37 +38,72 @@ const SolicitudCambioSchema = new mongoose.Schema({
     required: true, 
     unique: true 
   },
-  fechaCreacion: { 
+  // Información del activo
+  nombreActivo: {
+    type: String,
+    required: true
+  },
+  codigoActivo: {
+    type: String,
+    required: true
+  },
+  // Fechas
+  fechaSolicitud: { 
     type: Date, 
     default: Date.now 
   },
-  estadoGeneral: {
-    type: String,
-    enum: ["Pendiente", "En Revisión", "Aprobado", "Rechazado", "Implementado"],
-    default: "Pendiente"
+  fechaRevision: {
+    type: Date
   },
-  // Relaciones
-  activoId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Activo', 
-    required: true 
-  },
+  // Usuarios involucrados
   solicitanteId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
     required: true 
   },
-  // Cambios realizados
+  responsableSeguridadId: {
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User'
+  },
+  // Auditoría
+  auditorId: {
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User'
+  },
+  fechaAuditoria: {
+    type: Date
+  },
+  comentarioAuditoria: {
+    type: String
+  },
+  // Estado y comentarios
+  estado: {
+    type: String,
+    enum: ["Pendiente", "Aprobado", "Rechazado"],
+    default: "Pendiente"
+  },
+  comentarioSeguridad: {
+    type: String
+  },
+  // Tipo de operación
+  tipoOperacion: {
+    type: String,
+    enum: ["creacion", "modificacion"],
+    required: true
+  },
+  // Relación con activo
+  activoId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Activo', 
+    required: true 
+  },
+  // Justificación del cambio
   justificacion: { 
     type: String, 
     required: true 
   },
-  cambios: [CambioSchema],
-  // Flujo de aprobación
-  aprobaciones: {
-    seguridad: AprobacionSchema,
-    auditoria: AprobacionSchema
-  }
+  // Cambios específicos
+  cambios: [CambioSchema]
 });
 
 module.exports = mongoose.model("SolicitudCambio", SolicitudCambioSchema);
