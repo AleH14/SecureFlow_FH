@@ -7,8 +7,6 @@ import { Input, Button, Card, Select, Alert } from "../../../components/ui";
 import {
   validateActivoForm,
   categoriasOptions,
-  estadosOptions,
-  generateActivoCode,
 } from "./validacionesActivo";
 
 const NuevoActivo = ({ onNavigateBack }) => {
