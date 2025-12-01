@@ -1,9 +1,11 @@
 import React from "react";
-import { FaHistory } from "react-icons/fa";
+import { FaHistory, FaEdit } from "react-icons/fa";
 
 const CardActivo = ({ 
     activo,
     onHistorialClick = () => {},
+    onModificarClick = () => {},
+    showModificarButton = false,
     className = "",
     ...props 
 }) => {
@@ -16,11 +18,17 @@ const CardActivo = ({
             case 'activo':
                 return 'estado-activo';
             case 'mantenimiento':
+            case 'en mantenimiento':
                 return 'estado-mantenimiento';
             case 'inactivo':
                 return 'estado-inactivo';
             case 'en revision':
+            case 'en evaluación':
                 return 'estado-revision';
+            case 'dado de baja':
+                return 'estado-baja';
+            case 'obsoleto':
+                return 'estado-obsoleto';
             default:
                 return 'estado-default';
         }
@@ -29,6 +37,11 @@ const CardActivo = ({
     const handleHistorialClick = () => {
         console.log('Mostrando historial para:', activo.nombre);
         onHistorialClick(activo);
+    };
+
+    const handleModificarClick = () => {
+        console.log('Modificando activo:', activo.nombre);
+        onModificarClick(activo);
     };
 
     return (
@@ -91,8 +104,18 @@ const CardActivo = ({
 
             {/* Footer */}
             <div className="card-activo-footer">
+                {showModificarButton && (
+                    <button 
+                        className="modificar-btn"
+                        onClick={handleModificarClick}
+                        title="Solicitar modificación"
+                    >
+                        <FaEdit className="modificar-icon" />
+                        Modificar
+                    </button>
+                )}
                 <button 
-                    className="historial-btn"
+                    className={`historial-btn ${showModificarButton ? 'with-modificar' : 'full-width'}`}
                     onClick={handleHistorialClick}
                     title="Ver historial de versiones"
                 >
