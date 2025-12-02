@@ -280,6 +280,71 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
           </Card>
         </div>
       </div>
+
+      <style jsx>{`
+        // Estilos para la tabla de cambios
+        :global(.cambios-table table) {
+          margin-bottom: 0;
+          min-width: 600px;
+        }
+
+        :global(.cambios-table th) {
+          background-color: #f8f9fa;
+          border-bottom: 2px solid #dee2e6;
+          color: #000;
+          white-space: nowrap;
+        }
+
+        :global(.cambios-table td) {
+          color: #000;
+          word-break: break-word;
+        }
+
+        // Estilos responsivos para textos
+        @media (max-width: 992px) {
+          :global(.h4-responsive) {
+            font-size: 1.25rem;
+          }
+          :global(.h5-responsive) {
+            font-size: 1.1rem;
+          }
+          :global(.h6-responsive) {
+            font-size: 0.9rem;
+          }
+        }
+
+        @media (max-width: 768px) {
+          :global(.h4-responsive) {
+            font-size: 1.1rem;
+          }
+          :global(.h5-responsive) {
+            font-size: 1rem;
+          }
+          :global(.h6-responsive) {
+            font-size: 0.85rem;
+          }
+          
+          // Ajuste para el botón en móvil
+          :global(.solicitud-detalles-container .d-flex) {
+            flex-direction: column;
+            align-items: flex-start !important;
+          }
+          
+          :global(.solicitud-detalles-container .d-flex .btn) {
+            margin-top: 1rem;
+            align-self: flex-start;
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        @media (max-width: 576px) {
+          :global(.solicitud-detalles-container .d-flex .btn) {
+            padding: '0.625rem 1.25rem';
+            font-size: '0.9rem';
+          }
+        }
+      `}</style>
     </div>
   );
 };
