@@ -149,6 +149,7 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
         className="comment-btn"
         onClick={() => handleComment(item)}
         title="Agregar comentario de auditoría"
+        aria-label={`Agregar comentario a ${item["Solicitud de Cambio"].Nombre}`}
       >
         <FaCommentAlt className="comment-icon" />
         Comentar
@@ -158,13 +159,47 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
 
   // Definir columnas de la tabla
   const tableColumns = [
-    { key: "fecha", label: "Fecha" },
-    { key: "solicitud_de_cambio", label: "Solicitud de cambio" },
-    { key: "comentario", label: "Comentario" },
-    { key: "revision", label: "Revisión" },
-    { key: "auditoria", label: "Auditoría" },
-    { key: "estado", label: "Estado" },
-    { key: "accion", label: "Acción" },
+    { 
+      key: "fecha", 
+      label: "Fecha",
+      cellStyle: { minWidth: "100px" }
+    },
+    { 
+      key: "solicitud_de_cambio", 
+      label: "Solicitud de cambio",
+      cellStyle: { minWidth: "250px" }
+    },
+    { 
+      key: "comentario", 
+      label: "Comentario",
+      cellStyle: { minWidth: "150px" }
+    },
+    { 
+      key: "revision", 
+      label: "Revisión",
+      cellStyle: { minWidth: "250px" }
+    },
+    { 
+      key: "auditoria", 
+      label: "Auditoría",
+      cellStyle: { minWidth: "250px" }
+    },
+    { 
+      key: "estado", 
+      label: "Estado",
+      cellStyle: { 
+        minWidth: "120px",
+        textAlign: "center"
+      }
+    },
+    { 
+      key: "accion", 
+      label: "Acción",
+      cellStyle: { 
+        minWidth: "120px",
+        textAlign: "center"
+      }
+    },
   ];
 
   const activoInfo = selectedActivo || {
@@ -195,9 +230,14 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
         </h6>
       </div>
 
-      <Table columns={tableColumns} data={historialData} />
+      <Table 
+        columns={tableColumns} 
+        data={historialData}
+        hoverEffect={true}
+        bordered={true}
+      />
 
-      {/* MODAL — usando portal */}
+      {/* MODAL — usando portal para sobreponer */}
       {showCommentModal &&
         createPortal(
           <div className="modalOverlay" onClick={handleCancelComment}>
@@ -269,7 +309,7 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
           document.body
         )}
 
-      {/* CSS GLOBAL */}
+      {/* CSS de MODAL Y BOTON COMENTAR */}
       <style jsx global>{`
         /* Evitar scroll del fondo cuando modal está abierto */
         body.modal-open {
@@ -286,10 +326,10 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
           background: rgba(0, 0, 0, 0.55);
           display: flex;
           justify-content: center;
-          align-items: flex-start; /* Cambiado de center a flex-start */
+          align-items: flex-start;
           overflow: hidden;
           z-index: 50000 !important;
-          padding-top: 80px; /* Agregado para bajar el modal desde el top */
+          padding-top: 80px;
         }
 
         .modalContainer {
@@ -297,56 +337,16 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
           border-radius: 10px;
           width: 480px;
           max-width: 90%;
-          max-height: calc(85vh - 80px); /* Ajustado para el padding-top */
+          max-height: calc(85vh - 80px);
           overflow-y: auto;
           position: relative;
           padding-bottom: 20px;
           z-index: 50001 !important;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-          margin-top: 0; /* Aseguramos que no tenga margen adicional */
+          margin-top: 0;
         }
 
-        /* === ESTILOS DEL RESTO === */
-        .scv-cell-content {
-          line-height: 1.5;
-        }
-        .scv-label {
-          font-weight: bold !important;
-          color: var(--color-navy) !important;
-        }
-        .scv-value {
-          color: var(--color-navy) !important;
-          font-weight: normal !important;
-        }
-        .estado-badge {
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 500;
-          text-align: center;
-          display: inline-block;
-          min-width: 80px;
-        }
-        .estado-aprobado {
-          background-color: #d4edda;
-          color: #155724;
-        }
-        .estado-pendiente {
-          background-color: #fff3cd;
-          color: #856404;
-        }
-        .estado-rechazado {
-          background-color: #f8d7da;
-          color: #721c24;
-        }
-        .estado-revision {
-          background-color: #d1ecf1;
-          color: #0c5460;
-        }
-        .estado-default {
-          background-color: #e2e3e5;
-          color: #383d41;
-        }
+        /* Botón de comentar */
         .comment-btn {
           background-color: #17a2b8;
           color: white;
@@ -365,33 +365,6 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
         }
         .comment-icon {
           font-size: 11px;
-        }
-        .comment-input-section {
-          margin: 16px 0;
-        }
-        .comment-label {
-          font-weight: bold;
-          color: black !important;
-          margin-bottom: 8px;
-          display: block;
-        }
-        .comment-textarea {
-          width: 100%;
-          padding: 12px;
-          border: 1px solid #e0e0e0;
-          border-radius: 6px;
-          font-size: 14px;
-          font-family: inherit;
-          resize: vertical;
-          min-height: 80px;
-          box-sizing: border-box;
-          background-color: #f8f9fa; 
-          color: #000000ff
-        }
-        .comment-textarea:focus {
-          outline: none;
-          border-color: #17a2b8;
-          box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.2);
         }
 
         /* Estilos adicionales del modal */
@@ -449,6 +422,33 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
         .valueBoxSubtitle {
           font-size: 14px;
           color: #6c757d;
+        }
+        .comment-input-section {
+          margin: 16px 0;
+        }
+        .comment-label {
+          font-weight: bold;
+          color: black !important;
+          margin-bottom: 8px;
+          display: block;
+        }
+        .comment-textarea {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #e0e0e0;
+          border-radius: 6px;
+          font-size: 14px;
+          font-family: inherit;
+          resize: vertical;
+          min-height: 80px;
+          box-sizing: border-box;
+          background-color: #f8f9fa; 
+          color: #000000ff
+        }
+        .comment-textarea:focus {
+          outline: none;
+          border-color: #17a2b8;
+          box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.2);
         }
         .modalInformativeText {
           font-size: 13px;

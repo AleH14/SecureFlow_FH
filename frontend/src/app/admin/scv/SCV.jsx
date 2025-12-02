@@ -129,54 +129,6 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
           columns={tableColumns}
           data={historialData}
         />
-        
-        <style jsx global>{`
-          .scv-cell-content {
-            line-height: 1.5;
-          }
-          .scv-label {
-            font-weight: bold !important;
-            color: var(--color-navy) !important;
-          }
-          .scv-value {
-            color: var(--color-navy) !important;
-            font-weight: normal !important;
-          }
-          .estado-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            text-align: center;
-            display: inline-block;
-            min-width: 80px;
-          }
-          .estado-aprobado {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-          }
-          .estado-pendiente {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-          }
-          .estado-rechazado {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-          }
-          .estado-revision {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-          }
-          .estado-default {
-            background-color: #e2e3e5;
-            color: #383d41;
-            border: 1px solid #d6d8db;
-          }
-        `}</style>
     </div>
   );
 }

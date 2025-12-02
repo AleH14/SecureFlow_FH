@@ -9,14 +9,28 @@ const Table = ({
   headerStyle = {},
   rowStyle = {},
   cellStyle = {},
+  // Props opcionales para funcionalidad adicional
+  hoverEffect = true,
+  striped = false,
+  bordered = false,
+  compact = false,
   ...props 
 }) => {
   if (!columns || columns.length === 0) {
     return <div className="table-error">No se han definido columnas para la tabla</div>;
   }
 
+  // clases dinámicas
+  const tableClasses = [
+    className,
+    hoverEffect ? "table-hover" : "",
+    striped ? "table-striped" : "",
+    bordered ? "table-bordered" : "",
+    compact ? "table-compact" : ""
+  ].filter(Boolean).join(" ");
+
   return (
-    <div className={`table-container ${className}`} {...props}>
+    <div className={`table-container ${tableClasses}`} {...props}>
       {(title || icon) && (
         <div className="table-header">
           {icon && <div className="table-icon">{icon}</div>}
@@ -44,7 +58,7 @@ const Table = ({
               data.map((row, rowIndex) => (
                 <tr 
                   key={row.id || rowIndex} 
-                  className="table-row"
+                  className={`table-row ${striped && rowIndex % 2 === 0 ? 'table-row-striped' : ''}`}
                   style={rowStyle}
                 >
                   {columns.map((column, colIndex) => (

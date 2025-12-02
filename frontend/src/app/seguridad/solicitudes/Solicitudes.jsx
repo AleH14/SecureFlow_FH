@@ -162,7 +162,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
 
   const solicitudesToShow = isFiltered ? filteredSolicitudes : solicitudes;
 
-  
+  // Función para aplicar estilos a filas pendientes
   useEffect(() => {
     const colorPendingRows = () => {
       if (tableRef.current) {
@@ -171,11 +171,12 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
         rows.forEach((row, index) => {
           const solicitud = solicitudesToShow[index];
 
-          // Solo aplicar estilos, sin clonar ni reemplazar
+          // Aplicar fondo amarillo solo a filas pendientes
           if (solicitud && solicitud.estadoGeneral === "Pendiente") {
             row.style.backgroundColor = "#fff9db";
             row.style.transition = "background-color 0.2s ease";
           } else {
+            // Restaurar estilos por defecto
             row.style.backgroundColor = "";
             row.style.transition = "";
           }
@@ -241,7 +242,6 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
 
   const handleVerDetalles = (solicitud) => {
     console.log("CLICK en Ver Detalles:", solicitud);
-    // También debe navegar a revisión
     if (onNavigateToDetalles) {
       onNavigateToDetalles(solicitud);
     }
@@ -276,28 +276,17 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
     },
   ];
 
-  const getEstadoStyle = (estado) => {
-    const baseStyle = {
-      display: "inline-flex",
-      alignItems: "center",
-      padding: "0.5rem 1rem",
-      borderRadius: "20px",
-      fontSize: "0.75rem",
-      fontWeight: "600",
-      textTransform: "uppercase",
-      whiteSpace: "nowrap",
-      color: "white",
-    };
-
+  // Usar las clases CSS definidas en tus estilos
+  const getEstadoClass = (estado) => {
     switch (estado) {
       case "Aprobado":
-        return { ...baseStyle, backgroundColor: "#26AC17" };
+        return "estado-badge estado-aprobado";
       case "Rechazado":
-        return { ...baseStyle, backgroundColor: "#EB1008" };
+        return "estado-badge estado-rechazado";
       case "Pendiente":
-        return { ...baseStyle, backgroundColor: "#f59e0b" };
+        return "estado-badge estado-pendiente";
       default:
-        return { ...baseStyle, backgroundColor: "#6b7280" };
+        return "estado-badge estado-default";
     }
   };
 
@@ -312,20 +301,6 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       default:
         return <FaClock className="me-1" />;
     }
-  };
-
-  const getCategoriaStyle = () => {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      padding: "0.4rem 0.8rem",
-      borderRadius: "15px",
-      fontSize: "0.7rem",
-      fontWeight: "600",
-      backgroundColor: "#0ea5e9",
-      color: "white",
-      textTransform: "uppercase",
-    };
   };
 
   const tableColumns = [
@@ -357,13 +332,14 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
     {
       key: "categoria",
       label: "Categoría",
-      render: (row) => <span style={getCategoriaStyle()}>{row.categoria}</span>,
+      // Usando la clase version-badge 
+      render: (row) => <span className="version-badge">{row.categoria}</span>,
     },
     {
       key: "estadoGeneral",
       label: "Estado",
       render: (row) => (
-        <span style={getEstadoStyle(row.estadoGeneral)}>
+        <span className={getEstadoClass(row.estadoGeneral)}>
           {getEstadoIcon(row.estadoGeneral)}
           {row.estadoGeneral}
         </span>
@@ -405,27 +381,23 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
 
       <SearchBar fields={searchFields} onFilter={handleFilter} />
 
+      {/* Pasar una prop personalizada para el efecto hover */}
       <div className="mt-4" ref={tableRef}>
-        <Table columns={tableColumns} data={solicitudesToShow} />
+        <Table 
+          columns={tableColumns} 
+          data={solicitudesToShow} 
+          hoverEffect={true}
+        />
       </div>
 
       <style jsx global>{`
+      //BOTON VER DETALLER Y REVISAR MISMO TAMAÑO
         .btn-accion-solicitud {
           min-width: 120px !important;
           display: flex !important;
           justify-content: center !important;
           align-items: center !important;
           text-align: center !important;
-        }
-
-        .solicitudes-page .btn-accion-solicitud {
-          width: 120px;
-          margin: 0 auto;
-        }
-
-        .btn-accion-solicitud:disabled {
-          opacity: 0.6;
-          cursor: not-allowed !important;
         }
       `}</style>
     </div>

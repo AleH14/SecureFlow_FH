@@ -90,15 +90,57 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
 
   // Definir columnas de la tabla
   const tableColumns = [
-    { key: "fecha", label: "Fecha" },
-    { key: "solicitud_de_cambio", label: "Solicitud de cambio" },
-    { key: "comentario", label: "Comentario" },
-    { key: "revision", label: "Revisión" },
-    { key: "auditoria", label: "Auditoría" },
-    { key: "estado", label: "Estado" }
+    { 
+      key: "fecha", 
+      label: "Fecha",
+      cellStyle: { 
+        minWidth: "100px",
+        maxWidth: "120px"
+      }
+    },
+    { 
+      key: "solicitud_de_cambio", 
+      label: "Solicitud de cambio",
+      cellStyle: { 
+        minWidth: "250px",
+        maxWidth: "300px"
+      }
+    },
+    { 
+      key: "comentario", 
+      label: "Comentario",
+      cellStyle: { 
+        minWidth: "150px",
+        maxWidth: "200px"
+      }
+    },
+    { 
+      key: "revision", 
+      label: "Revisión",
+      cellStyle: { 
+        minWidth: "250px",
+        maxWidth: "300px"
+      }
+    },
+    { 
+      key: "auditoria", 
+      label: "Auditoría",
+      cellStyle: { 
+        minWidth: "250px",
+        maxWidth: "300px"
+      }
+    },
+    { 
+      key: "estado", 
+      label: "Estado",
+      cellStyle: { 
+        minWidth: "120px",
+        maxWidth: "150px",
+        textAlign: "center"
+      }
+    }
   ];
 
-  // Usar datos del activo seleccionado o valores por defecto
   const activoInfo = selectedActivo || {
     nombre: historialCambios[0]["Solicitud de Cambio"].Nombre,
     codigo: "SWP-001",
@@ -128,55 +170,9 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
         <Table 
           columns={tableColumns}
           data={historialData}
+          hoverEffect={true}
+          bordered={true}
         />
-        
-        <style jsx global>{`
-          .scv-cell-content {
-            line-height: 1.5;
-          }
-          .scv-label {
-            font-weight: bold !important;
-            color: var(--color-navy) !important;
-          }
-          .scv-value {
-            color: var(--color-navy) !important;
-            font-weight: normal !important;
-          }
-          .estado-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            text-align: center;
-            display: inline-block;
-            min-width: 80px;
-          }
-          .estado-aprobado {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-          }
-          .estado-pendiente {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-          }
-          .estado-rechazado {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-          }
-          .estado-revision {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-          }
-          .estado-default {
-            background-color: #e2e3e5;
-            color: #383d41;
-            border: 1px solid #d6d8db;
-          }
-        `}</style>
     </div>
   );
 }

@@ -305,7 +305,7 @@
   }
 }
 
-/* Table Styles */
+/* Estilos básicos de tabla */
 .table-container {
   background-color: transparent;
   border-radius: 1rem;
@@ -402,36 +402,219 @@
   font-weight: 500;
 }
 
-/* Responsive Table */
-@media (max-width: 768px) {
-  .table-container {
-    padding: 1rem;
-    margin-top: 1rem;
-  }
+/* === ESTILOS PARA TABLA DE SCV === */
+/* Contenido de celdas SCV */
+.table-cell .scv-cell-content {
+  line-height: 1.5;
+}
 
-  .table-header {
-    margin-bottom: 1rem;
-  }
+.table-cell .scv-label {
+  font-weight: bold !important;
+  color: var(--color-navy) !important;
+}
 
-  .table-title {
-    font-size: 1.125rem;
-  }
+.table-cell .scv-value {
+  color: var(--color-navy) !important;
+  font-weight: normal !important;
+}
 
-  .table-header-cell {
-    padding: 0.75rem;
-    font-size: 0.8rem;
-  }
+/* Badges de estado SCV */
+.table-cell .estado-badge {
+   padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+  min-width: 80px;
+  border: 1px solid transparent;
+  color: white !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
+.table-cell .estado-aprobado {
+  background-color: #26AC17;
+}
+
+.table-cell .estado-pendiente {
+  background-color: #f59e0b;
+}
+
+.table-cell .estado-rechazado {
+  background-color: #EB1008;
+}
+
+.table-cell .estado-default {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border-color: #d6d8db;
+}
+
+.table-cell .version-badge {
+  background-color: #2EC2E3;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+  min-width: 70px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+/* === ESTILOS PARA TABLA DE USER === */
+/* Badges de roles User  */
+.table-cell .role-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+  min-width: 80px;
+  border: 1px solid transparent;
+  color: white !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table-cell .role-administrador {
+  background-color: #dc3545;
+  border-color: #c82333;
+}
+
+.table-cell .role-usuario-lector {
+  background-color: #6c757d;
+  border-color: #545b62;
+}
+
+.table-cell .role-responsable-seguridad {
+  background-color: #28a745;
+  border-color: #1e7e34;
+}
+
+.table-cell .role-auditor {
+  background-color: #ffc107;
+  border-color: #e0a800;
+  color: #212529 !important; /* Letras oscuras para mejor contraste con amarillo */
+}
+
+/* Botones de acción User */
+.table-cell .action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.table-cell .action-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  transition: all 0.2s;
+  min-width: 36px;
+  min-height: 36px;
+  justify-content: center;
+}
+
+.table-cell .action-btn.edit-btn {
+  background-color: #dbe5f5;
+  color: #0d6efd;
+}
+
+.table-cell .action-btn.delete-btn {
+  background-color: rgba(249, 226, 229, 0.8);
+  color: red
+}
+
+.table-cell .action-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* === ESTILOS RESPONSIVOS === */
+@media (max-width: 1200px) {
+  .custom-table {
+    min-width: 800px;
+  }
+  
+  .table-header-cell,
   .table-cell {
-    padding: 0.75rem;
-    font-size: 0.8rem;
-  }
-
-  .table-wrapper {
-    border-radius: 0.5rem;
+    padding: 0.875rem 1rem;
   }
 }
 
+@media (max-width: 992px) {
+  .custom-table {
+    min-width: 700px;
+  }
+  
+  .table-header-cell,
+  .table-cell {
+    padding: 0.75rem 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-container {
+    padding: 0.5rem;
+  }
+  
+  .table-header-cell,
+  .table-cell {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .table-title {
+    font-size: 1.1rem;
+  }
+  
+  .table-cell .role-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    min-width: 70px;
+  }
+}
+
+@media (max-width: 576px) {
+  .table-header-cell,
+  .table-cell {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.8rem;
+  }
+  
+  .table-title {
+    font-size: 1rem;
+  }
+  
+  .table-cell .estado-badge,
+  .table-cell .role-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    min-width: 65px;
+  }
+  
+  .table-cell .action-btn {
+    padding: 4px 8px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 11px;
+  }
+  
+  .action-buttons {
+    gap: 4px;
+  }
+}
 /* Header Styles */
 .header {
   background-color: var(--color-white);
@@ -755,34 +938,6 @@
 .delete-btn:hover {
   background-color: rgba(220, 53, 69, 0.2);
   color: #c82333;
-}
-
-/* Role Badges */
-.role-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.role-usuario-lector {
-  background-color: #646464;
-}
-
-.role-administrador {
-  background-color: #a60303;
-}
-
-.role-responsable-seguridad {
-  background-color: #1b860f;
-}
-
-.role-auditor {
-  background-color: #c0ad20;
 }
 
 /* Register Page Styles */
