@@ -31,18 +31,15 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
 
   // Función para navegar a Modificar Activo
   const handleCorregirSolicitud = (e) => {
-    // Prevenir propagación del evento para evitar conflictos
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     
     if (onNavigateToModificarActivo && solicitud?.activoId) {
-      // Reconstruir el activo completo a partir de la solicitud
-      // Empezamos con los valores anteriores (antes de los cambios propuestos)
       const activoCompleto = {
         id: solicitud.activoId,
-        codigo: solicitud.activoId, // Usar el ID como código si no está disponible
+        codigo: solicitud.activoId,
         nombre: solicitud.nombreActivo || "Activo por modificar",
         categoria: "",
         descripcion: "",
@@ -52,7 +49,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
         version: "v1.0.0"
       };
 
-      // Aplicar los valores anteriores de los cambios para reconstruir el estado original
       if (solicitud.cambios && Array.isArray(solicitud.cambios)) {
         solicitud.cambios.forEach(cambio => {
           switch (cambio.campo.toLowerCase()) {
@@ -77,7 +73,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
             case 'responsable':
               activoCompleto.responsable = cambio.valorAnterior;
               break;
-            // Campos que podrían tener nombres diferentes
             case 'configuracion':
             case 'reglas_firewall':
               if (!activoCompleto.descripcion) {
@@ -85,7 +80,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
               }
               break;
             default:
-              // Para campos no reconocidos, intentar mapear a descripción si está vacía
               if (!activoCompleto.descripcion) {
                 activoCompleto.descripcion = cambio.valorAnterior;
               }
@@ -94,7 +88,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
         });
       }
 
-      // Si algunos campos siguen vacíos, usar valores por defecto razonables
       if (!activoCompleto.categoria) activoCompleto.categoria = "Infraestructura";
       if (!activoCompleto.descripcion) activoCompleto.descripcion = "Descripción no disponible - favor completar";
       if (!activoCompleto.ubicacion) activoCompleto.ubicacion = "No especificada";
@@ -120,22 +113,33 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
       key: "campo",
       label: "Campo",
       render: (row) => <strong className="text-dark">{row.campo}</strong>,
+      cellStyle: { 
+        minWidth: "150px",
+        maxWidth: "200px"
+      }
     },
     {
       key: "valorAnterior",
       label: "Valor anterior",
       render: (row) => <span className="text-dark">{row.valorAnterior}</span>,
+      cellStyle: { 
+        minWidth: "200px",
+        maxWidth: "250px"
+      }
     },
     {
       key: "valorModificado",
       label: "Valor modificado",
       render: (row) => <span className="text-dark">{row.valorModificado}</span>,
+      cellStyle: { 
+        minWidth: "200px",
+        maxWidth: "250px"
+      }
     },
   ];
 
   return (
     <div className="solicitud-detalles-container p-2 p-lg-3">
-      {/* Botón volver con texto blanco */}
       <Button
         variant="outline"
         size="sm"
@@ -146,14 +150,12 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
         Volver a mis solicitudes
       </Button>
 
-      {/* Título y código debajo del botón CON BOTÓN CORREGIR SI ES RECHAZADO */}
       <div className="d-flex justify-content-between align-items-start mb-3 mb-lg-4">
         <div className="text-white">
-          <h4 className="fw-bold mb-1 h4-responsive">Detalles de Solicitud de Cambio</h4>
+          <h2 className="fw-bold mb-1 h4-responsive">Detalles de Solicitud de Cambio</h2>
           <h6 className="text-white-50 h6-responsive">Código: {solicitud.codigoSolicitud}</h6>
         </div>
         
-        {/* BOTÓN CORREGIR SOLICITUD - SOLO SI ESTÁ RECHAZADO */}
         {solicitud.estadoGeneral === "Rechazado" && (
           <Button
             variant="warning"
@@ -176,7 +178,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
       </div>
 
       <div className="row">
-        {/* Columna izquierda - Revisión de Seguridad */}
         <div className="col-12 col-lg-4 mb-3 mb-lg-0">
           <Card className="h-auto" style={{ backgroundColor: '#FFEEEE' }}>
             <div className="card-body p-2 p-lg-3">
@@ -218,7 +219,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
           </Card>
         </div>
 
-        {/* Columna derecha - Tabla de cambios y información */}
         <div className="col-12 col-lg-8 mt-3 mt-lg-0">
           <Card style={{ backgroundColor: '#FFEEEE' }}>
             <div className="card-body p-2 p-lg-3">
@@ -229,7 +229,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
                 </h5>
               </div>
 
-              {/* Estado general de la solicitud */}
               <div className="mb-3 mb-lg-4 p-2 p-lg-3 rounded" style={{ backgroundColor: '#FFEEEE' }}>
                 <div className="row">
                   <div className="col-12 col-md-6 mb-2 mb-md-0">
@@ -255,7 +254,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
                 </div>
               </div>
 
-              {/* Justificación del cambio */}
               <div className="mb-3 mb-lg-4">
                 <h6 className="fw-bold mb-2 mb-lg-3 text-dark h6-responsive">
                   Justificación del Cambio
@@ -267,14 +265,14 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
                 </Card>
               </div>
 
-              {/* Tabla de cambios realizados */}
               <div className="mb-3 mb-lg-4">
                 <h6 className="fw-bold mb-2 mb-lg-3 text-dark h6-responsive">Cambios Realizados</h6>
                 <div className="table-responsive">
                   <Table
                     columns={cambiosTableColumns}
                     data={cambiosTableData}
-                    className="cambios-table"
+                    compact={true}
+                    bordered={true}
                   />
                 </div>
               </div>
@@ -282,71 +280,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
           </Card>
         </div>
       </div>
-
-      <style jsx>{`
-        // Estilos para la tabla de cambios
-        :global(.cambios-table table) {
-          margin-bottom: 0;
-          min-width: 600px;
-        }
-
-        :global(.cambios-table th) {
-          background-color: #f8f9fa;
-          border-bottom: 2px solid #dee2e6;
-          color: #000;
-          white-space: nowrap;
-        }
-
-        :global(.cambios-table td) {
-          color: #000;
-          word-break: break-word;
-        }
-
-        // Estilos responsivos para textos
-        @media (max-width: 992px) {
-          :global(.h4-responsive) {
-            font-size: 1.25rem;
-          }
-          :global(.h5-responsive) {
-            font-size: 1.1rem;
-          }
-          :global(.h6-responsive) {
-            font-size: 0.9rem;
-          }
-        }
-
-        @media (max-width: 768px) {
-          :global(.h4-responsive) {
-            font-size: 1.1rem;
-          }
-          :global(.h5-responsive) {
-            font-size: 1rem;
-          }
-          :global(.h6-responsive) {
-            font-size: 0.85rem;
-          }
-          
-          // Ajuste para el botón en móvil
-          :global(.solicitud-detalles-container .d-flex) {
-            flex-direction: column;
-            align-items: flex-start !important;
-          }
-          
-          :global(.solicitud-detalles-container .d-flex .btn) {
-            margin-top: 1rem;
-            align-self: flex-start;
-            width: 100%;
-            justify-content: center;
-          }
-        }
-
-        @media (max-width: 576px) {
-          :global(.solicitud-detalles-container .d-flex .btn) {
-            padding: '0.625rem 1.25rem';
-            font-size: '0.9rem';
-          }
-        }
-      `}</style>
     </div>
   );
 };

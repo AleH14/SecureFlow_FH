@@ -37,7 +37,7 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
     }
   };
 
-  // Convertir datos para la tabla con el nuevo formato
+  // Convertir datos
   const historialData = historialCambios.map((item, index) => ({
     version: (
       <span className="version-badge">
@@ -73,15 +73,42 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
 
   // Definir columnas de la tabla
   const tableColumns = [
-    { key: "version", label: "Versión" },
-    { key: "fecha", label: "Fecha" },
-    { key: "solicitud_de_cambio", label: "Solicitud de cambio" },
-    { key: "comentario", label: "Comentario" },
-    { key: "revision", label: "Revisión" },
-    { key: "auditoria", label: "Auditoría" }
+    { 
+      key: "version", 
+      label: "Versión",
+      cellStyle: { 
+        minWidth: "100px",
+        textAlign: "center"
+      }
+    },
+    { 
+      key: "fecha", 
+      label: "Fecha",
+      cellStyle: { minWidth: "100px" }
+    },
+    { 
+      key: "solicitud_de_cambio", 
+      label: "Solicitud de cambio",
+      cellStyle: { minWidth: "250px" }
+    },
+    { 
+      key: "comentario", 
+      label: "Comentario",
+      cellStyle: { minWidth: "150px" }
+    },
+    { 
+      key: "revision", 
+      label: "Revisión",
+      cellStyle: { minWidth: "250px" }
+    },
+    { 
+      key: "auditoria", 
+      label: "Auditoría",
+      cellStyle: { minWidth: "250px" }
+    }
   ];
 
-  // Usar datos del activo seleccionado o valores por defecto
+  // Usar datos del activo seleccionado
   const activoInfo = selectedActivo || {
     nombre: historialCambios[0]["Solicitud de Cambio"].Nombre,
     codigo: "SWP-001",
@@ -111,33 +138,9 @@ const SCV = ({ onNavigateBack, selectedActivo }) => {
         <Table 
           columns={tableColumns}
           data={historialData}
+          hoverEffect={true}
+          bordered={true}
         />
-        
-        <style jsx global>{`
-          .scv-cell-content {
-            line-height: 1.5;
-          }
-          .scv-label {
-            font-weight: bold !important;
-            color: var(--color-navy) !important;
-          }
-          .scv-value {
-            color: var(--color-navy) !important;
-            font-weight: normal !important;
-          }
-          /* Estilo para el badge de versión */
-          .version-badge {
-            background-color: #2EC2E3;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            text-align: center;
-            display: inline-block;
-            min-width: 70px;
-          }
-        `}</style>
     </div>
   );
 }

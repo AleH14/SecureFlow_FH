@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Button, Card, Table, Modal } from "../../../components/ui";
+import { Button, Card, Modal } from "../../../components/ui";
+import Table from "../../../components/ui/Table"; 
 import Toast from "../../../components/ui/Toast";
 import { FaArrowLeft, FaShieldAlt, FaInfoCircle, FaEdit } from "react-icons/fa";
 
@@ -60,13 +61,13 @@ const Revision = ({
     if (checklist.informacionCompleta) {
       comments.push("✓ Información completa y clara");
     } else {
-      comments.push("✗ Información imcompleta o confusa del cambio");
+      comments.push("✗ Información incompleta o confusa del cambio");
     }
     
     if (checklist.justificacionClara) {
       comments.push("✓ Justificación del cambio adecuada");
     } else {
-      comments.push("✗ Justificación no adecauada del cambio");
+      comments.push("✗ Justificación no adecuada del cambio");
     }
     
     if (checklist.impactoDocumentado) {
@@ -169,22 +170,34 @@ const Revision = ({
       valorModificado: cambio.valorNuevo,
     })) || [];
 
-  // Columnas para la tabla de cambios
+  // Columnas para la tabla de cambios 
   const cambiosTableColumns = [
     {
       key: "campo",
       label: "Campo",
-      render: (row) => <strong className="text-dark">{row.campo}</strong>,
+      render: (row) => <span className="text-dark fw-bold">{row.campo}</span>,
+      cellStyle: {
+        minWidth: "150px",
+        maxWidth: "200px"
+      }
     },
     {
       key: "valorAnterior",
       label: "Valor anterior",
       render: (row) => <span className="text-dark">{row.valorAnterior}</span>,
+      cellStyle: {
+        minWidth: "200px",
+        maxWidth: "250px"
+      }
     },
     {
       key: "valorModificado",
       label: "Valor modificado",
       render: (row) => <span className="text-dark">{row.valorModificado}</span>,
+      cellStyle: {
+        minWidth: "200px",
+        maxWidth: "250px"
+      }
     },
   ];
 
@@ -452,7 +465,8 @@ const Revision = ({
                   <Table
                     columns={cambiosTableColumns}
                     data={cambiosTableData}
-                    className="cambios-table"
+                    hoverEffect={true}
+                    bordered={true}
                   />
                 </div>
               </div>
@@ -496,75 +510,6 @@ const Revision = ({
         headerBgColor="#dc3545"
         buttonColor="#dc3545"
       />
-
-      <style jsx>{`
-        // Estilos para la tabla de cambios
-        :global(.cambios-table table) {
-          margin-bottom: 0;
-          min-width: 600px;
-        }
-
-        :global(.cambios-table th) {
-          background-color: #f8f9fa;
-          border-bottom: 2px solid #dee2e6;
-          color: #000;
-          white-space: nowrap;
-        }
-
-        :global(.cambios-table td) {
-          color: #000;
-          word-break: break-word;
-        }
-
-        // Estilos para los checkboxes
-        :global(.form-check-input:checked) {
-          background-color: #198754;
-          border-color: #198754;
-        }
-
-        :global(.form-check-input:focus) {
-          border-color: #86b7fe;
-          outline: 0;
-          box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-
-        // Estilos responsivos
-        @media (max-width: 992px) {
-          :global(.h4-responsive) {
-            font-size: 1.25rem;
-          }
-          :global(.h5-responsive) {
-            font-size: 1.1rem;
-          }
-          :global(.h6-responsive) {
-            font-size: 0.9rem;
-          }
-        }
-
-        @media (max-width: 768px) {
-          :global(.h4-responsive) {
-            font-size: 1.1rem;
-          }
-          :global(.h5-responsive) {
-            font-size: 1rem;
-          }
-          :global(.h6-responsive) {
-            font-size: 0.85rem;
-          }
-          
-          :global(.revision-container .d-flex) {
-            flex-direction: column;
-            align-items: flex-start !important;
-          }
-          
-          :global(.revision-container .d-flex .btn) {
-            margin-top: 1rem;
-            align-self: flex-start;
-            width: 100%;
-            justify-content: center;
-          }
-        }
-      `}</style>
     </div>
   );
 };

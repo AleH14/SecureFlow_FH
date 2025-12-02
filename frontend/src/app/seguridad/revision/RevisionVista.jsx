@@ -20,22 +20,34 @@ const RevisionVista = ({ solicitud, onNavigateBack }) => {
       valorModificado: cambio.valorNuevo,
     })) || [];
 
-  // Columnas para la tabla de cambios
+  // Columnas para la tabla de cambios - usando cellStyle para anchos
   const cambiosTableColumns = [
     {
       key: "campo",
       label: "Campo",
       render: (row) => <strong className="text-dark">{row.campo}</strong>,
+      cellStyle: {
+        minWidth: "150px",
+        maxWidth: "200px"
+      }
     },
     {
       key: "valorAnterior",
       label: "Valor anterior",
       render: (row) => <span className="text-dark">{row.valorAnterior}</span>,
+      cellStyle: {
+        minWidth: "200px",
+        maxWidth: "250px"
+      }
     },
     {
       key: "valorModificado",
       label: "Valor modificado",
       render: (row) => <span className="text-dark">{row.valorModificado}</span>,
+      cellStyle: {
+        minWidth: "200px",
+        maxWidth: "250px"
+      }
     },
   ];
 
@@ -94,8 +106,13 @@ const RevisionVista = ({ solicitud, onNavigateBack }) => {
                 <div className="mb-2 mb-lg-3">
                   <label className="form-label fw-semibold small text-dark">Estado Final</label>
                   <div>
-                    <span className={`badge ${
-                      solicitud.estadoGeneral === "Aprobado" ? "bg-success" : "bg-danger"
+                    {/* Usando badges de Bootstrap */}
+                    <span className={`badge ms-2 ${
+                      solicitud.estadoGeneral === "Aprobado"
+                        ? "bg-success"
+                        : solicitud.estadoGeneral === "Rechazado"
+                        ? "bg-danger"
+                        : "bg-warning"
                     }`}>
                       {solicitud.estadoGeneral}
                     </span>
@@ -154,14 +171,16 @@ const RevisionVista = ({ solicitud, onNavigateBack }) => {
                 </Card>
               </div>
 
-              {/* Tabla de cambios */}
+              {/* Tabla  */}
               <div className="mb-3 mb-lg-4">
                 <h6 className="fw-bold mb-2 mb-lg-3 text-dark h6-responsive">Cambios Solicitados</h6>
                 <div className="table-responsive">
                   <Table
                     columns={cambiosTableColumns}
                     data={cambiosTableData}
-                    className="cambios-table"
+                    hoverEffect={true}
+                    bordered={true}
+                    compact={false}
                   />
                 </div>
               </div>
@@ -169,23 +188,6 @@ const RevisionVista = ({ solicitud, onNavigateBack }) => {
           </Card>
         </div>
       </div>
-
-      <style jsx>{`
-        :global(.cambios-table table) {
-          margin-bottom: 0;
-          min-width: 600px;
-        }
-        :global(.cambios-table th) {
-          background-color: #f8f9fa;
-          border-bottom: 2px solid #dee2e6;
-          color: #000;
-          white-space: nowrap;
-        }
-        :global(.cambios-table td) {
-          color: #000;
-          word-break: break-word;
-        }
-      `}</style>
     </div>
   );
 };

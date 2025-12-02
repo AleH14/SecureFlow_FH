@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { FaUserPlus, FaEdit, FaTrash, FaUsers } from "react-icons/fa";
+import { FaUserPlus, FaEdit, FaTrash } from "react-icons/fa";
 import { SearchBar, Table, Modal } from "../../../components/ui";
 
 const User = ({ className = "", ...props }) => { 
@@ -135,6 +135,22 @@ const User = ({ className = "", ...props }) => {
     // Usar usuarios filtrados o todos los usuarios
     const usersToShow = isFiltered ? filteredUsers : usuarios;
 
+    // Función para obtener clase CSS del rol
+    const getRoleClass = (role) => {
+        switch (role) {
+            case 'Usuario Lector':
+                return 'role-usuario-lector';
+            case 'Administrador':
+                return 'role-administrador';
+            case 'Responsable de Seguridad':
+                return 'role-responsable-seguridad';
+            case 'Auditor':
+                return 'role-auditor';
+            default:
+                return 'role-usuario-lector';
+        }
+    };
+
     // Definir columnas de la tabla
     const tableColumns = [
         { key: "codigo", label: "Código" },
@@ -145,27 +161,11 @@ const User = ({ className = "", ...props }) => {
         { 
             key: "rol", 
             label: "Rol",
-            render: (row) => {
-                const getRoleClass = (role) => {
-                    switch (role) {
-                        case 'Usuario Lector':
-                            return 'role-usuario-lector';
-                        case 'Administrador':
-                            return 'role-administrador';
-                        case 'Responsable de Seguridad':
-                            return 'role-responsable-seguridad';
-                        case 'Auditor':
-                            return 'role-auditor';
-                        default:
-                            return 'role-usuario-lector';
-                    }
-                };
-                return (
-                    <span className={`role-badge ${getRoleClass(row.rol)}`}>
-                        {row.rol}
-                    </span>
-                );
-            }
+            render: (row) => (
+                <span className={`role-badge ${getRoleClass(row.rol)}`}>
+                    {row.rol}
+                </span>
+            )
         },
         { key: "fecha_creacion", label: "Fecha Creación" },
         { 

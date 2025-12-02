@@ -7,7 +7,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
   const [filteredSolicitudes, setFilteredSolicitudes] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
 
-  // Datos actualizados con la nueva estructura
+  // Datos
   const solicitudes = [
     {
       "_id": "SOL-2025-001",
@@ -49,7 +49,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       "_id": "SOL-2025-002",
       "codigoSolicitud": "BBB-0002",
       "fechaCreacion": "2025-11-22T10:15:00Z",
-      "estadoGeneral": "En Revisión", 
+      "estadoGeneral": "Pendiente",
       "activoId": "ACT-101",        
       "solicitanteId": "USR-006",   
       "nombreActivo": "Base de Datos MySQL",
@@ -111,7 +111,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       "_id": "SOL-2025-004",
       "codigoSolicitud": "DDD-0004",
       "fechaCreacion": "2025-11-25T11:00:00Z",
-      "estadoGeneral": "En Revisión", 
+      "estadoGeneral": "Pendiente", 
       "activoId": "ACT-103",        
       "solicitanteId": "USR-010",   
       "nombreActivo": "Servidor de Aplicaciones",
@@ -204,35 +204,23 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       options: [
         { value: "Aprobado", label: "Aprobado" },
         { value: "Rechazado", label: "Rechazado" },
-        { value: "En Revisión", label: "En Revisión" },
+        { value: "Pendiente", label: "Pendiente" }, 
       ],
     },
   ];
 
   const solicitudesToShow = isFiltered ? filteredSolicitudes : solicitudes;
 
-  const getEstadoStyle = (estado) => {
-    const baseStyle = {
-      display: "inline-flex",
-      alignItems: "center",
-      padding: "0.5rem 1rem",
-      borderRadius: "20px",
-      fontSize: "0.75rem",
-      fontWeight: "600",
-      textTransform: "uppercase",
-      whiteSpace: "nowrap",
-      color: "white",
-    };
-
+  const getEstadoClass = (estado) => {
     switch (estado) {
       case "Aprobado":
-        return { ...baseStyle, backgroundColor: "#26AC17" };
+        return "estado-badge estado-aprobado";
       case "Rechazado":
-        return { ...baseStyle, backgroundColor: "#EB1008" };
-      case "En Revisión":
-        return { ...baseStyle, backgroundColor: "#f59e0b" };
+        return "estado-badge estado-rechazado";
+      case "Pendiente":
+        return "estado-badge estado-pendiente";
       default:
-        return { ...baseStyle, backgroundColor: "#6b7280" };
+        return "estado-badge estado-default";
     }
   };
 
@@ -242,7 +230,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
         return <FaCheck className="me-1" />;
       case "Rechazado":
         return <FaTimes className="me-1" />;
-      case "En Revisión":
+      case "Pendiente":
         return <FaClock className="me-1" />;
       default:
         return <FaClock className="me-1" />;
@@ -259,40 +247,47 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
           <div className="text-muted small">Código: {row.codigoSolicitud}</div>
         </div>
       ),
+      cellStyle: { 
+        minWidth: "200px",
+        maxWidth: "250px"
+      }
     },
     {
       key: "fechaCreacion",
       label: "Fecha de Solicitud",
       render: (row) => formatFecha(row.fechaCreacion),
+      cellStyle: { 
+        minWidth: "150px",
+        maxWidth: "180px"
+      }
     },
     {
       key: "estadoGeneral",
       label: "Estado",
       render: (row) => (
-        <span style={getEstadoStyle(row.estadoGeneral)}>
+        <span className={getEstadoClass(row.estadoGeneral)}>
           {getEstadoIcon(row.estadoGeneral)}
           {row.estadoGeneral}
         </span>
       ),
+      cellStyle: { 
+        minWidth: "150px",
+        maxWidth: "180px",
+        textAlign: "center"
+      }
     },
     {
       key: "justificacion",
       label: "Justificación",
       render: (row) => (
-        <div 
-          className="justificacion-cell"
-          style={{ 
-            maxWidth: "400px",
-            minWidth: "300px",
-            wordWrap: "break-word",
-            whiteSpace: "normal",
-            lineHeight: "1.5",
-            padding: "1rem 1.25rem"
-          }}
-        >
+        <div className="justificacion-cell">
           {row.justificacion}
         </div>
       ),
+      cellStyle: { 
+        minWidth: "300px",
+        maxWidth: "400px"
+      }
     },
     {
       key: "acciones",
@@ -307,10 +302,16 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
             handleVerDetalles(row);
           }}
           type="button"
+          className="btn-ver-detalles"
         >
           Ver Detalles
         </Button>
       ),
+      cellStyle: { 
+        minWidth: "120px",
+        maxWidth: "150px",
+        textAlign: "center"
+      }
     },
   ];
 
@@ -325,157 +326,14 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
 
       <SearchBar fields={searchFields} onFilter={handleFilter} />
 
-      <div className="mt-4" style={{ fontSize: "1rem" }}>
-        <div className="table-responsive" style={{ width: "100%" }}>
-          <Table 
-            columns={tableColumns} 
-            data={solicitudesToShow}
-            className="solicitudes-table"
-          />
-        </div>
+      <div className="mt-4">
+        <Table 
+          columns={tableColumns} 
+          data={solicitudesToShow}
+          hoverEffect={true}
+          bordered={true}
+        />
       </div>
-
-      <style jsx>{`
-        // Estilos para la tabla de solicitudes
-        :global(.solicitudes-table table) {
-          table-layout: fixed;
-          width: 100%;
-        }
-        
-        :global(.solicitudes-table th:nth-child(1)),
-        :global(.solicitudes-table td:nth-child(1)) {
-          width: 20%;
-        }
-        
-        :global(.solicitudes-table th:nth-child(2)),
-        :global(.solicitudes-table td:nth-child(2)) {
-          width: 15%;
-        }
-        
-        :global(.solicitudes-table th:nth-child(3)),
-        :global(.solicitudes-table td:nth-child(3)) {
-          width: 15%;
-        }
-        
-        :global(.solicitudes-table th:nth-child(4)),
-        :global(.solicitudes-table td:nth-child(4)) {
-          width: 35%;
-        }
-        
-        :global(.solicitudes-table th:nth-child(5)),
-        :global(.solicitudes-table td:nth-child(5)) {
-          width: 15%;
-        }
-        
-        // MEJOR ESPACIADO PARA JUSTIFICACIÓN
-        :global(.justificacion-cell) {
-          min-height: 70px;
-          display: flex;
-          align-items: center;
-          word-wrap: break-word;
-          white-space: normal;
-          line-height: 1.5;
-        }
-
-        // PADDING DE 20px PARA TODAS LAS COLUMNAS
-        :global(.solicitudes-table th) {
-          padding: 1rem 1.25rem;
-          background-color: #f8f9fa;
-          border-bottom: 2px solid #dee2e6;
-        }
-        
-        :global(.solicitudes-table td) {
-          padding: 1rem 1.25rem;
-          vertical-align: top;
-        }
-
-        // RESPONSIVIDAD DESDE ANCHO MAYOR (1200px)
-        @media (max-width: 1200px) {
-          :global(.solicitudes-table table) {
-            min-width: 900px;
-          }
-          
-          :global(.solicitudes-table th),
-          :global(.solicitudes-table td) {
-            padding: 0.875rem 1rem;
-          }
-          
-          :global(.justificacion-cell) {
-            min-height: 65px;
-            font-size: 0.9rem;
-            padding: 0.875rem 1rem !important;
-          }
-        }
-
-        @media (max-width: 992px) {
-          :global(.solicitudes-table table) {
-            min-width: 850px;
-          }
-          
-          :global(.solicitudes-table th),
-          :global(.solicitudes-table td) {
-            padding: 0.75rem 0.875rem;
-          }
-          
-          :global(.justificacion-cell) {
-            min-height: 60px;
-            font-size: 0.875rem;
-            padding: 0.75rem 0.875rem !important;
-          }
-          
-          :global(.user-header h2) {
-            font-size: 1.5rem;
-          }
-          
-          :global(.user-header h6) {
-            font-size: 0.9rem;
-          }
-        }
-
-        @media (max-width: 768px) {
-          :global(.solicitudes-page) {
-            padding: 1rem;
-          }
-          
-          :global(.solicitudes-table th),
-          :global(.solicitudes-table td) {
-            padding: 0.625rem 0.75rem;
-          }
-          
-          :global(.justificacion-cell) {
-            min-height: 55px;
-            padding: 0.625rem 0.75rem !important;
-          }
-          
-          :global(.user-header h2) {
-            font-size: 1.35rem;
-          }
-        }
-
-        @media (max-width: 576px) {
-          :global(.solicitudes-page) {
-            padding: 0.75rem;
-          }
-          
-          :global(.solicitudes-table th),
-          :global(.solicitudes-table td) {
-            padding: 0.5rem 0.625rem;
-          }
-          
-          :global(.justificacion-cell) {
-            min-height: 50px;
-            padding: 0.5rem 0.625rem !important;
-          }
-          
-          :global(.user-header h2) {
-            font-size: 1.25rem;
-          }
-          
-          :global(.user-header h6) {
-            font-size: 0.8rem;
-          }
-        }
-      `}</style>
     </div>
   );
 };
