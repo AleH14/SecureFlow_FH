@@ -23,7 +23,7 @@ const RegisterPage = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleBack = () => {
@@ -135,16 +135,7 @@ const RegisterPage = () => {
     setErrors({});
     
     try {
-      console.log('Datos a enviar:', {
-        nombre: formData.firstName,
-        apellido: formData.lastName,
-        email: formData.email,
-        telefono: formData.phoneNumber,
-        departamento: formData.department,
-        contrasena: formData.password,
-        confirmarContrasena: formData.confirmPassword,
-        rol: formData.userRole
-      });
+
     
       const response = await AuthService.register(
         formData.firstName,
@@ -188,7 +179,7 @@ const RegisterPage = () => {
       
     } catch (error) {
       console.error('Registration error:', error);
-      setErrors({ general: 'Error al crear el usuario. Por favor intenta de nuevo.' });
+      setErrors({ general: error?.message || 'Error al crear el usuario. Por favor intenta de nuevo.' });
     } finally {
       setLoading(false);
     }
@@ -389,7 +380,7 @@ const RegisterPage = () => {
                     size="lg"
                     loading={loading}
                     disabled={loading}
-                    className="flexF-grow-1"
+                    className="flex-grow-1"
                   >
                     Crear Usuario
                   </Button>
