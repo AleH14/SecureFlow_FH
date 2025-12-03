@@ -148,9 +148,7 @@ const RegisterPage = () => {
         formData.userRole
       );
       
-      console.log('Respuesta completa de la API:', response);
-      console.log('Success field:', response.success);
-      console.log('Data field:', response.data);
+
       
       // Verificar si la respuesta es exitosa
       if (!response || !response.success) {
@@ -161,7 +159,7 @@ const RegisterPage = () => {
       // Obtener los datos del usuario creado desde la respuesta
       const usuarioCreado = response.data;
       
-      console.log('Usuario creado desde backend:', usuarioCreado);
+     
       
       setSuccessMessage(`El usuario ${usuarioCreado.nombre} ${usuarioCreado.apellido} ha sido creado exitosamente con el código: ${usuarioCreado.codigo}`);
       
