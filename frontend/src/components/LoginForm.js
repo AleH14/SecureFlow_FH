@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Input, Button, Card } from './ui';
 import { AuthService } from '@/services';
 
 const LoginForm = () => {
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -61,13 +63,41 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      const data = await AuthService.login(formData.email, formData.password);
-      // Redirect or update UI on successful login
-      if (data.rol === 'administrador') {
-        window.location.href = '/admin'; // Example redirect
-      } 
+      const response = await AuthService.login(formData.email, formData.password);
+
+      
+      // La respuesta de la API tiene la estructura: { success: true, data: { token, user } }
+      const { token, user } = response.data;
+      
+      if (!user || !user.rol) {
+        throw new Error('Respuesta del servidor inválida');
+      }
+      
+      // Guardar token en localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Redireccionar según el rol del usuario
+      switch (user.rol) {
+        case 'administrador':
+          router.push('/admin');
+          break;
+        case 'responsable_seguridad':
+          router.push('/seguridad'); // Misma interfaz que admin
+          break;
+        case 'auditor':
+          router.push('/auditor');
+          break;
+        case 'usuario':
+        default:
+          router.push('/usuario');
+          break;
+      }
     } catch (error) {
       console.error('Login error:', error);
+      setErrors({ 
+        general: error.message || 'Error al iniciar sesión. Verifica tus credenciales.' 
+      });
     } finally {
       setLoading(false);
     }
@@ -96,6 +126,12 @@ const LoginForm = () => {
               </div>
               
               <form onSubmit={handleSubmit}>
+                {errors.general && (
+                  <div className="alert alert-danger mb-3" role="alert">
+                    {errors.general}
+                  </div>
+                )}
+                
                 <Input
                   type="email"
                   name="email"

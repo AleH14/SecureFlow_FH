@@ -2,8 +2,7 @@ import api from "./api";
 
 export const login = async (email, contrasena) => {
   const response = await api.post("/auth/login", { email, contrasena });
-  const { token, user } = response.data;
-  return { token, user };
+  return response.data; // Devolver la respuesta completa que tiene la estructura { success: true, data: { token, user } }
 };
 
 export const register = async (
@@ -15,22 +14,18 @@ export const register = async (
   contrasena,
   confirmarContrasena,
   rol
-
-  
 ) => {
   const response = await api.post("/auth/register", {
-  nombre,
-  apellido,
-  email,
-  telefono,
-  departamento,
-  contrasena,
-  confirmarContrasena,
-  rol,
-
+    nombre,
+    apellido,
+    email,
+    telefono,
+    departamento,
+    contrasena,
+    confirmarContrasena,
+    rol,
   });
-  const { token, user } = response.data;
-  return { token, user };
+  return response.data; // Devolver la respuesta completa
 };
 
 
@@ -46,5 +41,5 @@ export const getCurrentUser = async () => {
             Authorization: `Bearer ${token}`
         }
     });
-    return response.data.user;
+    return response.data.data; // La API devuelve { success: true, data: { user info } }
 }

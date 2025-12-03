@@ -80,7 +80,7 @@ const AdminPage = () => {
     <GradientLayout>
       <Header
         showUser={true}
-        userName="Juan Pérez"
+        userName="Administrador"
         userIcon={FaUserCircle}
       />
       <Sidebar 
