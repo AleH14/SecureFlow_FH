@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header, Sidebar, GradientLayout } from "../../components/ui";
+import { RequestService } from "../../services";
 import Inventory from "./inventory/Inventory";
 import SCV from "./scv/SCV";
 import NuevoActivo from "./activo/NuevoActivo";
@@ -17,6 +18,27 @@ const UsuarioPage = () => {
   const [showSolicitudDetalles, setShowSolicitudDetalles] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState(null);
   const [modificarActivoContext, setModificarActivoContext] = useState(null); // 'inventory' o 'solicitudes'
+  const [solicitudesCount, setSolicitudesCount] = useState(0);
+
+  // Cargar el conteo de solicitudes pendientes al montar el componente
+  useEffect(() => {
+    const loadSolicitudesPendientesCount = async () => {
+      try {
+        const response = await RequestService.getRequests();
+        if (response && response.success && response.data) {
+          const solicitudesPendientes = response.data.solicitudes?.filter(
+            solicitud => solicitud.estado === 'Pendiente'
+          ) || [];
+          setSolicitudesCount(solicitudesPendientes.length);
+        }
+      } catch (error) {
+        console.error('Error cargando conteo de solicitudes pendientes:', error);
+        setSolicitudesCount(0);
+      }
+    };
+
+    loadSolicitudesPendientesCount();
+  }, []);
 
   const usuarioTabs = [
     {
@@ -28,7 +50,7 @@ const UsuarioPage = () => {
       id: "mis-solicitudes",
       name: "Mis Solicitudes",
       iconName: "FaFileAlt",
-      badgeCount: 3,
+      badgeCount: solicitudesCount,
     },
   ];
 
