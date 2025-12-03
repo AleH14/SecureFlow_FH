@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaArrowLeft } from 'react-icons/fa';
 import { Input, Button, Card, Select, Alert } from '../../../components/ui';
+import { UserService, AuthService } from '@/services';
 
 const EditUser = () => {
   const router = useRouter();
@@ -38,13 +39,27 @@ const EditUser = () => {
       const [firstName = '', ...lastNameParts] = nombre.split(' ');
       const lastName = lastNameParts.join(' ');
       
+      const departamento = searchParams.get('departamento') || '';
+      const rol = searchParams.get('rol') || '';
+      
+      console.log('Datos recibidos de URL:', {
+        userId,
+        nombre,
+        firstName,
+        lastName,
+        departamento,
+        rol,
+        email: searchParams.get('email'),
+        telefono: searchParams.get('telefono')
+      });
+      
       setFormData({
         firstName,
         lastName,
         email: searchParams.get('email') || '',
         phoneNumber: searchParams.get('telefono') || '',
-        department: searchParams.get('departamento') || '',
-        userRole: searchParams.get('rol') || '',
+        department: departamento,
+        userRole: rol,
         password: '',
         confirmPassword: '',
         codigo: searchParams.get('codigo') || ''
@@ -57,20 +72,20 @@ const EditUser = () => {
   };
 
   const userRoles = [
-    { value: 'Administrador', label: 'Administrador' },
-    { value: 'Usuario Lector', label: 'Usuario Lector' },
-    { value: 'Responsable de Seguridad', label: 'Responsable de Seguridad' },
-    { value: 'Auditor', label: 'Auditor' }
+    { value: 'administrador', label: 'Administrador' },
+    { value: 'usuario', label: 'Usuario Lector' },
+    { value: 'responsable_seguridad', label: 'Responsable de Seguridad' },
+    { value: 'auditor', label: 'Auditor' }
   ];
 
   const departments = [
-    { value: 'TI', label: 'Tecnología de la Información' },
-    { value: 'Recursos Humanos', label: 'Recursos Humanos' },
-    { value: 'Seguridad', label: 'Seguridad' },
-    { value: 'Auditoría', label: 'Auditoría' },
-    { value: 'Finanzas', label: 'Finanzas' },
-    { value: 'Operaciones', label: 'Operaciones' },
-    { value: 'Legal', label: 'Legal y Cumplimiento' }
+    { value: 'Tecnologia_de_la_Informacion', label: 'Tecnología de la Información' },
+    { value: 'recursos_humanos', label: 'Recursos Humanos' },
+    { value: 'seguridad', label: 'Seguridad' },
+    { value: 'auditoria', label: 'Auditoría' },
+    { value: 'finanzas', label: 'Finanzas' },
+    { value: 'operaciones', label: 'Operaciones' },
+    { value: 'legal_y_cumplimiento', label: 'Legal y Cumplimiento' }
   ];
 
   const handleChange = (e) => {
@@ -149,11 +164,7 @@ const EditUser = () => {
     return newErrors;
   };
 
-  const generateUserCode = () => {
-    const initials = (formData.firstName.charAt(0) + formData.lastName.charAt(0)).toUpperCase();
-    const randomNumbers = Math.floor(100000 + Math.random() * 900000);
-    return `${initials}${randomNumbers}`;
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -168,44 +179,60 @@ const EditUser = () => {
     setErrors({});
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const userId = searchParams.get('userId');
       
-      // Generate user code
-      const userCode = generateUserCode();
-      
-      // Create user object without confirmPassword
-      const { confirmPassword, ...userData } = formData;
-      const newUser = {
-        ...userData,
-        codigo: userCode,
-        nombre_completo: `${formData.firstName} ${formData.lastName}`,
-        fecha_creacion: new Date().toISOString().split('T')[0]
-      };
-      
-      console.log('Usuario creado:', newUser);
-      
-      if (isEditMode) {
-        setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido actualizado exitosamente.`);
+      if (isEditMode && userId) {
+        // Actualizar usuario existente
+        const updateData = {
+          nombre: formData.firstName,
+          apellido: formData.lastName,
+          email: formData.email,
+          telefono: formData.phoneNumber,
+          departamento: formData.department,
+          rol: formData.userRole
+        };
+        
+        // Solo incluir contraseña si se proporcionó
+        if (formData.password && formData.password.trim()) {
+          updateData.contrasena = formData.password;
+        }
+        
+        console.log('Actualizando usuario con datos:', updateData);
+        const response = await UserService.updateUser(userId, updateData);
+        
+        if (response && response.success) {
+          setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido actualizado exitosamente.`);
+        } else {
+          throw new Error(response?.message || 'Error al actualizar el usuario');
+        }
       } else {
-        setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido creado exitosamente con el código: ${userCode}`);
+        // Crear nuevo usuario (aunque este componente parece ser principalmente para edición)
+        const response = await AuthService.register(
+          formData.firstName,
+          formData.lastName,
+          formData.email,
+          formData.phoneNumber,
+          formData.department,
+          formData.password,
+          formData.confirmPassword,
+          formData.userRole
+        );
+        
+        if (response && response.success) {
+          const usuarioCreado = response.data;
+          setSuccessMessage(`El usuario ${usuarioCreado.nombre} ${usuarioCreado.apellido} ha sido creado exitosamente con el código: ${usuarioCreado.codigo}`);
+        } else {
+          throw new Error(response?.message || 'Error al crear el usuario');
+        }
       }
       
-      // Reset form after successful creation
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phoneNumber: '',
-        department: '',
-        userRole: '',
-        password: '',
-        confirmPassword: ''
-      });
-      
     } catch (error) {
-      console.error('Registration error:', error);
-      setErrors({ general: 'Error al crear el usuario. Por favor intenta de nuevo.' });
+      console.error('Error en operación de usuario:', error);
+      setErrors({ 
+        general: isEditMode 
+          ? 'Error al actualizar el usuario. Por favor intenta de nuevo.' 
+          : 'Error al crear el usuario. Por favor intenta de nuevo.'
+      });
     } finally {
       setLoading(false);
     }

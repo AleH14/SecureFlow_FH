@@ -1,10 +1,13 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaUserPlus, FaEdit, FaTrash } from "react-icons/fa";
 import { SearchBar, Table, Modal } from "../../../components/ui";
-
+import { UserService } from "@/services";
 const User = ({ className = "", ...props }) => { 
     const router = useRouter();
+    const [usuarios, setUsuarios] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
     const [filteredUsers, setFilteredUsers] = useState([]);
@@ -14,6 +17,32 @@ const User = ({ className = "", ...props }) => {
         console.log('Navegando a crear usuario');
         router.push('/admin/register');
     };
+
+    // Función para cargar usuarios desde la API
+    const loadUsers = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await UserService.getUsers();
+            
+            if (response && response.success && response.data) {
+                setUsuarios(response.data.users || []);
+            } else {
+                throw new Error('Formato de respuesta inesperado');
+            }
+        } catch (err) {
+            console.error('Error cargando usuarios:', err);
+            setError('Error al cargar los usuarios. Por favor intenta de nuevo.');
+            setUsuarios([]); 
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Cargar usuarios al montar el componente
+    useEffect(() => {
+        loadUsers();
+    }, []);
 
     const handleFilter = useCallback((filters) => {
         console.log('Filtros aplicados:', filters);
@@ -30,7 +59,7 @@ const User = ({ className = "", ...props }) => {
             // Filtro por nombre, código o email
             if (filters.name) {
                 const searchTerm = filters.name.toLowerCase();
-                const matchesName = usuario.nombre_completo.toLowerCase().includes(searchTerm);
+                const matchesName = usuario.nombreCompleto.toLowerCase().includes(searchTerm);
                 const matchesCode = usuario.codigo.toLowerCase().includes(searchTerm);
                 const matchesEmail = usuario.email.toLowerCase().includes(searchTerm);
                 
@@ -49,29 +78,39 @@ const User = ({ className = "", ...props }) => {
 
         setFilteredUsers(filtered);
         setIsFiltered(true);
-    }, []);
+    }, [usuarios]);
 
     const handleEdit = (user) => {
         console.log('Editar usuario:', user);
         // Navegar a EditUser con los datos del usuario
-        router.push(`/admin/edituser?userId=${user.id}&codigo=${user.codigo}&nombre=${encodeURIComponent(user.nombre_completo)}&email=${encodeURIComponent(user.email)}&telefono=${user.telefono}&departamento=${encodeURIComponent(user.departamento)}&rol=${encodeURIComponent(user.rol)}`);
+        const userId = user._id || user.id;
+        router.push(`/admin/edituser?userId=${userId}&codigo=${user.codigo}&nombre=${encodeURIComponent(user.nombreCompleto)}&email=${encodeURIComponent(user.email)}&telefono=${user.telefono}&departamento=${encodeURIComponent(user.departamento)}&rol=${encodeURIComponent(user.rol)}`);
     };
 
     const handleDelete = (user) => {
-        console.log('Solicitar eliminar usuario:', user);
+        
         setUserToDelete(user);
         setShowDeleteModal(true);
     };
 
-    const confirmDelete = () => {
-        console.log('Eliminando usuario:', userToDelete);
-        // Aquí iría la lógica para eliminar el usuario
-        // Por ejemplo: await deleteUser(userToDelete.id);
+    const confirmDelete = async () => {
+        if (!userToDelete) return;
         
-        setShowDeleteModal(false);
-        setUserToDelete(null);
-        
-        // Aquí podrías actualizar la lista de usuarios o mostrar un mensaje de éxito
+        try {
+            
+            await UserService.deleteUser(userToDelete._id || userToDelete.id);
+            
+            // Recargar la lista de usuarios
+            await loadUsers();
+            
+            setShowDeleteModal(false);
+            setUserToDelete(null);
+            
+            console.log('Usuario eliminado exitosamente');
+        } catch (error) {
+            console.error('Error eliminando usuario:', error);
+            setError('Error al eliminar el usuario. Por favor intenta de nuevo.');
+        }
     };
 
     const cancelDelete = () => {
@@ -79,95 +118,88 @@ const User = ({ className = "", ...props }) => {
         setUserToDelete(null);
     };
 
-    // Datos de usuarios
-    const usuarios = [
-        {
-            id: 1,
-            codigo: "AH112233",
-            nombre_completo: "Andrés Aguilar",
-            email: "andresaguilar@empresa.com",
-            telefono: "5533-0225",
-            departamento: "Recursos Humanos",
-            rol: "Usuario Lector",
-            fecha_creacion: "2025-11-23"
-        },
-        {
-            id: 2,
-            codigo: "AF112233",
-            nombre_completo: "Abigail Flores",
-            email: "abigailflores@empresa.com",
-            telefono: "7788-9966",
-            departamento: "TI",
-            rol: "Administrador",
-            fecha_creacion: "2025-11-23"
-        },
-        {
-            id: 3,
-            codigo: "JO112233",
-            nombre_completo: "Javier Orellana",
-            email: "javierorellana@empresa.com",
-            telefono: "7123-6655",
-            departamento: "TI",
-            rol: "Responsable de Seguridad",
-            fecha_creacion: "2025-11-23"
-        },
-        {
-            id: 4,
-            codigo: "FR771100",
-            nombre_completo: "Valeria Enriquez",
-            email: "valeriaenriquez@empresa.com",
-            telefono: "7475-6985",
-            departamento: "TI",
-            rol: "Auditor",
-            fecha_creacion: "2025-11-23"
-        },     {
-            id: 5,
-            codigo: "AD771100",
-            nombre_completo: "Albin Jakitori",
-            email: "Albin@empresa.com",
-            telefono: "7475-6385",
-            departamento: "TI",
-            rol: "Administrador",
-            fecha_creacion: "2025-11-23"
-        }
-    ];
-
     // Usar usuarios filtrados o todos los usuarios
     const usersToShow = isFiltered ? filteredUsers : usuarios;
 
     // Función para obtener clase CSS del rol
     const getRoleClass = (role) => {
         switch (role) {
-            case 'Usuario Lector':
+            case 'usuario':
                 return 'role-usuario-lector';
-            case 'Administrador':
+            case 'administrador':
                 return 'role-administrador';
-            case 'Responsable de Seguridad':
+            case 'responsable_seguridad':
                 return 'role-responsable-seguridad';
-            case 'Auditor':
+            case 'auditor':
                 return 'role-auditor';
             default:
                 return 'role-usuario-lector';
         }
     };
 
+    // Función para obtener el texto amigable del rol
+    const getRoleDisplayText = (role) => {
+        switch (role) {
+            case 'usuario':
+                return 'Usuario Lector';
+            case 'administrador':
+                return 'Administrador';
+            case 'responsable_seguridad':
+                return 'Responsable de Seguridad';
+            case 'auditor':
+                return 'Auditor';
+            default:
+                return 'Usuario Lector';
+        }
+    };
+
+    // Función para obtener el texto amigable del departamento
+    const getDepartmentDisplayText = (department) => {
+        switch (department) {
+            case 'Tecnologia_de_la_Informacion':
+                return 'TI';
+            case 'recursos_humanos':
+                return 'Recursos Humanos';
+            case 'seguridad':
+                return 'Seguridad';
+            case 'auditoria':
+                return 'Auditoría';
+            case 'finanzas':
+                return 'Finanzas';
+            case 'operaciones':
+                return 'Operaciones';
+            case 'legal_y_cumplimiento':
+                return 'Legal y Cumplimiento';
+            default:
+                return department; // Si no coincide, mostrar el valor original
+        }
+    };
+
     // Definir columnas de la tabla
     const tableColumns = [
         { key: "codigo", label: "Código" },
-        { key: "nombre_completo", label: "Nombre Completo" },
+        { key: "nombreCompleto", label: "Nombre Completo" },
         { key: "email", label: "Email" },
         { key: "telefono", label: "Teléfono" },
-        { key: "departamento", label: "Departamento" },
+        { 
+            key: "departamento", 
+            label: "Departamento",
+            render: (row) => getDepartmentDisplayText(row.departamento)
+        },
         { 
             key: "rol", 
             label: "Rol",
             render: (row) => (
                 <span className={`role-badge ${getRoleClass(row.rol)}`}>
-                    {row.rol}
+                    {getRoleDisplayText(row.rol)}
                 </span>
             )
         },
-        { key: "fecha_creacion", label: "Fecha Creación" },
+        { 
+            key: "fechaCreacion", 
+            label: "Fecha Creación",
+            render: (row) => new Date(row.fechaCreacion).toLocaleDateString('es-ES')
+        },
         { 
             key: "acciones", 
             label: "Acciones", 
@@ -205,13 +237,27 @@ const User = ({ className = "", ...props }) => {
             label: 'Rol',
             type: 'select',
             options: [
-                { value: 'Administrador', label: 'Administrador' },
-                { value: 'Usuario Lector', label: 'Usuario Lector' },
-                { value: 'Responsable de Seguridad', label: 'Responsable de Seguridad' },
-                { value: 'Auditor', label: 'Auditor' }
+                { value: 'administrador', label: 'Administrador' },
+                { value: 'usuario', label: 'Usuario Lector' },
+                { value: 'responsable_seguridad', label: 'Responsable de Seguridad' },
+                { value: 'auditor', label: 'Auditor' }
             ]
         }
     ];
+
+    // Mostrar loading
+    if (loading) {
+        return (
+            <div className={`user-page ${className}`} {...props}>
+                <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Cargando usuarios...</span>
+                    </div>
+                    <p className="mt-3">Cargando usuarios...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={`user-page ${className}`} {...props}>
@@ -228,6 +274,19 @@ const User = ({ className = "", ...props }) => {
                     Crear Nuevo Usuario
                 </button>
             </div>
+
+            {error && (
+                <div className="alert alert-danger" role="alert">
+                    <strong>Error:</strong> {error}
+                    <button 
+                        type="button" 
+                        className="btn btn-sm btn-outline-danger ms-3"
+                        onClick={loadUsers}
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            )}
 
             <SearchBar 
                 fields={searchFields}
@@ -247,7 +306,7 @@ const User = ({ className = "", ...props }) => {
                 question="¿Estás seguro de que deseas eliminar este usuario?"
                 showValueBox={true}
                 valueBoxTitle="Usuario a eliminar:"
-                valueBoxSubtitle={userToDelete ? `${userToDelete.nombre_completo} (${userToDelete.codigo})` : ""}
+                valueBoxSubtitle={userToDelete ? `${userToDelete.nombreCompleto} (${userToDelete.codigo})` : ""}
                 informativeText="Esta acción no se puede deshacer. Se eliminarán todos los datos asociados al usuario."
                 cancelText="Cancelar"
                 acceptText="Eliminar"

@@ -470,7 +470,7 @@
 .table-cell .role-badge {
   padding: 4px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   text-align: center;
   display: inline-block;
@@ -498,6 +498,45 @@
 
 .table-cell .role-auditor {
   background-color: #ffc107;
+  border-color: #e0a800;
+  color: #212529 !important; /* Letras oscuras para mejor contraste con amarillo */
+}
+
+/* Estilos globales para role badges */
+.role-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 8px;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+  min-width: 80px;
+  border: 1px solid transparent;
+  color: white !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-administrador {
+  background-color: #dc3545 !important;
+  border-color: #c82333;
+  color: white !important;
+}
+
+.role-usuario-lector {
+  background-color: #6c757d !important;
+  border-color: #545b62;
+  color: white !important;
+}
+
+.role-responsable-seguridad {
+  background-color: #28a745 !important;
+  border-color: #1e7e34;
+  color: white !important;
+}
+
+.role-auditor {
+  background-color: #ffc107 !important;
   border-color: #e0a800;
   color: #212529 !important; /* Letras oscuras para mejor contraste con amarillo */
 }

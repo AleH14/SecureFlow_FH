@@ -1,10 +1,14 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const { auth, admin } = require('../middleware/auth');
 const { 
   asyncHandler, 
   sendResponse, 
-  sendError 
+  sendError,
+  sanitizeInput,
+  isValidEmail,
+  isValidPassword
 } = require('../utils/helpers');
 
 const router = express.Router();
@@ -184,24 +188,171 @@ router.get('/stats/summary', auth, admin, asyncHandler(async (req, res) => {
 
 // @route   PUT /api/users/:id
 // @desc    Update user
-// @access  Private
-router.put('/:id', (req, res) => {
-  const { id } = req.params;
-  res.json({
-    message: `Update user endpoint - Coming soon`,
-    data: { userId: id }
-  });
-});
+// @access  Private (Admin only)
+router.put('/:id', auth, admin, asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, apellido, email, telefono, departamento, rol, contrasena } = req.body;
+
+    // Verificar que el usuario existe
+    const user = await User.findById(id);
+    if (!user) {
+      return sendError(res, 404, 'Usuario no encontrado');
+    }
+
+    // Sanitizar datos de entrada
+    const sanitizedData = {
+      nombre: sanitizeInput(nombre?.trim()),
+      apellido: sanitizeInput(apellido?.trim()),
+      email: email?.toLowerCase().trim(),
+      telefono: sanitizeInput(telefono?.trim()),
+      departamento: sanitizeInput(departamento?.trim()),
+      rol: sanitizeInput(rol?.trim())
+    };
+
+    // Validaciones básicas
+    if (!sanitizedData.nombre || sanitizedData.nombre.length < 2) {
+      return sendError(res, 400, 'El nombre debe tener al menos 2 caracteres');
+    }
+
+    if (!sanitizedData.apellido || sanitizedData.apellido.length < 2) {
+      return sendError(res, 400, 'El apellido debe tener al menos 2 caracteres');
+    }
+
+    if (!sanitizedData.email || !isValidEmail(sanitizedData.email)) {
+      return sendError(res, 400, 'Email inválido');
+    }
+
+    if (!sanitizedData.telefono) {
+      return sendError(res, 400, 'El teléfono es requerido');
+    }
+
+    // Verificar que el email no esté en uso por otro usuario
+    const existingUser = await User.findOne({ 
+      email: sanitizedData.email,
+      _id: { $ne: id }  // Excluir el usuario actual
+    });
+    if (existingUser) {
+      return sendError(res, 400, 'El email ya está registrado por otro usuario');
+    }
+
+    // Verificar departamento válido
+    const validDepartments = [
+      'Tecnologia_de_la_Informacion',
+      'recursos_humanos',
+      'seguridad',
+      'auditoria',
+      'finanzas',
+      'operaciones',
+      'legal_y_cumplimiento'
+    ];
+    
+    if (!validDepartments.includes(sanitizedData.departamento)) {
+      return sendError(res, 400, 'Departamento inválido');
+    }
+
+    // Verificar rol válido
+    const validRoles = ['administrador', 'responsable_seguridad', 'auditor', 'usuario'];
+    if (!validRoles.includes(sanitizedData.rol)) {
+      return sendError(res, 400, 'Rol inválido');
+    }
+
+    // Preparar datos para actualizar
+    const updateData = {
+      nombre: sanitizedData.nombre,
+      apellido: sanitizedData.apellido,
+      email: sanitizedData.email,
+      telefono: sanitizedData.telefono,
+      departamento: sanitizedData.departamento,
+      rol: sanitizedData.rol
+    };
+
+    // Si se proporciona nueva contraseña, hashearla
+    if (contrasena && contrasena.trim()) {
+      if (!isValidPassword(contrasena)) {
+        return sendError(res, 400, 'La contraseña debe tener al menos 8 caracteres, incluyendo mayúscula, minúscula y número');
+      }
+      const saltRounds = 12;
+      updateData.contrasenaHash = await bcrypt.hash(contrasena, saltRounds);
+    }
+
+    // Actualizar usuario
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-contrasenaHash');
+
+    // Formatear respuesta
+    const userResponse = {
+      id: updatedUser._id,
+      codigo: updatedUser.codigo,
+      nombre: updatedUser.nombre,
+      apellido: updatedUser.apellido,
+      email: updatedUser.email,
+      telefono: updatedUser.telefono,
+      departamento: updatedUser.departamento,
+      rol: updatedUser.rol,
+      fechaCreacion: updatedUser.fechaCreacion
+    };
+
+    sendResponse(res, 200, 'Usuario actualizado exitosamente', userResponse);
+
+  } catch (error) {
+    console.error('Error actualizando usuario:', error);
+    if (error.name === 'ValidationError') {
+      return sendError(res, 400, 'Error de validación', error.message);
+    }
+    if (error.name === 'CastError') {
+      return sendError(res, 400, 'ID de usuario inválido');
+    }
+    return sendError(res, 500, 'Error interno del servidor');
+  }
+}));
 
 // @route   DELETE /api/users/:id
 // @desc    Delete user
 // @access  Private (Admin only)
-router.delete('/:id', (req, res) => {
-  const { id } = req.params;
-  res.json({
-    message: `Delete user endpoint - Coming soon`,
-    data: { userId: id }
-  });
-});
+router.delete('/:id', auth, admin, asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar que el usuario existe
+    const user = await User.findById(id);
+    if (!user) {
+      return sendError(res, 404, 'Usuario no encontrado');
+    }
+
+    // Verificar que no se está intentando eliminar al propio usuario
+    if (user._id.toString() === req.user.id) {
+      return sendError(res, 400, 'No puedes eliminar tu propia cuenta');
+    }
+
+    // Opcional: Verificar si el usuario tiene activos asociados o solicitudes pendientes
+    // y decidir si permitir la eliminación o mostrar una advertencia
+    
+    // Eliminar el usuario
+    await User.findByIdAndDelete(id);
+
+    // Formatear respuesta con información del usuario eliminado
+    const deletedUserInfo = {
+      id: user._id,
+      codigo: user.codigo,
+      nombreCompleto: `${user.nombre} ${user.apellido}`,
+      email: user.email,
+      rol: user.rol,
+      departamento: user.departamento
+    };
+
+    sendResponse(res, 200, 'Usuario eliminado exitosamente', deletedUserInfo);
+
+  } catch (error) {
+    console.error('Error eliminando usuario:', error);
+    if (error.name === 'CastError') {
+      return sendError(res, 400, 'ID de usuario inválido');
+    }
+    return sendError(res, 500, 'Error interno del servidor');
+  }
+}));
 
 module.exports = router;
