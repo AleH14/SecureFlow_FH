@@ -1,9 +1,39 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { SearchBar, CardActivo } from "../../../components/ui";
+import { ActivoService } from "@/services";
 
 const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
+    const [activos, setActivos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [filteredActivos, setFilteredActivos] = useState([]);
     const [isFiltered, setIsFiltered] = useState(false);
+
+    // Función para cargar activos desde la API
+    const loadActivos = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await ActivoService.getActivos();
+            
+            if (response && response.success && response.data) {
+                setActivos(response.data.activos || []);
+            } else {
+                throw new Error('Formato de respuesta inesperado');
+            }
+        } catch (err) {
+            console.error('Error cargando activos:', err);
+            setError('Error al cargar los activos. Por favor intenta de nuevo.');
+            setActivos([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Cargar activos al montar el componente
+    useEffect(() => {
+        loadActivos();
+    }, []);
 
     const handleFilter = useCallback((filters) => {
         console.log('Filtros aplicados:', filters);
@@ -22,7 +52,7 @@ const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
                 const searchTerm = filters.name.toLowerCase();
                 const matchesName = activo.nombre.toLowerCase().includes(searchTerm);
                 const matchesCode = activo.codigo.toLowerCase().includes(searchTerm);
-                const matchesResponsible = activo.responsable.toLowerCase().includes(searchTerm);
+                const matchesResponsible = activo.responsable?.nombreCompleto?.toLowerCase().includes(searchTerm) || false;
                 
                 if (!matchesName && !matchesCode && !matchesResponsible) {
                     return false;
@@ -44,7 +74,7 @@ const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
 
         setFilteredActivos(filtered);
         setIsFiltered(true);
-    }, []);
+    }, [activos]);
 
     const handleHistorialClick = (activo) => {
         console.log('Navegando al historial de:', activo.nombre);
@@ -53,57 +83,16 @@ const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
         }
     };
 
-    // Datos de ejemplo
-    const activos = [
-        {
-            nombre: "Servidor Web Principal",
-            codigo: "SWP-001",
-            estado: "Activo",
-            categoria: "Infraestructura",
-            descripcion: "Servidor web para aplicaciones corporativas con balanceador de carga",
-            responsable: "Abigail Flores",
-            version: "v1.0.0",
-            ubicacion: "Sala 5 - Dep TI",
-            fecha_creacion: "2025-11-23",
+    // Función para transformar activos del backend al formato esperado por CardActivo
+    const transformActivo = (activo) => {
+        return {
+            ...activo,
+            responsable: activo.responsable?.nombreCompleto || 'Sin asignar',
+            fecha_creacion: activo.fechaCreacion ? new Date(activo.fechaCreacion).toLocaleDateString('es-ES') : 'N/A',
+            version: `v${activo.version || '1.0'}`,
             acciones_disponibles: ["Historial de Versiones"]
-        },
-        {
-            nombre: "Base de Datos MySQL",
-            codigo: "BDM-002",
-            estado: "Mantenimiento",
-            categoria: "Base de Datos",
-            descripcion: "Base de datos principal para almacenamiento de información corporativa",
-            responsable: "Javier Orellana",
-            version: "v2.1.3",
-            ubicacion: "Sala 3 - Dep TI",
-            fecha_creacion: "2025-11-20",
-            acciones_disponibles: ["Historial de Versiones"]
-        },
-        {
-            nombre: "Sistema de Backup",
-            codigo: "SBK-003",
-            estado: "Inactivo",
-            categoria: "Respaldo",
-            descripcion: "Sistema automatizado de respaldos nocturnos",
-            responsable: "Valeria Enriquez",
-            version: "v1.5.2",
-            ubicacion: "Sala 7 - Dep TI",
-            fecha_creacion: "2025-11-18",
-            acciones_disponibles: ["Historial de Versiones"]
-        },
-        {
-            nombre: "Firewall Corporativo",
-            codigo: "FWC-004",
-            estado: "En Revision",
-            categoria: "Seguridad",
-            descripcion: "Firewall de nueva generación para protección perimetral",
-            responsable: "Andrés Aguilar",
-            version: "v3.0.1",
-            ubicacion: "Sala 1 - Seguridad",
-            fecha_creacion: "2025-11-25",
-            acciones_disponibles: ["Historial de Versiones"]
-        }
-    ];
+        };
+    };
 
     // Usar activos filtrados o todos los activos
     const activosToShow = isFiltered ? filteredActivos : activos;
@@ -121,9 +110,10 @@ const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
             label: 'Categoría',
             type: 'select',
             options: [
-                { value: 'Infraestructura', label: 'Infraestructura' },
-                { value: 'Base de Datos', label: 'Base de Datos' },
-                { value: 'Respaldo', label: 'Respaldo' },
+                { value: 'Sistemas', label: 'Sistemas' },
+                { value: 'Hardware', label: 'Hardware' },
+                { value: 'Software', label: 'Software' },
+                { value: 'Redes', label: 'Redes' },
                 { value: 'Seguridad', label: 'Seguridad' }
             ]
         },
@@ -140,6 +130,20 @@ const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
         }
     ];
 
+    // Mostrar loading
+    if (loading) {
+        return (
+            <div className={`inventory-page ${className}`} {...props}>
+                <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Cargando activos...</span>
+                    </div>
+                    <p className="mt-3">Cargando activos...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={`inventory-page ${className}`} {...props}>
             <div className="user-header">
@@ -148,14 +152,27 @@ const Inventory = ({ className = "", onNavigateToSCV, ...props }) => {
                     <h6>{activosToShow.length} activos en total</h6>
                 </div>
             </div>
+
+            {error && (
+                <div className="alert alert-danger" role="alert">
+                    <strong>Error:</strong> {error}
+                    <button 
+                        type="button" 
+                        className="btn btn-sm btn-outline-danger ms-3"
+                        onClick={loadActivos}
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            )}
             
             <SearchBar fields={searchFields} onFilter={handleFilter} />
             
             <div className="activos-grid">
                 {activosToShow.map((activo, index) => (
                     <CardActivo
-                        key={index}
-                        activo={activo}
+                        key={activo.id || index}
+                        activo={transformActivo(activo)}
                         onHistorialClick={handleHistorialClick}
                     />
                 ))}

@@ -7,8 +7,13 @@ export const createActivo = async (activoData) => {
 };
 
 export const getActivos = async () => {
-    const response = await api.get("/activos");
-    return response.data.activos;
+    try {
+        const response = await api.get("/activos");
+        return response.data; // Devolver la respuesta completa que incluye {success, message, data, timestamp}
+    } catch (error) {
+        console.error('Error obteniendo activos:', error);
+        throw error;
+    }
 };
 
 export const getActivoById = async (id) => {
@@ -26,6 +31,11 @@ export const historyCommentsByActivoId = async (id) => {
 };
 
 export const historyCompleteRequestByActivoId = async (id) => {
-    const response = await api.get(`/activos/${id}/solicitudes-historial`);
-    return response.data.history;
+    try {
+        const response = await api.get(`/activos/${id}/solicitudes-historial`);
+        return response.data; // Devolver la respuesta completa que incluye {success, message, data}
+    } catch (error) {
+        console.error('Error obteniendo historial de solicitudes:', error);
+        throw error;
+    }
 }

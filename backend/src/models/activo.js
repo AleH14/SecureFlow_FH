@@ -26,12 +26,12 @@ const ActivoSchema = new mongoose.Schema({
   estado: {
     type: String,
     enum: [
-      "En evaluacion",
+
       "Activo",
       "Inactivo",
       "Mantenimiento",
-      "En Revisión",
-      "Dado de Baja"
+      "En Revision",
+
     ],
     default: "En evaluacion"
   },

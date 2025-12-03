@@ -14,7 +14,9 @@ const CardActivo = ({
     }
 
     const getEstadoClass = (estado) => {
-        switch (estado?.toLowerCase()) {
+        if (!estado) return 'estado-default';
+        
+        switch (estado.toLowerCase().trim()) {
             case 'activo':
                 return 'estado-activo';
             case 'mantenimiento':
@@ -23,13 +25,16 @@ const CardActivo = ({
             case 'inactivo':
                 return 'estado-inactivo';
             case 'en revision':
-            case 'en evaluación':
+            case 'en revisión':
+            case 'revision':
                 return 'estado-revision';
             case 'dado de baja':
+            case 'baja':
                 return 'estado-baja';
             case 'obsoleto':
                 return 'estado-obsoleto';
             default:
+                console.log('Estado no reconocido:', estado); // Para debug
                 return 'estado-default';
         }
     };
