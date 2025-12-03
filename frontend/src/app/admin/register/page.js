@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaUserTag, FaLock, FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft } from 'react-icons/fa';
 import { Input, Button, Card, Select, Alert } from '../../../components/ui';
+import { AuthService } from '@/services';
 
 const RegisterPage = () => {
   const router = useRouter();
@@ -30,20 +31,20 @@ const RegisterPage = () => {
   };
 
   const userRoles = [
-    { value: 'Administrador', label: 'Administrador' },
-    { value: 'Usuario Lector', label: 'Usuario Lector' },
-    { value: 'Responsable de Seguridad', label: 'Responsable de Seguridad' },
-    { value: 'Auditor', label: 'Auditor' }
+    { value: 'administrador', label: 'Administrador' },
+    { value: 'usuario', label: 'Usuario Lector' },
+    { value: 'responsable_seguridad', label: 'Responsable de Seguridad' },
+    { value: 'auditor', label: 'Auditor' }
   ];
 
   const departments = [
-    { value: 'TI', label: 'Tecnología de la Información' },
-    { value: 'Recursos Humanos', label: 'Recursos Humanos' },
-    { value: 'Seguridad', label: 'Seguridad' },
-    { value: 'Auditoría', label: 'Auditoría' },
-    { value: 'Finanzas', label: 'Finanzas' },
-    { value: 'Operaciones', label: 'Operaciones' },
-    { value: 'Legal', label: 'Legal y Cumplimiento' }
+    { value: 'Tecnologia_de_la_Informacion', label: 'Tecnología de la Información' },
+    { value: 'recursos_humanos', label: 'Recursos Humanos' },
+    { value: 'seguridad', label: 'Seguridad' },
+    { value: 'auditoria', label: 'Auditoría' },
+    { value: 'finanzas', label: 'Finanzas' },
+    { value: 'operaciones', label: 'Operaciones' },
+    { value: 'legal_y_cumplimiento', label: 'Legal y Cumplimiento' }
   ];
 
   const handleChange = (e) => {
@@ -117,15 +118,13 @@ const RegisterPage = () => {
     return newErrors;
   };
 
-  const generateUserCode = () => {
-    const initials = (formData.firstName.charAt(0) + formData.lastName.charAt(0)).toUpperCase();
-    const randomNumbers = Math.floor(100000 + Math.random() * 900000);
-    return `${initials}${randomNumbers}`;
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
+
+    
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -136,24 +135,44 @@ const RegisterPage = () => {
     setErrors({});
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('Datos a enviar:', {
+        nombre: formData.firstName,
+        apellido: formData.lastName,
+        email: formData.email,
+        telefono: formData.phoneNumber,
+        departamento: formData.department,
+        contrasena: formData.password,
+        confirmarContrasena: formData.confirmPassword,
+        rol: formData.userRole
+      });
+    
+      const response = await AuthService.register(
+        formData.firstName,
+        formData.lastName,  
+        formData.email,
+        formData.phoneNumber,
+        formData.department,
+        formData.password,
+        formData.confirmPassword,
+        formData.userRole
+      );
       
-      // Generate user code
-      const userCode = generateUserCode();
+      console.log('Respuesta completa de la API:', response);
+      console.log('Success field:', response.success);
+      console.log('Data field:', response.data);
       
-      // Create user object without confirmPassword
-      const { confirmPassword, ...userData } = formData;
-      const newUser = {
-        ...userData,
-        codigo: userCode,
-        nombre_completo: `${formData.firstName} ${formData.lastName}`,
-        fecha_creacion: new Date().toISOString().split('T')[0]
-      };
+      // Verificar si la respuesta es exitosa
+      if (!response || !response.success) {
+        const errorMessage = response?.message || 'Error desconocido en la creación del usuario';
+        throw new Error(errorMessage);
+      }
       
-      console.log('Usuario creado:', newUser);
+      // Obtener los datos del usuario creado desde la respuesta
+      const usuarioCreado = response.data;
       
-      setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido creado exitosamente con el código: ${userCode}`);
+      console.log('Usuario creado desde backend:', usuarioCreado);
+      
+      setSuccessMessage(`El usuario ${usuarioCreado.nombre} ${usuarioCreado.apellido} ha sido creado exitosamente con el código: ${usuarioCreado.codigo}`);
       
       // Reset form after successful creation
       setFormData({
@@ -370,7 +389,7 @@ const RegisterPage = () => {
                     size="lg"
                     loading={loading}
                     disabled={loading}
-                    className="flex-grow-1"
+                    className="flexF-grow-1"
                   >
                     Crear Usuario
                   </Button>

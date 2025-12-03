@@ -24,9 +24,8 @@ const UserSchema = new mongoose.Schema({
       "seguridad",
       "auditoria",
       "finanzas",
-        "operaciones",
-        "legal_y_cumplimiento"
-
+      "operaciones",
+      "legal_y_cumplimiento"
     ],
     default: "Tecnologia_de_la_Informacion",
   },
