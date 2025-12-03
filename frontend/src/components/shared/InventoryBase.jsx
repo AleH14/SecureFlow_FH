@@ -178,7 +178,7 @@ const InventoryBase = ({
       ...activo,
       responsable: activo.responsable?.nombreCompleto || activo.responsable || 'Sin asignar',
       fecha_creacion: activo.fechaCreacion ? new Date(activo.fechaCreacion).toLocaleDateString('es-ES') : 'N/A',
-      version: `v${activo.version || '1.0'}`,
+      version: activo.version || 'v1.0.0',
       acciones_disponibles: ["Historial de Versiones"]
     };
   };

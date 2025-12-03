@@ -13,12 +13,7 @@ export const validateActivoForm = (formData) => {
     }
   }
   
-  // Validación de código - formato ACT-AAA-000
-  if (!formData.codigo?.trim()) {
-    errors.codigo = 'El código del activo es requerido';
-  } else if (!/^ACT-[A-Z]{3}-\d{3}$/.test(formData.codigo)) {
-    errors.codigo = 'El código debe tener el formato: ACT-AAA-000';
-  }
+  // El código se genera automáticamente en el backend, no necesita validación frontend
   
   // Validación de categoría
   if (!formData.categoria) {

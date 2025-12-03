@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { FaArrowLeft } from "react-icons/fa";
 import { Input, Button, Card, Select, Alert } from "../../../components/ui";
+import { ActivoService } from "@/services";
 import {
   validateActivoForm,
   categoriasOptions,
@@ -12,11 +13,11 @@ import {
 const NuevoActivo = ({ onNavigateBack }) => {
   const [formData, setFormData] = useState({
     nombre: "",
-    codigo: "ACT-XXX-000",
+    codigo: "(Se generará automáticamente)",
     categoria: "",
     descripcion: "",
     ubicacion: "",
-    estado: "en evaluación", // Estado por defecto en minúsculas
+    estado: "En Revision", // Estado por defecto del backend
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -35,22 +36,6 @@ const NuevoActivo = ({ onNavigateBack }) => {
       [name]: value,
     }));
 
-    // Generar código automáticamente cuando se escribe el nombre
-    if (name === "nombre" && value.trim().length >= 3) {
-      const cleanName = value.replace(/\s/g, "");
-      const nombrePrefix = cleanName
-        .substring(0, 3)
-        .toUpperCase()
-        .padEnd(3, "X");
-      const randomNumbers = Math.floor(100 + Math.random() * 900);
-      const generatedCode = `ACT-${nombrePrefix}-${randomNumbers}`;
-
-      setFormData((prev) => ({
-        ...prev,
-        codigo: generatedCode,
-      }));
-    }
-
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({
@@ -66,25 +51,18 @@ const NuevoActivo = ({ onNavigateBack }) => {
   };
 
   const handleGenerateCode = () => {
-    if (formData.nombre) {
-      const cleanName = formData.nombre.replace(/\s/g, "");
-      const nombrePrefix = cleanName
-        .substring(0, 3)
-        .toUpperCase()
-        .padEnd(3, "X");
-      const randomNumbers = Math.floor(100 + Math.random() * 900);
-      const generatedCode = `ACT-${nombrePrefix}-${randomNumbers}`;
-
-      setFormData((prev) => ({
-        ...prev,
-        codigo: generatedCode,
-      }));
-    } else {
+    setErrors((prev) => ({
+      ...prev,
+      codigo: "El código se generará automáticamente al crear el activo",
+    }));
+    
+    // Limpiar el error después de 3 segundos
+    setTimeout(() => {
       setErrors((prev) => ({
         ...prev,
-        nombre: "Primero ingresa el nombre del activo para generar el código",
+        codigo: "",
       }));
-    }
+    }, 3000);
   };
 
   const handleSubmit = async (e) => {
@@ -102,25 +80,56 @@ const NuevoActivo = ({ onNavigateBack }) => {
     setLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Preparar datos para el backend (sin el código ya que se genera automáticamente)
+      const activoData = {
+        nombre: formData.nombre.trim(),
+        categoria: formData.categoria,
+        descripcion: formData.descripcion.trim(),
+        ubicacion: formData.ubicacion.trim()
+      };
 
-
+      // Llamar al servicio para crear el activo
+      const response = await ActivoService.createActivo(activoData);
+      
+      console.log('Activo creado exitosamente:', response);
+      
+      // El backend devuelve tanto el activo como la solicitud de cambio
+      const codigoGenerado = response.activo?.codigo || 'Código no disponible';
+      const solicitudCodigo = response.solicitud?.codigoSolicitud || '';
+      
       setSuccessMessage(
-        `El activo "${formData.nombre}" ha sido creado exitosamente con el código: ${formData.codigo}`
+        `El activo "${formData.nombre}" ha sido creado exitosamente con el código: ${codigoGenerado}. ` +
+        `Se ha generado la solicitud de aprobación: ${solicitudCodigo}`
       );
 
+      // Limpiar formulario
       setFormData({
         nombre: "",
-        codigo: "ACT-XXX-000",
+        codigo: "(Se generará automáticamente)",
         categoria: "",
         descripcion: "",
         ubicacion: "",
-        estado: "en evaluación",
+        estado: "En Revision",
       });
       setErrors({});
+      
     } catch (error) {
+      console.error('Error creando activo:', error);
+      
+      let errorMessage = "Error al crear el activo. Por favor intenta de nuevo.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 400) {
+        errorMessage = "Datos inválidos. Verifica la información ingresada.";
+      } else if (error.response?.status === 401) {
+        errorMessage = "No tienes permisos para crear activos. Inicia sesión nuevamente.";
+      } else if (error.response?.status >= 500) {
+        errorMessage = "Error interno del servidor. Intenta más tarde.";
+      }
+      
       setErrors({
-        general: "Error al crear el activo. Por favor intenta de nuevo.",
+        general: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -130,11 +139,11 @@ const NuevoActivo = ({ onNavigateBack }) => {
   const handleReset = () => {
     setFormData({
       nombre: "",
-      codigo: "ACT-XXX-000",
+      codigo: "(Se generará automáticamente)",
       categoria: "",
       descripcion: "",
       ubicacion: "",
-      estado: "en evaluación",
+      estado: "En Revision",
     });
     setErrors({});
     setSuccessMessage("");
@@ -180,9 +189,9 @@ const NuevoActivo = ({ onNavigateBack }) => {
                   }}
                 >
                   <strong>Proceso de Control de Cambios ISO 27001:</strong>{" "}
-                  Todas las modificaciones requieren aprobación del responsable
-                  de seguridad. Se creará una solicitud de cambio pendiente de
-                  revisión.
+                  Los nuevos activos se crean en estado &quot;En Revisión&quot; y requieren aprobación del responsable
+                  de seguridad. Se generará automáticamente una solicitud de cambio pendiente de
+                  revisión. El código del activo se asignará automáticamente.
                 </div>
 
                 {successMessage && (
@@ -252,21 +261,19 @@ const NuevoActivo = ({ onNavigateBack }) => {
                             variant="outline"
                             size="sm"
                             onClick={handleGenerateCode}
-                            disabled={!formData.nombre}
                             style={{ whiteSpace: "nowrap" }}
                           >
-                            Regenerar Código
+                            Info Código
                           </Button>
                         </div>
                         <Input
                           type="text"
                           name="codigo"
-                          placeholder="ACT-AAA-000"
+                          placeholder="Se generará automáticamente"
                           value={formData.codigo}
                           readOnly
                           disabled
                           error={errors.codigo}
-                          required
                           style={{
                             marginTop: "0",
                             backgroundColor: "#f8f9fa",

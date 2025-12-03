@@ -13,10 +13,16 @@ const {
 const router = express.Router();
 
 // Función para generar código único de activo
-const generateActivoCode = () => {
-  const year = new Date().getFullYear();
-  const randomNum = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
-  return `ACT-${year}-${randomNum}`;
+const generateActivoCode = (nombreActivo) => {
+  // Tomar las primeras 3 letras del nombre del activo, limpiar espacios y convertir a mayúsculas
+  const nombreLimpio = nombreActivo.replace(/\s/g, '').replace(/[^a-zA-Z]/g, '');
+  const prefijo = nombreLimpio.substring(0, 3).toUpperCase().padEnd(3, 'X');
+  
+  // Generar correlativo de 3 dígitos
+  const correlativo = Math.floor(Math.random() * 999) + 1;
+  const correlativoStr = correlativo.toString().padStart(3, '0');
+  
+  return `ACT-${prefijo}-${correlativoStr}`;
 };
 
 // Función para generar código único de solicitud
@@ -62,7 +68,7 @@ router.post('/', auth, asyncHandler(async (req, res) => {
     let codigoExists = true;
     
     while (codigoExists) {
-      codigo = generateActivoCode();
+      codigo = generateActivoCode(sanitizedData.nombre);
       const activoWithCode = await Activo.findOne({ codigo });
       if (!activoWithCode) {
         codigoExists = false;
@@ -77,7 +83,7 @@ router.post('/', auth, asyncHandler(async (req, res) => {
       descripcion: sanitizedData.descripcion,
       ubicacion: sanitizedData.ubicacion,
       responsableId: req.user._id, // Usuario logueado como responsable
-      estado: 'En evaluacion', // Estado por defecto
+      estado: 'En Revision', // Estado por defecto
       version: 'v1.0.0', // Versión por defecto
       fechaCreacion: new Date(),
       historialComentarios: [{
@@ -119,7 +125,7 @@ router.post('/', auth, asyncHandler(async (req, res) => {
         { campo: 'descripcion', valorAnterior: null, valorNuevo: sanitizedData.descripcion },
         { campo: 'ubicacion', valorAnterior: null, valorNuevo: sanitizedData.ubicacion },
         { campo: 'responsableId', valorAnterior: null, valorNuevo: req.user._id.toString() },
-        { campo: 'estado', valorAnterior: null, valorNuevo: 'En evaluacion' }
+        { campo: 'estado', valorAnterior: null, valorNuevo: 'En Revision' }
       ]
     });
 
@@ -401,7 +407,7 @@ router.put('/:id', auth, asyncHandler(async (req, res) => {
     }
     
     if (estado !== undefined) {
-      const validStates = ['En evaluacion', 'Activo', 'Inactivo', 'Mantenimiento', 'En Revisión', 'Dado de Baja'];
+      const validStates = ['Activo', 'Inactivo', 'Mantenimiento', 'En Revision'];
       if (!validStates.includes(estado)) {
         return sendError(res, 400, 'Estado inválido');
       }

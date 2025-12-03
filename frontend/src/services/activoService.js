@@ -2,8 +2,13 @@ import api from "./api";
 
 
 export const createActivo = async (activoData) => {    
-    const response = await api.post("/activos", activoData);
-    return response.data.activo;
+    try {
+        const response = await api.post("/activos", activoData);
+        return response.data; // Devolver la respuesta completa que incluye {activo, solicitud}
+    } catch (error) {
+        console.error('Error creando activo:', error);
+        throw error;
+    }
 };
 
 export const getActivos = async () => {
