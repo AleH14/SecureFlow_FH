@@ -26,8 +26,13 @@ export const getActivoById = async (id) => {
     return response.data.activo;
 };
 export const updateActivo = async (id, activoData) => {
-    const response = await api.put(`/activos/${id}`, activoData);
-    return response.data.activo;
+    try {
+        const response = await api.put(`/activos/${id}`, activoData);
+        return response.data; // Devolver la respuesta completa que incluye {activo, solicitud}
+    } catch (error) {
+        console.error('Error actualizando activo:', error);
+        throw error;
+    }
 };
 
 export const historyCommentsByActivoId = async (id) => {

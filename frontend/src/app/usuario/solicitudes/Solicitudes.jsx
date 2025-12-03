@@ -2,13 +2,48 @@
 import React, { useState, useCallback } from "react";
 import { SearchBar, Table, Button } from "../../../components/ui";
 import { FaCheck, FaTimes, FaClock } from "react-icons/fa";
+import { RequestService } from "@/services";
 
 const Solicitudes = ({ onNavigateToDetalles }) => {
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filteredSolicitudes, setFilteredSolicitudes] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
 
-  // Datos
-  const solicitudes = [
+  // Función para cargar solicitudes desde la API
+  const loadSolicitudes = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await RequestService.getRequests();
+      
+      if (response && response.success && response.data) {
+        setSolicitudes(response.data.solicitudes || []);
+        console.log(`Cargadas ${response.data.solicitudes?.length || 0} solicitudes`);
+      } else {
+        throw new Error('Formato de respuesta inesperado');
+      }
+    } catch (err) {
+      console.error('Error cargando solicitudes:', err);
+      if (err.response?.status === 403) {
+        setError('No tienes permisos para ver estas solicitudes.');
+      } else {
+        setError('Error al cargar las solicitudes. Por favor intenta de nuevo.');
+      }
+      setSolicitudes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar solicitudes al montar el componente
+  React.useEffect(() => {
+    loadSolicitudes();
+  }, []);
+
+  // Datos de ejemplo (se mantendrán como fallback)
+  const solicitudesEjemplo = React.useMemo(() => [
     {
       "_id": "SOL-2025-001",
       "codigoSolicitud": "AAA-0001",
@@ -143,13 +178,57 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
         }
       }
     }
-  ];
+  ], []);
+
+  // Función para transformar solicitudes del backend al formato esperado por el frontend
+  const transformSolicitud = (solicitud) => {
+    return {
+      _id: solicitud.id,
+      codigoSolicitud: solicitud.codigoSolicitud,
+      fechaCreacion: solicitud.fechaSolicitud,
+      estadoGeneral: solicitud.estado,
+      activoId: solicitud.codigoActivo,
+      solicitanteId: solicitud.solicitante?.id,
+      nombreActivo: solicitud.nombreActivo,
+      justificacion: solicitud.justificacion || 'Sin justificación',
+      // Simular estructura de cambios si no existe
+      cambios: [
+        {
+          campo: 'solicitud',
+          valorAnterior: 'Estado anterior',
+          valorNuevo: `Operación: ${solicitud.tipoOperacion}`
+        }
+      ],
+      // Simular estructura de aprobaciones basada en los datos del backend
+      aprobaciones: {
+        seguridad: {
+          responsableId: solicitud.responsableSeguridad?.id,
+          fecha: solicitud.fechaRevision,
+          estado: solicitud.estado === 'Pendiente' ? 'Pendiente' : (solicitud.estado === 'Aprobado' ? 'Aprobado' : 'Rechazado'),
+          comentario: solicitud.comentarioSeguridad || ''
+        },
+        auditoria: {
+          responsableId: null,
+          fecha: null,
+          estado: 'Pendiente',
+          comentario: ''
+        }
+      }
+    };
+  };
 
   // Función para formatear fecha
   const formatFecha = (fechaISO) => {
     if (!fechaISO) return "No asignada";
     return new Date(fechaISO).toLocaleDateString('es-ES');
   };
+
+  // Transformar datos del backend si están disponibles, sino usar los de ejemplo
+  const solicitudesTransformadas = React.useMemo(() => {
+    return solicitudes.length > 0 
+      ? solicitudes.map(transformSolicitud) 
+      : (loading ? [] : solicitudesEjemplo);
+  }, [solicitudes, loading, solicitudesEjemplo]);
 
   const handleFilter = useCallback((filters) => {
     if (!filters.name && !filters.estado) {
@@ -158,7 +237,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       return;
     }
 
-    const filtered = solicitudes.filter((solicitud) => {
+    const filtered = solicitudesTransformadas.filter((solicitud) => {
       if (filters.name) {
         const searchTerm = filters.name.toLowerCase();
         const matchesNombre = solicitud.nombreActivo
@@ -181,7 +260,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
 
     setFilteredSolicitudes(filtered);
     setIsFiltered(true);
-  }, []);
+  }, [solicitudesTransformadas]);
 
   const handleVerDetalles = (solicitud) => {
     console.log("CLICK en Ver Detalles:", solicitud);
@@ -209,7 +288,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
     },
   ];
 
-  const solicitudesToShow = isFiltered ? filteredSolicitudes : solicitudes;
+  const solicitudesToShow = isFiltered ? filteredSolicitudes : solicitudesTransformadas;
 
   const getEstadoClass = (estado) => {
     switch (estado) {
@@ -315,12 +394,56 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
     },
   ];
 
+  // Estado de carga
+  if (loading) {
+    return (
+      <div className="solicitudes-page">
+        <div className="user-header">
+          <div className="user-header-text">
+            <h2>Control de Cambios - Mis Solicitudes</h2>
+            <h6>Seguimiento de solicitudes de cambio según ISO 27001</h6>
+          </div>
+        </div>
+        <div className="text-center p-4">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+          <p className="mt-2">Cargando solicitudes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Estado de error
+  if (error) {
+    return (
+      <div className="solicitudes-page">
+        <div className="user-header">
+          <div className="user-header-text">
+            <h2>Control de Cambios - Mis Solicitudes</h2>
+            <h6>Seguimiento de solicitudes de cambio según ISO 27001</h6>
+          </div>
+        </div>
+        <div className="alert alert-danger text-center">
+          <h5>Error al cargar solicitudes</h5>
+          <p>{error}</p>
+          <button 
+            className="btn btn-primary mt-2" 
+            onClick={loadSolicitudes}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="solicitudes-page">
       <div className="user-header">
         <div className="user-header-text">
           <h2>Control de Cambios - Mis Solicitudes</h2>
-          <h6>Seguimiento de solicitudes de cambio según ISO 27001</h6>
+          <h6>Seguimiento de solicitudes de cambio según ISO 27001 ({solicitudesTransformadas.length} solicitudes)</h6>
         </div>
       </div>
 

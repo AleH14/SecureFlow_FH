@@ -2,9 +2,14 @@ import api from "./api";
 
 
 export const getRequests = async () => {
-    const response = await api.get("/solicitudes");
-    return response.data.solicitudes;
-}
+    try {
+        const response = await api.get("/solicitudes");
+        return response.data; // Devolver la respuesta completa que incluye {success, message, data, timestamp}
+    } catch (error) {
+        console.error('Error obteniendo solicitudes:', error);
+        throw error;
+    }
+};
 
 
 export const getRequestById = async (id) => {

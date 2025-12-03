@@ -7,10 +7,18 @@ import { Input, Button, Card, Select, Alert } from "../../../components/ui";
 import {
   validateActivoForm,
   categoriasOptions,
-  estadosOptions,
 } from "./validacionesActivo";
+import { ActivoService } from "@/services";
 
 const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
+  // Estados válidos para modificación (deben coincidir con el backend)
+  const estadosOptions = [
+    { value: 'Activo', label: 'Activo' },
+    { value: 'Inactivo', label: 'Inactivo' },
+    { value: 'Mantenimiento', label: 'Mantenimiento' },
+    { value: 'En Revision', label: 'En Revisión' }
+  ];
+
   const [formData, setFormData] = useState({
     nombre: "",
     codigo: "",
@@ -94,34 +102,54 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
     setErrors({});
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Create updated activo object
-      const activoActualizado = {
-        ...formData,
-        version: activo?.version || "v1.0.0",
-        fecha_actualizacion: new Date().toISOString().split("T")[0],
-        acciones_disponibles: activo?.acciones_disponibles || [
-          "Historial de Versiones",
-        ],
-        justificacion_cambio: formData.justificacion,
+      // Preparar datos para el backend
+      const updateData = {
+        nombre: formData.nombre.trim(),
+        categoria: formData.categoria,
+        descripcion: formData.descripcion.trim(),
+        ubicacion: formData.ubicacion.trim(),
+        estado: formData.estado,
+        comentario: formData.justificacion.trim() // El backend espera 'comentario' en lugar de 'justificacion'
       };
 
-      console.log("Activo actualizado:", activoActualizado);
-
-      // Si se proporcionó la función onUpdateActivo, llamarla
-      if (onUpdateActivo) {
-        onUpdateActivo(activoActualizado);
-      }
-
+      // Llamar al servicio para actualizar el activo
+      const response = await ActivoService.updateActivo(activo.id, updateData);
+      
+      console.log('Activo actualizado exitosamente:', response);
+      
+      // El backend devuelve tanto el activo como la solicitud de cambio
+      const solicitudCodigo = response.solicitud?.codigoSolicitud || '';
+      
       setSuccessMessage(
-        `El activo "${formData.nombre}" ha sido actualizado exitosamente`
+        `El activo "${formData.nombre}" ha sido actualizado exitosamente. ` +
+        `Se ha generado la solicitud de modificación: ${solicitudCodigo}`
       );
+
+      // Si se proporcionó la función onUpdateActivo, llamarla con los datos actualizados del backend
+      if (onUpdateActivo && response.activo) {
+        onUpdateActivo(response.activo);
+      }
     } catch (error) {
-      console.error("Error al actualizar activo:", error);
+      console.error('Error actualizando activo:', error);
+      
+      let errorMessage = "Error al actualizar el activo. Por favor intenta de nuevo.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 400) {
+        errorMessage = "Datos inválidos. Verifica la información ingresada.";
+      } else if (error.response?.status === 401) {
+        errorMessage = "No tienes permisos para modificar este activo. Inicia sesión nuevamente.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "No tienes permisos para modificar este activo.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "El activo no fue encontrado.";
+      } else if (error.response?.status >= 500) {
+        errorMessage = "Error interno del servidor. Intenta más tarde.";
+      }
+      
       setErrors({
-        general: "Error al actualizar el activo. Por favor intenta de nuevo.",
+        general: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -213,8 +241,8 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
                 >
                   <strong>Proceso de Control de Cambios ISO 27001:</strong>{" "}
                   Todas las modificaciones requieren aprobación del responsable
-                  de seguridad. Se creará una solicitud de cambio pendiente de
-                  revisión.
+                  de seguridad. Se creará automáticamente una solicitud de cambio pendiente de
+                  revisión. Solo se pueden modificar activos de los cuales eres responsable.
                 </div>
 
                 {successMessage && (
