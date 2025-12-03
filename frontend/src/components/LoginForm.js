@@ -4,12 +4,15 @@ import React, { useState } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import Image from 'next/image';
 import { Input, Button, Card } from './ui';
+import { AuthService } from '@/services';
 
 const LoginForm = () => {
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -56,11 +59,13 @@ const LoginForm = () => {
     }
     
     setLoading(true);
-    // Simulate API call
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Login submitted:', formData);
-      // Handle successful login here
+      const data = await AuthService.login(formData.email, formData.password);
+      // Redirect or update UI on successful login
+      if (data.rol === 'administrador') {
+        window.location.href = '/admin'; // Example redirect
+      } 
     } catch (error) {
       console.error('Login error:', error);
     } finally {
