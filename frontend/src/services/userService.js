@@ -1,5 +1,15 @@
 import api from "./api";
 
+export const getCurrentUser = async () => {
+  try {
+    const response = await api.get("/auth/me");
+    return response.data; // Devolver la respuesta completa que incluye {success, message, data}
+  } catch (error) {
+    console.error('Error obteniendo usuario actual:', error);
+    throw error;
+  }
+};
+
 export const getUsers = async () => {
   try {
     const response = await api.get("/users");

@@ -186,6 +186,14 @@ router.get('/', auth, asyncHandler(async (req, res) => {
 
     // Construir filtro de búsqueda
     let filter = {};
+
+    // Aplicar filtros según el rol del usuario
+    const userRole = req.user.rol;
+    if (userRole === 'usuario') {
+      // Los usuarios solo pueden ver sus propios activos (donde son responsables)
+      filter.responsableId = req.user._id;
+    }
+    // Los roles admin, auditor y responsable_seguridad pueden ver todos los activos
     
     // Filtro por categoría
     if (categoria) {
@@ -286,6 +294,16 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
     if (!activo) {
       return sendError(res, 404, 'Activo no encontrado');
     }
+
+    // Verificar permisos según el rol del usuario
+    const userRole = req.user.rol;
+    if (userRole === 'usuario') {
+      // Los usuarios solo pueden ver sus propios activos
+      if (activo.responsableId._id.toString() !== req.user._id.toString()) {
+        return sendError(res, 403, 'No tienes permisos para ver este activo');
+      }
+    }
+    // Los roles admin, auditor y responsable_seguridad pueden ver todos los activos
 
     // Formatear respuesta
     const activoResponse = {
@@ -724,10 +742,20 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
     const { id } = req.params;
 
     // Verificar que el activo existe
-    const activo = await Activo.findById(id);
+    const activo = await Activo.findById(id).populate('responsableId', 'nombre apellido');
     if (!activo) {
       return sendError(res, 404, 'Activo no encontrado');
     }
+
+    // Verificar permisos según el rol del usuario
+    const userRole = req.user.rol;
+    if (userRole === 'usuario') {
+      // Los usuarios solo pueden ver el historial de sus propios activos
+      if (activo.responsableId._id.toString() !== req.user._id.toString()) {
+        return sendError(res, 403, 'No tienes permisos para ver el historial de este activo');
+      }
+    }
+    // Los roles admin, auditor y responsable_seguridad pueden ver todos los historiales
 
     // Obtener todas las solicitudes de cambio relacionadas con este activo
     console.log('Buscando solicitudes para activo ID:', id);
