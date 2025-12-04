@@ -45,6 +45,20 @@ export const reviewRequest = async (id, estado, comentario) => {
 };
 
 export const addCommentToRequestByAuditory = async (id, comentario) => {
-    const response = await api.post(`/solicitudes/${id}/auditoria`, { comentario });
-    return response.data.comment;
+    try {
+        console.log('AddCommentToRequestByAuditory - Sending data:', { id, comentario });
+        
+        const response = await api.put(`/solicitudes/${id}/auditoria`, { comentario });
+        
+        console.log('AddCommentToRequestByAuditory - Response received:', response);
+        console.log('AddCommentToRequestByAuditory - Response status:', response.status);
+        console.log('AddCommentToRequestByAuditory - Response data:', response.data);
+        
+        return response.data;
+    } catch (error) {
+        console.error('AddCommentToRequestByAuditory - Error details:', error);
+        console.error('AddCommentToRequestByAuditory - Error response:', error.response?.data);
+        console.error('AddCommentToRequestByAuditory - Error status:', error.response?.status);
+        throw error;
+    }
 }

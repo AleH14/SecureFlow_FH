@@ -125,18 +125,60 @@ const SCVBase = ({
     document.body.classList.add("modal-open");
   };
 
-  const handleSubmitComment = () => {
-    console.log("Comentario agregado:", {
-      record: selectedRecord,
-      comment: comment,
-      auditor: "Auditor",
-      fecha: new Date().toISOString().split("T")[0],
-    });
+  const handleSubmitComment = async () => {
+    if (!comment.trim() || !selectedRecord?.id) {
+      console.error('Comentario vacío o solicitud inválida');
+      return;
+    }
 
-    setShowCommentModal(false);
-    setSelectedRecord(null);
-    setComment("");
-    document.body.classList.remove("modal-open");
+    try {
+      setLoading(true);
+      console.log("Enviando comentario de auditoría:", {
+        solicitudId: selectedRecord.id,
+        comentario: comment.trim(),
+        auditor: currentUser?.nombreCompleto || "Auditor"
+      });
+
+      // Importar el servicio dinámicamente para evitar problemas de dependencia circular
+      const { addCommentToRequestByAuditory } = await import('@/services/requestService');
+      
+      const response = await addCommentToRequestByAuditory(
+        selectedRecord.id,
+        comment.trim()
+      );
+
+      console.log("Respuesta del comentario de auditoría:", response);
+
+      // Recargar el historial para mostrar el nuevo comentario
+      await loadHistorialCambios();
+
+      // Cerrar modal y limpiar estado
+      setShowCommentModal(false);
+      setSelectedRecord(null);
+      setComment("");
+      document.body.classList.remove("modal-open");
+
+      // Mostrar mensaje de éxito (podrías agregar un toast aquí)
+      console.log("Comentario de auditoría agregado exitosamente");
+
+    } catch (error) {
+      console.error('Error agregando comentario de auditoría:', error);
+      
+      // Manejar errores específicos
+      let errorMessage = 'Error al agregar el comentario de auditoría';
+      if (error.response?.status === 403) {
+        errorMessage = 'No tienes permisos para agregar comentarios de auditoría';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Solicitud no encontrada';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      // Mostrar error al usuario (podrías usar un toast aquí)
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancelComment = () => {

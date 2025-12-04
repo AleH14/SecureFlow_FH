@@ -287,6 +287,13 @@ router.put('/:id/auditoria', auth, auditor, asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { comentario } = req.body;
 
+    console.log('Agregando comentario de auditoría:', {
+      solicitudId: id,
+      auditorId: req.user._id,
+      auditorNombre: `${req.user.nombre} ${req.user.apellido}`,
+      comentario: comentario
+    });
+
     // Validaciones
     if (!comentario || comentario.trim() === '') {
       return sendError(res, 400, 'El comentario de auditoría es requerido');
