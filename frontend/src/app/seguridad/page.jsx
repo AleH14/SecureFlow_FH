@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header, Sidebar, GradientLayout } from "../../components/ui";
 import { FaUserCircle } from "react-icons/fa";
 
@@ -8,6 +8,7 @@ import SCV from "./scv/SCV";
 import Solicitudes from "./solicitudes/Solicitudes";
 import Revision from "./revision/Revision"; // Componente para aprobar/rechazar
 import RevisionVista from "./revision/RevisionVista"; // Componente para solo ver
+import { RequestService } from "../../services";
 
 const SeguridadPage = () => {
   const [activeTab, setActiveTab] = useState("panel-revision");
@@ -16,6 +17,27 @@ const SeguridadPage = () => {
   const [selectedSolicitud, setSelectedSolicitud] = useState(null);
   const [showRevision, setShowRevision] = useState(false);
   const [showRevisionVista, setShowRevisionVista] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  // Cargar conteo al montar el componente
+  useEffect(() => {
+    const loadPendingRequestsCount = async () => {
+      try {
+        const response = await RequestService.getRequests();
+        if (response && response.success && response.data) {
+          const solicitudes = response.data.solicitudes || [];
+          const pendingCount = solicitudes.filter(solicitud => solicitud.estado === 'Pendiente').length;
+          setPendingRequestsCount(pendingCount);
+          console.log(`Solicitudes pendientes encontradas: ${pendingCount}`);
+        }
+      } catch (error) {
+        console.error('Error cargando conteo de solicitudes pendientes:', error);
+        setPendingRequestsCount(0);
+      }
+    };
+
+    loadPendingRequestsCount();
+  }, []);
 
   // Tabs del Responsable de Seguridad
   const seguridadTabs = [
@@ -23,7 +45,7 @@ const SeguridadPage = () => {
       id: "panel-revision",
       name: "Panel de Revisión",
       iconName: "FaTasks",
-      badgeCount: 1
+      badgeCount: pendingRequestsCount
     },
     {
       id: "inventario",
@@ -75,6 +97,22 @@ const SeguridadPage = () => {
     setShowRevision(false);
     setShowRevisionVista(false);
     setSelectedSolicitud(null);
+    
+    // Recargar el conteo de solicitudes pendientes cuando se regresa de la revisión
+    const updatePendingCount = async () => {
+      try {
+        const response = await RequestService.getRequests();
+        if (response && response.success && response.data) {
+          const solicitudes = response.data.solicitudes || [];
+          const pendingCount = solicitudes.filter(solicitud => solicitud.estado === 'Pendiente').length;
+          setPendingRequestsCount(pendingCount);
+        }
+      } catch (error) {
+        console.error('Error actualizando conteo de solicitudes pendientes:', error);
+      }
+    };
+    
+    updatePendingCount();
   };
 
   const renderContent = () => {
@@ -122,6 +160,10 @@ const SeguridadPage = () => {
           <div className="main-content">
             <Solicitudes
               onNavigateToDetalles={handleNavigateToDetalles}
+              onSolicitudesLoaded={(solicitudes) => {
+                const pendingCount = solicitudes.filter(s => s.estadoGeneral === 'Pendiente').length;
+                setPendingRequestsCount(pendingCount);
+              }}
             />
           </div>
         );

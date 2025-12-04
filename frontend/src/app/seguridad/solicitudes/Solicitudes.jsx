@@ -4,7 +4,7 @@ import { SearchBar, Table, Button } from "../../../components/ui";
 import { FaCheck, FaTimes, FaClock, FaUser } from "react-icons/fa";
 import { RequestService } from "../../../services";
 
-const Solicitudes = ({ onNavigateToDetalles }) => {
+const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -96,10 +96,17 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
 
   // Transformar datos del backend si están disponibles, sino mostrar array vacío
   const solicitudesTransformadas = React.useMemo(() => {
-    return solicitudes.length > 0 
+    const transformed = solicitudes.length > 0 
       ? solicitudes.map(transformSolicitud) 
       : [];
-  }, [solicitudes]);
+    
+    // Notificar al componente padre sobre las solicitudes cargadas
+    if (onSolicitudesLoaded && transformed.length > 0) {
+      onSolicitudesLoaded(transformed);
+    }
+    
+    return transformed;
+  }, [solicitudes, onSolicitudesLoaded]);
 
   const solicitudesToShow = isFiltered ? filteredSolicitudes : solicitudesTransformadas;
 
