@@ -4,9 +4,9 @@ import { Button, Card, Modal } from "../../../components/ui";
 import Table from "../../../components/ui/Table"; 
 import Toast from "../../../components/ui/Toast";
 import { FaArrowLeft, FaShieldAlt, FaInfoCircle, FaEdit } from "react-icons/fa";
-
+import { RequestService } from "@/services";
 const Revision = ({
-  solicitud,
+  solicitud: initialSolicitud,
   onNavigateBack,
   onNavigateToModificarActivo,
   onApprove,
@@ -16,6 +16,10 @@ const Revision = ({
   checklist: externalChecklist,
   onChecklistChange: externalChecklistChange,
 }) => {
+  const [solicitud, setSolicitud] = useState(initialSolicitud);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
   const [revisionComment, setRevisionComment] = useState(externalComment || "");
   const [checklist, setChecklist] = useState(
     externalChecklist || {
@@ -31,6 +35,47 @@ const Revision = ({
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("info");
+
+  // Cargar datos detallados de la solicitud
+  useEffect(() => {
+    const loadSolicitudDetails = async () => {
+      if (initialSolicitud && initialSolicitud._id) {
+        try {
+          setLoading(true);
+          setError(null);
+          const response = await RequestService.getRequestById(initialSolicitud._id);
+          
+          if (response && response.success && response.data) {
+            // Transformar datos del backend al formato del frontend
+            const detailedSolicitud = {
+              ...initialSolicitud,
+              // Datos adicionales del backend
+              activo: response.data.activo,
+              cambios: response.data.cambios || [],
+              solicitante: response.data.solicitante?.nombreCompleto || initialSolicitud.solicitante,
+              nombreSolicitante: response.data.solicitante?.nombreCompleto || initialSolicitud.solicitante,
+              responsableSeguridad: response.data.responsableSeguridad,
+              comentarioSeguridad: response.data.comentarioSeguridad,
+              fechaRevision: response.data.fechaRevision,
+              tipoOperacion: response.data.tipoOperacion || initialSolicitud.tipoOperacion // Preservar tipo de operación
+            };
+            setSolicitud(detailedSolicitud);
+          }
+        } catch (err) {
+          console.error('Error cargando detalles de solicitud:', err);
+          setError('Error al cargar los detalles de la solicitud');
+          // Mantener la solicitud inicial si falla la carga de detalles
+          setSolicitud(initialSolicitud);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setSolicitud(initialSolicitud);
+      }
+    };
+
+    loadSolicitudDetails();
+  }, [initialSolicitud]);
 
   // Sincronizar con props externos
   useEffect(() => {
@@ -127,27 +172,131 @@ const Revision = ({
   };
 
   // Confirmar aprobación
-  const confirmApprove = () => {
-    setShowApproveModal(false);
-    if (onApprove) {
-      onApprove();
+  const confirmApprove = async () => {
+    if (!revisionComment.trim()) {
+      setToastMessage('El comentario de revisión es requerido para aprobar la solicitud');
+      setToastVariant('warning');
+      setShowToast(true);
+      setShowApproveModal(false);
+      return;
     }
-    showSuccessToastAndNavigate(
-      "Solicitud aprobada exitosamente",
-      "success"
-    );
+
+    try {
+      setSubmittingReview(true);
+      setShowApproveModal(false);
+      
+      console.log('Enviando aprobación:', {
+        id: solicitud._id,
+        estado: 'Aprobado',
+        comentario: revisionComment
+      });
+      
+      const response = await RequestService.reviewRequest(
+        solicitud._id,
+        'Aprobado',
+        revisionComment
+      );
+      
+      console.log('Respuesta de aprobación:', response);
+      
+      // Actualizar el estado local de la solicitud
+      setSolicitud(prevSolicitud => ({
+        ...prevSolicitud,
+        estadoGeneral: 'Aprobado',
+        comentarioSeguridad: revisionComment,
+        fechaRevision: new Date().toISOString(),
+        responsableSeguridad: {
+          nombreCompleto: 'Responsable de Seguridad' // Se actualizará con datos reales del backend
+        }
+      }));
+      
+      if (onApprove) {
+        onApprove();
+      }
+      
+      showSuccessToastAndNavigate(
+        "Solicitud aprobada exitosamente. Los cambios se han guardado en la base de datos.",
+        "success"
+      );
+    } catch (error) {
+      console.error('Error aprobando solicitud:', error);
+      let errorMessage = 'Error al aprobar la solicitud. Por favor intenta de nuevo.';
+      
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      
+      setToastMessage(errorMessage);
+      setToastVariant('error');
+      setShowToast(true);
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   // Confirmar rechazo
-  const confirmReject = () => {
-    setShowRejectModal(false);
-    if (onReject) {
-      onReject();
+  const confirmReject = async () => {
+    if (!revisionComment.trim()) {
+      setToastMessage('El comentario de revisión es requerido para rechazar la solicitud');
+      setToastVariant('warning');
+      setShowToast(true);
+      setShowRejectModal(false);
+      return;
     }
-    showSuccessToastAndNavigate(
-      "Solicitud rechazada exitosamente",
-      "success"
-    );
+
+    try {
+      setSubmittingReview(true);
+      setShowRejectModal(false);
+      
+      console.log('Enviando rechazo:', {
+        id: solicitud._id,
+        estado: 'Rechazado',
+        comentario: revisionComment
+      });
+      
+      const response = await RequestService.reviewRequest(
+        solicitud._id,
+        'Rechazado',
+        revisionComment
+      );
+      
+      console.log('Respuesta de rechazo:', response);
+      
+      // Actualizar el estado local de la solicitud
+      setSolicitud(prevSolicitud => ({
+        ...prevSolicitud,
+        estadoGeneral: 'Rechazado',
+        comentarioSeguridad: revisionComment,
+        fechaRevision: new Date().toISOString(),
+        responsableSeguridad: {
+          nombreCompleto: 'Responsable de Seguridad' // Se actualizará con datos reales del backend
+        }
+      }));
+      
+      if (onReject) {
+        onReject();
+      }
+      
+      showSuccessToastAndNavigate(
+        "Solicitud rechazada exitosamente. Los cambios se han guardado en la base de datos.",
+        "success"
+      );
+    } catch (error) {
+      console.error('Error rechazando solicitud:', error);
+      let errorMessage = 'Error al rechazar la solicitud. Por favor intenta de nuevo.';
+      
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      
+      setToastMessage(errorMessage);
+      setToastVariant('error');
+      setShowToast(true);
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   // Cancelar acción
@@ -201,7 +350,31 @@ const Revision = ({
     },
   ];
 
-  if (!solicitud) {
+  // Estado de carga
+  if (loading) {
+    return (
+      <div className="revision-container p-2 p-lg-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onNavigateBack}
+          className="mb-3 text-white border-white"
+        >
+          <FaArrowLeft className="me-2" />
+          Volver al panel de revisión
+        </Button>
+        <div className="text-center p-4">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+          <p className="mt-2 text-white">Cargando detalles de la solicitud...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Estado de error o solicitud no encontrada
+  if (error || !solicitud) {
     return (
       <div className="revision-container p-2 p-lg-3">
         <Button
@@ -214,7 +387,8 @@ const Revision = ({
           Volver al panel de revisión
         </Button>
         <div className="alert alert-warning">
-          No se encontró la información de la solicitud
+          <h5>Error al cargar la solicitud</h5>
+          <p>{error || 'No se encontró la información de la solicitud'}</p>
         </div>
       </div>
     );
@@ -259,17 +433,33 @@ const Revision = ({
               variant="success"
               size="md"
               onClick={handleApproveClick}
+              disabled={submittingReview}
               className="text-white fw-bold"
             >
-              Aprobar
+              {submittingReview ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Procesando...
+                </>
+              ) : (
+                'Aprobar'
+              )}
             </Button>
             <Button
               variant="danger"
               size="md"
               onClick={handleRejectClick}
+              disabled={submittingReview}
               className="text-white fw-bold"
             >
-              Rechazar
+              {submittingReview ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Procesando...
+                </>
+              ) : (
+                'Rechazar'
+              )}
             </Button>
           </div>
         )}
@@ -411,9 +601,52 @@ const Revision = ({
                       Limpiar
                     </Button>
                   </div>
+              </div>
+            </Card>
+          </>
+          )}
+          
+          {/* Sección de revisión completada (si ya fue revisada) */}
+          {solicitud.estadoGeneral !== "Pendiente" && solicitud.responsableSeguridad && (
+            <Card style={{ backgroundColor: '#FFEEEE' }} className="mt-3">
+              <div className="card-body p-2 p-lg-3">
+                <div className="bg-secondary p-2 p-lg-3 rounded mb-2 mb-lg-3">
+                  <h5 className="card-title fw-bold mb-0 text-white d-flex align-items-center h5-responsive">
+                    <FaShieldAlt className="me-2" />
+                    Revisión Completada
+                  </h5>
                 </div>
-              </Card>
-            </>
+                
+                <div className="mb-2">
+                  <strong className="text-dark">Estado Final:</strong>
+                  <span className={`badge ms-2 ${
+                    solicitud.estadoGeneral === "Aprobado" ? "bg-success" :
+                    solicitud.estadoGeneral === "Rechazado" ? "bg-danger" : "bg-warning"
+                  }`}>
+                    {solicitud.estadoGeneral}
+                  </span>
+                </div>
+                
+                <div className="mb-2">
+                  <strong className="text-dark">Fecha de Revisión:</strong>
+                  <span className="ms-2 text-dark">{formatFecha(solicitud.fechaRevision)}</span>
+                </div>
+                
+                <div className="mb-2">
+                  <strong className="text-dark">Responsable de Seguridad:</strong>
+                  <span className="ms-2 text-dark">{solicitud.responsableSeguridad.nombreCompleto}</span>
+                </div>
+                
+                <div>
+                  <strong className="text-dark">Comentario de Revisión:</strong>
+                  <div className="mt-2 p-2 bg-light rounded">
+                    <small className="text-dark">
+                      {solicitud.comentarioSeguridad || 'Sin comentarios'}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </Card>
           )}
         </div>
 
@@ -440,7 +673,30 @@ const Revision = ({
                   <div className="col-12 col-md-6">
                     <strong className="text-dark">Solicitante:</strong>
                     <span className="ms-2 text-dark d-block d-md-inline">
-                      {solicitud.nombreSolicitante || "No especificado"}
+                      {solicitud.nombreSolicitante || solicitud.solicitante || "No especificado"}
+                    </span>
+                  </div>
+                </div>
+                <div className="row mt-3">
+                  <div className="col-12 col-md-6 mb-2 mb-md-0">
+                    <strong className="text-dark">Tipo de Operación:</strong>
+                    <span className="ms-2 text-dark d-block d-md-inline">
+                      <span className="badge bg-info ms-1">
+                        {solicitud.tipoOperacion === 'creacion' ? 'Creación' :
+                         solicitud.tipoOperacion === 'modificacion' ? 'Modificación' :
+                         solicitud.tipoOperacion || 'No especificado'}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <strong className="text-dark">Activo:</strong>
+                    <span className="ms-2 text-dark d-block d-md-inline">
+                      {solicitud.nombreActivo}
+                      {solicitud.activo && (
+                        <small className="text-muted d-block">
+                          Código: {solicitud.activo.codigo} | Categoría: {solicitud.activo.categoria}
+                        </small>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -461,14 +717,21 @@ const Revision = ({
               {/* Tabla de cambios realizados */}
               <div className="mb-3 mb-lg-4">
                 <h6 className="fw-bold mb-2 mb-lg-3 text-dark h6-responsive">Cambios Solicitados</h6>
-                <div className="table-responsive">
-                  <Table
-                    columns={cambiosTableColumns}
-                    data={cambiosTableData}
-                    hoverEffect={true}
-                    bordered={true}
-                  />
-                </div>
+                {cambiosTableData.length > 0 ? (
+                  <div className="table-responsive">
+                    <Table
+                      columns={cambiosTableColumns}
+                      data={cambiosTableData}
+                      hoverEffect={true}
+                      bordered={true}
+                    />
+                  </div>
+                ) : (
+                  <div className="alert alert-info">
+                    <FaInfoCircle className="me-2" />
+                    No hay cambios específicos documentados para esta solicitud.
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -484,7 +747,7 @@ const Revision = ({
         showValueBox={true}
         valueBoxTitle="Solicitud a aprobar:"
         valueBoxSubtitle={solicitud ? `${solicitud.codigoSolicitud} - ${solicitud.nombreActivo || "Activo"}` : ""}
-        informativeText="Esta acción cambiará el estado de la solicitud a 'Aprobado' y permitirá que continúe el flujo de aprobación."
+        informativeText="Esta acción cambiará el estado de la solicitud a 'Aprobado' en la base de datos y permitirá que continúe el flujo de aprobación. Los cambios serán permanentes."
         cancelText="Cancelar"
         acceptText="Aprobar"
         onCancel={cancelAction}
@@ -502,7 +765,7 @@ const Revision = ({
         showValueBox={true}
         valueBoxTitle="Solicitud a rechazar:"
         valueBoxSubtitle={solicitud ? `${solicitud.codigoSolicitud} - ${solicitud.nombreActivo || "Activo"}` : ""}
-        informativeText="Esta acción cambiará el estado de la solicitud a 'Rechazado' y notificará al solicitante. El comentario de revisión será visible para el solicitante."
+        informativeText="Esta acción cambiará el estado de la solicitud a 'Rechazado' en la base de datos y notificará al solicitante. El comentario de revisión será visible para el solicitante y los cambios serán permanentes."
         cancelText="Cancelar"
         acceptText="Rechazar"
         onCancel={cancelAction}

@@ -13,14 +13,36 @@ export const getRequests = async () => {
 
 
 export const getRequestById = async (id) => {
-    const response = await api.get(`/solicitudes/${id}`);
-    return response.data.solicitud;
-}
+    try {
+        const response = await api.get(`/solicitudes/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error obteniendo solicitud por ID:', error);
+        throw error;
+    }
+};
 
-export const reviewRequest = async (id, status, comentarios) => {
-    const response = await api.put(`/solicitudes/${id}/revisar`, { status, comentarios });
-    return response.data.solicitud;
-}
+export const reviewRequest = async (id, estado, comentario) => {
+    try {
+        console.log('ReviewRequest - Sending data:', { id, estado, comentario });
+        
+        const response = await api.put(`/solicitudes/${id}/revisar`, { 
+            estado, 
+            comentario 
+        });
+        
+        console.log('ReviewRequest - Response received:', response);
+        console.log('ReviewRequest - Response status:', response.status);
+        console.log('ReviewRequest - Response data:', response.data);
+        
+        return response.data;
+    } catch (error) {
+        console.error('ReviewRequest - Error details:', error);
+        console.error('ReviewRequest - Error response:', error.response?.data);
+        console.error('ReviewRequest - Error status:', error.response?.status);
+        throw error;
+    }
+};
 
 export const addCommentToRequestByAuditory = async (id, comentario) => {
     const response = await api.post(`/solicitudes/${id}/auditoria`, { comentario });
