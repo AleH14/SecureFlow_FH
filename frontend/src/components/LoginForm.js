@@ -44,10 +44,7 @@ const LoginForm = () => {
     
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
     }
-    
     return newErrors;
   };
 
@@ -152,22 +149,7 @@ const LoginForm = () => {
                   onChange={handleChange}
                   error={errors.password}
                   required
-                />
-                
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="rememberMe"
-                    />
-                    <label className="form-check-label text-sm" htmlFor="rememberMe">
-                      Recuérdame
-                    </label>
-                  </div>
-
-                </div>
-                
+                />                
                 <Button
                   type="submit"
                   variant="primary"

@@ -1,6 +1,7 @@
 import React from "react";
+import { HiOutlineSearch } from "react-icons/hi";
 
-const Table = ({ 
+const Table = ({
   columns = [],
   data = [],
   title,
@@ -14,10 +15,14 @@ const Table = ({
   striped = false,
   bordered = false,
   compact = false,
-  ...props 
+  ...props
 }) => {
   if (!columns || columns.length === 0) {
-    return <div className="table-error">No se han definido columnas para la tabla</div>;
+    return (
+      <div className="table-error">
+        No se han definido columnas para la tabla
+      </div>
+    );
   }
 
   // clases dinámicas
@@ -26,8 +31,10 @@ const Table = ({
     hoverEffect ? "table-hover" : "",
     striped ? "table-striped" : "",
     bordered ? "table-bordered" : "",
-    compact ? "table-compact" : ""
-  ].filter(Boolean).join(" ");
+    compact ? "table-compact" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className={`table-container ${tableClasses}`} {...props}>
@@ -37,13 +44,13 @@ const Table = ({
           {title && <h3 className="table-title">{title}</h3>}
         </div>
       )}
-      
+
       <div className="table-wrapper">
         <table className="custom-table">
           <thead>
             <tr style={headerStyle}>
               {columns.map((column, index) => (
-                <th 
+                <th
                   key={column.key || index}
                   className="table-header-cell"
                   style={column.headerStyle || {}}
@@ -56,32 +63,37 @@ const Table = ({
           <tbody>
             {data && data.length > 0 ? (
               data.map((row, rowIndex) => (
-                <tr 
-                  key={row.id || rowIndex} 
-                  className={`table-row ${striped && rowIndex % 2 === 0 ? 'table-row-striped' : ''}`}
+                <tr
+                  key={row.id || rowIndex}
+                  className={`table-row ${
+                    striped && rowIndex % 2 === 0 ? "table-row-striped" : ""
+                  }`}
                   style={rowStyle}
                 >
                   {columns.map((column, colIndex) => (
-                    <td 
+                    <td
                       key={`${rowIndex}-${column.key || colIndex}`}
                       className="table-cell"
                       style={column.cellStyle || cellStyle}
                     >
-                      {column.render 
-                        ? column.render(row, rowIndex) 
-                        : row[column.key] || '-'
-                      }
+                      {column.render
+                        ? column.render(row, rowIndex)
+                        : row[column.key] || "-"}
                     </td>
                   ))}
                 </tr>
               ))
             ) : (
               <tr>
-                <td 
-                  colSpan={columns.length} 
-                  className="table-empty"
-                >
-                  No hay datos disponibles
+                <td colSpan={columns.length} className="table-empty">
+                  <div className="empty-container">
+                    <HiOutlineSearch  className="empty-icon" />
+                    <p className="empty-title">Sin resultados.</p>
+                    <p className="empty-subtitle">
+                      La base de datos está vacía o los filtros no coinciden con
+                      ningún registro.
+                    </p>
+                  </div>
                 </td>
               </tr>
             )}

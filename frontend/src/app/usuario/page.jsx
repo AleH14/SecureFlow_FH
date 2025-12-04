@@ -8,6 +8,7 @@ import NuevoActivo from "./activo/NuevoActivo";
 import ModificarActivo from "./activo/ModificarActivo";
 import Solicitudes from "./solicitudes/Solicitudes";
 import SolicitudDetalles from "./solicitudes/SolicitudDetalles";
+import { getCurrentUser } from "../../services/userService"; // Importa la función para obtener el usuario actual
 
 const UsuarioPage = () => {
   const [activeTab, setActiveTab] = useState("mis-activos");
@@ -19,6 +20,8 @@ const UsuarioPage = () => {
   const [selectedSolicitud, setSelectedSolicitud] = useState(null);
   const [modificarActivoContext, setModificarActivoContext] = useState(null); // 'inventory' o 'solicitudes'
   const [solicitudesCount, setSolicitudesCount] = useState(0);
+  const [userData, setUserData] = useState(null); //almacenar datos del usuario
+
 
   // Cargar el conteo de solicitudes pendientes al montar el componente
   useEffect(() => {
@@ -53,6 +56,23 @@ const UsuarioPage = () => {
       badgeCount: solicitudesCount,
     },
   ];
+
+  // Obtener el usuario actual
+    useEffect(() => {
+      const fetchCurrentUser = async () => {
+        try {
+          const response = await getCurrentUser(); // Esto devuelve {success, message, data}
+  
+          if (response.success && response.data) {
+            setUserData(response.data); // response.data contiene la info del usuario
+          }
+        } catch (error) {
+          console.error("Error al obtener usuario:", error);
+        }
+      };
+  
+      fetchCurrentUser();
+    }, []); // El array vacío [] significa que se ejecuta solo una vez al montar el componente
 
   const handleTabChange = (tabId) => {
     // Si es la misma pestaña actual, no hacer nada (evita resetear en re-renders)
@@ -249,7 +269,11 @@ const UsuarioPage = () => {
 
   return (
     <GradientLayout>
-      <Header showUser={true} userName="Usuario" />
+      <Header 
+      showUser={true} 
+      userName={userData ? `${userData.nombre} ${userData.apellido}` : "Usuario"} 
+      userRole={userData ? userData.rol : ""} // Pasar el rol
+      />
       <Sidebar
         tabs={usuarioTabs}
         defaultActiveTab={activeTab}
