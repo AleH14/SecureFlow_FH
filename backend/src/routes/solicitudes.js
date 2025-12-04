@@ -118,7 +118,7 @@ router.get('/', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, `${formattedSolicitudes.length} solicitudes obtenidas correctamente`, responseData);
 
   } catch (error) {
-    console.error('Error obteniendo solicitudes:', error);
+
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -186,7 +186,7 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Solicitud obtenida correctamente', solicitudResponse);
 
   } catch (error) {
-    console.error('Error obteniendo solicitud:', error);
+
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de solicitud inválido');
     }
@@ -274,7 +274,7 @@ router.put('/:id/revisar', auth, responsableSeguridad, asyncHandler(async (req, 
     });
 
   } catch (error) {
-    console.error('Error revisando solicitud:', error);
+
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -287,12 +287,7 @@ router.put('/:id/auditoria', auth, auditor, asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { comentario } = req.body;
 
-    console.log('Agregando comentario de auditoría:', {
-      solicitudId: id,
-      auditorId: req.user._id,
-      auditorNombre: `${req.user.nombre} ${req.user.apellido}`,
-      comentario: comentario
-    });
+
 
     // Validaciones
     if (!comentario || comentario.trim() === '') {

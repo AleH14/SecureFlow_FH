@@ -172,7 +172,7 @@ router.post('/', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 201, 'Activo creado y solicitud de aprobación generada', activoResponse);
 
   } catch (error) {
-    console.error('Error creando activo:', error);
+
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -280,7 +280,7 @@ router.get('/', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, `${formattedActivos.length} activos obtenidos correctamente`, responseData);
 
   } catch (error) {
-    console.error('Error obteniendo activos:', error);
+
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -854,7 +854,7 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
       historial
     };
 
-    console.log('Respuesta del historial:', JSON.stringify(responseData, null, 2));
+
     sendResponse(res, 200, `Historial de cambios obtenido correctamente`, responseData);
 
   } catch (error) {

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Header, Sidebar, GradientLayout } from "../../components/ui";
+import { ProtectedRoute, LogoutButton } from "../../components";
 import { FaUserCircle } from "react-icons/fa";
 
 import Inventory from "./inventory/Inventory";
@@ -45,7 +46,7 @@ const SeguridadPage = () => {
       id: "panel-revision",
       name: "Panel de Revisión",
       iconName: "FaTasks",
-      badgeCount: pendingRequestsCount
+      ...(pendingRequestsCount > 0 && { badgeCount: pendingRequestsCount })
     },
     {
       id: "inventario",
@@ -178,21 +179,31 @@ const SeguridadPage = () => {
   };
 
   return (
-    <GradientLayout>
-      <Header
-        showUser={true}
-        userName="Responsable de Seguridad"
-        userIcon={FaUserCircle}
-      />
+    <ProtectedRoute allowedRoles={['responsable_seguridad']}>
+      <GradientLayout>
+        <Header
+          showUser={true}
+          userName="Responsable de Seguridad"
+          userIcon={FaUserCircle}
+        >
+          <div className="d-flex align-items-center">
+            <LogoutButton 
+              variant="outline" 
+              size="sm" 
+              className="text-white border-white"
+            />
+          </div>
+        </Header>
 
-      <Sidebar
-        tabs={seguridadTabs}
-        defaultActiveTab="panel-revision"
-        onTabChange={handleTabChange}
-      />
+        <Sidebar
+          tabs={seguridadTabs}
+          defaultActiveTab="panel-revision"
+          onTabChange={handleTabChange}
+        />
 
-      {renderContent()}
-    </GradientLayout>
+        {renderContent()}
+      </GradientLayout>
+    </ProtectedRoute>
   );
 };
 

@@ -2,6 +2,7 @@
 "use client";
 import React, { useState } from "react";
 import{Header,Sidebar,GradientLayout}  from "../../components/ui"
+import { ProtectedRoute, LogoutButton } from "../../components";
 import { FaUserCircle } from "react-icons/fa";
 import User from "./user/User";
 import Inventory from "./inventory/Inventory";
@@ -77,19 +78,30 @@ const AdminPage = () => {
   };
 
   return (
-    <GradientLayout>
-      <Header
-        showUser={true}
-        userName="Administrador"
-        userIcon={FaUserCircle}
-      />
-      <Sidebar 
-        tabs={adminTabs}
-        defaultActiveTab="usuarios"
-        onTabChange={handleTabChange}
-      />
-      {renderContent()}
-    </GradientLayout>
-  );};
+    <ProtectedRoute allowedRoles={['administrador']}>
+      <GradientLayout>
+        <Header
+          showUser={true}
+          userName="Administrador"
+          userIcon={FaUserCircle}
+        >
+          <div className="d-flex align-items-center">
+            <LogoutButton 
+              variant="outline" 
+              size="sm" 
+              className="text-white border-white"
+            />
+          </div>
+        </Header>
+        <Sidebar 
+          tabs={adminTabs}
+          defaultActiveTab="usuarios"
+          onTabChange={handleTabChange}
+        />
+        {renderContent()}
+      </GradientLayout>
+    </ProtectedRoute>
+  );
+};
 
 export default AdminPage;

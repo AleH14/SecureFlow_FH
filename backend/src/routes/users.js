@@ -84,7 +84,7 @@ router.get('/', auth, admin, asyncHandler(async (req, res) => {
     sendResponse(res, 200, `${formattedUsers.length} usuarios obtenidos correctamente`, responseData);
 
   } catch (error) {
-    console.error('Error obteniendo usuarios:', error);
+
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -119,7 +119,7 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Usuario obtenido correctamente', userResponse);
 
   } catch (error) {
-    console.error('Error obteniendo usuario:', error);
+
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de usuario inválido');
     }
@@ -299,7 +299,7 @@ router.put('/:id', auth, admin, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Usuario actualizado exitosamente', userResponse);
 
   } catch (error) {
-    console.error('Error actualizando usuario:', error);
+
     if (error.name === 'ValidationError') {
       return sendError(res, 400, 'Error de validación', error.message);
     }
@@ -347,7 +347,7 @@ router.delete('/:id', auth, admin, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Usuario eliminado exitosamente', deletedUserInfo);
 
   } catch (error) {
-    console.error('Error eliminando usuario:', error);
+
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de usuario inválido');
     }

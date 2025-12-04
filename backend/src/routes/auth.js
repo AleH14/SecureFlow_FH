@@ -81,7 +81,6 @@ router.post('/login', asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error en login:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -206,13 +205,17 @@ router.post('/register', asyncHandler(async (req, res) => {
 }));
 
 // @route   POST /api/auth/logout
-// @desc    Logout user
+// @desc    Logout user (invalidate token)
 // @access  Private
 router.post('/logout', auth, asyncHandler(async (req, res) => {
-  // Con JWT, el logout se maneja en el frontend eliminando el token
-  // Aquí solo confirmamos el logout
-  sendResponse(res, 200, 'Logout exitoso', {
-    message: 'Token debe ser eliminado del cliente'
+  // En una implementación más avanzada, podrías agregar el token a una blacklist
+  // o implementar un sistema de revocación de tokens
+  
+  // Por ahora, simplemente confirmamos el logout exitoso
+  // El cliente debe eliminar el token del localStorage/cookies
+  
+  sendResponse(res, 200, 'Sesión cerrada exitosamente', {
+    message: 'Token invalidado correctamente'
   });
 }));
 

@@ -1,6 +1,7 @@
 "use client"
 import React,{ useState } from "react";
 import{Header,Sidebar,GradientLayout}  from "../../components/ui"
+import { ProtectedRoute, LogoutButton } from "../../components";
 import Inventory from "./inventory/Inventory";
 import SCV from "./scv/SCV";
 
@@ -64,19 +65,29 @@ const AuditorPage = () => {
   
 
     return (  
-        <GradientLayout>
-            <Header
-                showUser={true}
-                userName="Auditor"
-            />  
-                  <Sidebar 
-                    tabs={adminTabs}
-                    defaultActiveTab="activos"
-                    onTabChange={handleTabChange}
-                  />
-                   {renderContent()}
+        <ProtectedRoute allowedRoles={['auditor']}>
+            <GradientLayout>
+                <Header
+                    showUser={true}
+                    userName="Auditor"
+                >
+                    <div className="d-flex align-items-center">
+                        <LogoutButton 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-white border-white"
+                        />
+                    </div>
+                </Header>  
+                      <Sidebar 
+                        tabs={adminTabs}
+                        defaultActiveTab="activos"
+                        onTabChange={handleTabChange}
+                      />
+                       {renderContent()}
 
-        </GradientLayout>
+            </GradientLayout>
+        </ProtectedRoute>
     );
 }
 

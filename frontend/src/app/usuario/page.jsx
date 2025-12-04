@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Header, Sidebar, GradientLayout } from "../../components/ui";
+import { ProtectedRoute, LogoutButton } from "../../components";
 import { RequestService } from "../../services";
 import Inventory from "./inventory/Inventory";
 import SCV from "./scv/SCV";
@@ -50,7 +51,7 @@ const UsuarioPage = () => {
       id: "mis-solicitudes",
       name: "Mis Solicitudes",
       iconName: "FaFileAlt",
-      badgeCount: solicitudesCount,
+      ...(solicitudesCount > 0 && { badgeCount: solicitudesCount })
     },
   ];
 
@@ -248,15 +249,25 @@ const UsuarioPage = () => {
   };
 
   return (
-    <GradientLayout>
-      <Header showUser={true} userName="Usuario" />
-      <Sidebar
-        tabs={usuarioTabs}
-        defaultActiveTab={activeTab}
-        onTabChange={handleTabChange}
-      />
-      {renderContent()}
-    </GradientLayout>
+    <ProtectedRoute allowedRoles={['usuario']}>
+      <GradientLayout>
+        <Header showUser={true} userName="Usuario">
+          <div className="d-flex align-items-center">
+            <LogoutButton 
+              variant="outline" 
+              size="sm" 
+              className="text-white border-white"
+            />
+          </div>
+        </Header>
+        <Sidebar
+          tabs={usuarioTabs}
+          defaultActiveTab={activeTab}
+          onTabChange={handleTabChange}
+        />
+        {renderContent()}
+      </GradientLayout>
+    </ProtectedRoute>
   );
 };
 

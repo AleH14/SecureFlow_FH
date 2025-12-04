@@ -55,7 +55,7 @@ const Sidebar = ({
                   {IconComponent && <IconComponent className="sidebar-icon" />}
                   {tab.name}
                   {/* Badge para notificaciones */}
-                  {tab.badgeCount && tab.badgeCount > 0 && (
+                  {typeof tab.badgeCount === 'number' && tab.badgeCount > 0 && (
                     <span className="sidebar-badge">
                       {tab.badgeCount}
                     </span>

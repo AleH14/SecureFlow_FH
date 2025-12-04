@@ -13,3 +13,4 @@ export { default as SearchBar } from './SearchBar';
 export { default as Table } from './Table';
 export { default as CardActivo } from './CardActivo';
 export { default as Modal } from './Modal';
+export { default as ConnectionStatus } from './ConnectionStatus';

@@ -42,143 +42,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
     loadSolicitudes();
   }, []);
 
-  // Datos de ejemplo (se mantendrán como fallback)
-  const solicitudesEjemplo = React.useMemo(() => [
-    {
-      "_id": "SOL-2025-001",
-      "codigoSolicitud": "AAA-0001",
-      "fechaCreacion": "2025-11-23T09:30:00Z",
-      "estadoGeneral": "Aprobado", 
-      "activoId": "ACT-100",        
-      "solicitanteId": "USR-005",   
-      "nombreActivo": "Servidor Web Principal",
-      "justificacion": "El servidor requiere mantenimiento preventivo urgente debido a sobrecalentamiento detectado en los sensores de temperatura durante la última revisión rutinaria del sistema.",
-      "cambios": [
-        {
-          "campo": "estado",
-          "valorAnterior": "Activo",
-          "valorNuevo": "En Mantenimiento"
-        },
-        {
-          "campo": "descripcion",
-          "valorAnterior": "Servidor de la empresa",
-          "valorNuevo": "Servidor en reparación por fallas térmicas"
-        }
-      ],
-      "aprobaciones": {
-        "seguridad": {
-          "responsableId": "USR-008", 
-          "fecha": "2025-11-23T14:00:00Z",
-          "estado": "Aprobado",
-          "comentario": "Se valida que el mantenimiento no afecta la seguridad perimetral."
-        },
-        "auditoria": {
-          "responsableId": "USR-009",
-          "fecha": "2025-11-24T09:00:00Z",
-          "estado": "Aprobado",
-          "comentario": "Proceso conforme a la normativa ISO."
-        }
-      }
-    },
-    {
-      "_id": "SOL-2025-002",
-      "codigoSolicitud": "BBB-0002",
-      "fechaCreacion": "2025-11-22T10:15:00Z",
-      "estadoGeneral": "Pendiente",
-      "activoId": "ACT-101",        
-      "solicitanteId": "USR-006",   
-      "nombreActivo": "Base de Datos MySQL",
-      "justificacion": "Actualización de configuración de seguridad requerida para compliance con nuevas regulaciones de protección de datos implementadas este trimestre, incluyendo encriptación avanzada y políticas de retención.",
-      "cambios": [
-        {
-          "campo": "configuracion",
-          "valorAnterior": "Configuración estándar",
-          "valorNuevo": "Configuración extendida con encriptación"
-        }
-      ],
-      "aprobaciones": {
-        "seguridad": {
-          "responsableId": "USR-008", 
-          "fecha": "2025-11-22T16:30:00Z",
-          "estado": "Aprobado",
-          "comentario": "Configuración cumple con políticas de seguridad."
-        },
-        "auditoria": {
-          "responsableId": "USR-009",
-          "fecha": null,
-          "estado": "Pendiente",
-          "comentario": ""
-        }
-      }
-    },
-    {
-      "_id": "SOL-2025-003",
-      "codigoSolicitud": "CCC-0003",
-      "fechaCreacion": "2025-11-21T08:45:00Z",
-      "estadoGeneral": "Rechazado", 
-      "activoId": "ACT-102",        
-      "solicitanteId": "USR-007",   
-      "nombreActivo": "Firewall Corporativo",
-      "justificacion": "Cambio en reglas de firewall para nuevo departamento de desarrollo que requiere acceso a puertos específicos para herramientas de integración continua y despliegue automático.",
-      "cambios": [
-        {
-          "campo": "reglas_firewall",
-          "valorAnterior": "Reglas básicas",
-          "valorNuevo": "Reglas extendidas para departamento nuevo"
-        }
-      ],
-      "aprobaciones": {
-        "seguridad": {
-          "responsableId": "USR-008", 
-          "fecha": "2025-11-21T15:20:00Z",
-          "estado": "Rechazado",
-          "comentario": "Las reglas propuestas presentan vulnerabilidades de seguridad."
-        },
-        "auditoria": {
-          "responsableId": null,
-          "fecha": null,
-          "estado": "No Aplica",
-          "comentario": ""
-        }
-      }
-    },
-    {
-      "_id": "SOL-2025-004",
-      "codigoSolicitud": "DDD-0004",
-      "fechaCreacion": "2025-11-25T11:00:00Z",
-      "estadoGeneral": "Pendiente", 
-      "activoId": "ACT-103",        
-      "solicitanteId": "USR-010",   
-      "nombreActivo": "Servidor de Aplicaciones",
-      "justificacion": "Migración a nueva versión del sistema operativo para mantener soporte técnico y recibir actualizaciones de seguridad críticas que ya no están disponibles en la versión actual.",
-      "cambios": [
-        {
-          "campo": "version_so",
-          "valorAnterior": "Windows Server 2019",
-          "valorNuevo": "Windows Server 2022"
-        },
-        {
-          "campo": "estado",
-          "valorAnterior": "Activo",
-          "valorNuevo": "En Migración"
-        }
-      ],
-      "aprobaciones": {
-        "seguridad": {
-          "responsableId": null,
-          "fecha": null,
-          "estado": "Pendiente",
-          "comentario": ""
-        },
-        "auditoria": {
-          "responsableId": null,
-          "fecha": null,
-          "estado": "Pendiente",
-          "comentario": ""
-        }
-      }
-    }
-  ], []);
+
 
   // Función para transformar solicitudes del backend al formato esperado por el frontend
   const transformSolicitud = (solicitud) => {
@@ -223,12 +87,12 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
     return new Date(fechaISO).toLocaleDateString('es-ES');
   };
 
-  // Transformar datos del backend si están disponibles, sino usar los de ejemplo
+  // Transformar datos del backend si están disponibles
   const solicitudesTransformadas = React.useMemo(() => {
     return solicitudes.length > 0 
       ? solicitudes.map(transformSolicitud) 
-      : (loading ? [] : solicitudesEjemplo);
-  }, [solicitudes, loading, solicitudesEjemplo]);
+      : [];
+  }, [solicitudes]);
 
   const handleFilter = useCallback((filters) => {
     if (!filters.name && !filters.estado) {
@@ -450,12 +314,34 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       <SearchBar fields={searchFields} onFilter={handleFilter} />
 
       <div className="mt-4">
-        <Table 
-          columns={tableColumns} 
-          data={solicitudesToShow}
-          hoverEffect={true}
-          bordered={true}
-        />
+        {solicitudesToShow.length === 0 ? (
+          <div className="alert alert-info text-center py-4">
+            <h5>No se encontraron solicitudes</h5>
+            {isFiltered ? (
+              <p>No hay solicitudes que coincidan con los filtros aplicados.</p>
+            ) : (
+              <p>Aún no has creado ninguna solicitud de cambio. Las solicitudes aparecerán aquí una vez que crees tu primer activo o modifiques uno existente.</p>
+            )}
+            {isFiltered && (
+              <button 
+                className="btn btn-outline-primary mt-2" 
+                onClick={() => {
+                  setFilteredSolicitudes([]);
+                  setIsFiltered(false);
+                }}
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        ) : (
+          <Table 
+            columns={tableColumns} 
+            data={solicitudesToShow}
+            hoverEffect={true}
+            bordered={true}
+          />
+        )}
       </div>
     </div>
   );
