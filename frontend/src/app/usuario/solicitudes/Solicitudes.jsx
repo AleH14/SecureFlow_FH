@@ -21,7 +21,6 @@ const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
       
       if (response && response.success && response.data) {
         setSolicitudes(response.data.solicitudes || []);
-        console.log(`Cargadas ${response.data.solicitudes?.length || 0} solicitudes`);
         // Actualizar el contador cuando se cargan las solicitudes
         if (onRefreshCount) {
           onRefreshCount();
@@ -51,12 +50,10 @@ const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
   const loadSolicitudDetalles = async (solicitudId) => {
     try {
       setLoadingDetalles(true);
-      console.log(`Cargando detalles de solicitud ID: ${solicitudId}`);
       
       const response = await RequestService.getRequestById(solicitudId);
       
       if (response && response.success && response.data) {
-        console.log('Detalles de solicitud cargados:', response.data);
         return response.data;
       } else {
         throw new Error('Formato de respuesta inesperado');
@@ -71,8 +68,6 @@ const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
 
   // Función para manejar el clic en "Ver Detalles"
   const handleVerDetalles = async (solicitud) => {
-    console.log("CLICK en Ver Detalles para solicitud:", solicitud);
-    
     try {
       // Cargar los detalles completos de la solicitud
       const detallesCompletos = await loadSolicitudDetalles(solicitud.id);

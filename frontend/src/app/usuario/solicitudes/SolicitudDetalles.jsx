@@ -9,6 +9,47 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);
   const [loadingActivo, setLoadingActivo] = useState(false);
 
+  // Cargar responsables disponibles al montar el componente
+  useEffect(() => {
+    const cargarResponsablesDisponibles = async () => {
+      setLoadingUsuarios(true);
+      try {
+        const response = await ActivoService.getResponsablesDisponibles();
+        
+        let responsablesData = [];
+        
+        if (Array.isArray(response)) {
+          responsablesData = response;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          responsablesData = response.data;
+        } else if (response && response.success && Array.isArray(response.data)) {
+          responsablesData = response.data;
+        }
+        
+        const responsablesFiltrados = responsablesData
+          .map(user => ({
+            id: user.id || user._id,
+            nombreCompleto: user.nombreCompleto || `${user.nombre} ${user.apellido}`,
+            nombre: user.nombre || '',
+            apellido: user.apellido || '',
+            email: user.email || ''
+          }))
+          .filter(user => user.nombreCompleto && user.nombreCompleto.trim() !== "")
+          .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
+        
+        setUsuariosOptions(responsablesFiltrados);
+        
+      } catch (error) {
+        console.error("Error cargando responsables:", error);
+        setUsuariosOptions([]);
+      } finally {
+        setLoadingUsuarios(false);
+      }
+    };
+
+    cargarResponsablesDisponibles();
+  }, []);
+
   if (!solicitud) {
     return (
       <div className="solicitud-detalles-container p-2 p-lg-3">
@@ -27,47 +68,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
       </div>
     );
   }
-
-  // Cargar responsables disponibles al montar el componente
-  useEffect(() => {
-    cargarResponsablesDisponibles();
-  }, []);
-
-  const cargarResponsablesDisponibles = async () => {
-    setLoadingUsuarios(true);
-    try {
-      const response = await ActivoService.getResponsablesDisponibles();
-      
-      let responsablesData = [];
-      
-      if (Array.isArray(response)) {
-        responsablesData = response;
-      } else if (response && response.data && Array.isArray(response.data)) {
-        responsablesData = response.data;
-      } else if (response && response.success && Array.isArray(response.data)) {
-        responsablesData = response.data;
-      }
-      
-      const responsablesFiltrados = responsablesData
-        .map(user => ({
-          id: user.id || user._id,
-          nombreCompleto: user.nombreCompleto || `${user.nombre} ${user.apellido}`,
-          nombre: user.nombre || '',
-          apellido: user.apellido || '',
-          email: user.email || ''
-        }))
-        .filter(user => user.nombreCompleto && user.nombreCompleto.trim() !== "")
-        .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
-      
-      setUsuariosOptions(responsablesFiltrados);
-      
-    } catch (error) {
-      console.error("Error cargando responsables:", error);
-      setUsuariosOptions([]);
-    } finally {
-      setLoadingUsuarios(false);
-    }
-  };
 
   // Función para obtener el nombre de un responsable por ID
   const getNombreResponsableById = (responsableId) => {
@@ -167,7 +167,7 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
     setLoadingActivo(true);
     
     try {
-      const response = await ActivoService.obtenerActivoPorId(activoId);
+      const response = await ActivoService.getActivoById(activoId);
       
       let activoData = null;
       
@@ -177,6 +177,7 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
       } else if (response && response.data) {
         activoData = response.data;
       } else if (response) {
+        // getActivoById retorna directamente el activo
         activoData = response;
       }
       
@@ -212,15 +213,18 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
     try {
       // Obtener datos actuales del activo SIEMPRE
       let activoActual = null;
-      if (solicitud.activoId) {
-        activoActual = await obtenerDatosActivoActual(solicitud.activoId);
+      // Obtener el ID del activo de diferentes fuentes posibles
+      const activoId = solicitud.activoId || solicitud.activo?.id || solicitud.activo?._id;
+      
+      if (activoId) {
+        activoActual = await obtenerDatosActivoActual(activoId);
       }
 
       // Preparar objeto con TODOS los datos del activo
       const datosActivoCompletos = {
         // Identificación
-        id: solicitud.activoId,
-        codigo: solicitud.codigoActivo || "",
+        id: activoId,
+        codigo: solicitud.codigoActivo || solicitud.activo?.codigo || "",
         
         // Datos principales (prioridad: activoActual > cambios > valores por defecto)
         nombre: "",
@@ -238,27 +242,43 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
         datosActivoCompletos.id = activoActual._id || activoActual.id || solicitud.activoId;
         datosActivoCompletos.codigo = activoActual.codigo || solicitud.codigoActivo || "";
         
-        // Mapear TODOS los campos del activo actual
-        datosActivoCompletos.nombre = activoActual.nombre || "";
-        datosActivoCompletos.descripcion = activoActual.descripcion || "";
-        datosActivoCompletos.ubicacion = activoActual.ubicacion || "";
-        datosActivoCompletos.estado = activoActual.estado || "";
-        datosActivoCompletos.categoria = activoActual.categoria || "";
+        // Mapear TODOS los campos del activo actual - Usar valores del activo con prioridad absoluta
+        if (activoActual.nombre) datosActivoCompletos.nombre = activoActual.nombre;
+        if (activoActual.descripcion) datosActivoCompletos.descripcion = activoActual.descripcion;
+        if (activoActual.ubicacion) datosActivoCompletos.ubicacion = activoActual.ubicacion;
+        if (activoActual.estado) datosActivoCompletos.estado = activoActual.estado;
+        if (activoActual.categoria) datosActivoCompletos.categoria = activoActual.categoria;
         datosActivoCompletos.version = activoActual.version || "v1.0.0";
         
-        // Manejar responsable
-        if (typeof activoActual.responsable === 'object') {
+        // Manejar responsable - Prioridad: objeto completo > ID > string
+        if (typeof activoActual.responsable === 'object' && activoActual.responsable !== null) {
+          // Si responsable es un objeto con datos completos
           datosActivoCompletos.responsable = activoActual.responsable.nombreCompleto || 
             `${activoActual.responsable.nombre || ''} ${activoActual.responsable.apellido || ''}`.trim();
           datosActivoCompletos.responsableId = activoActual.responsable.id || activoActual.responsable._id;
-        } else if (activoActual.responsable) {
-          datosActivoCompletos.responsable = getNombreResponsableById(activoActual.responsable);
-          datosActivoCompletos.responsableId = activoActual.responsable;
+        } else if (activoActual.responsable && typeof activoActual.responsable === 'string') {
+          // Si responsable es un string (puede ser ID o nombre)
+          if (/^[0-9a-fA-F]{24}$/.test(activoActual.responsable)) {
+            // Es un ObjectID - intentar buscar el nombre
+            datosActivoCompletos.responsableId = activoActual.responsable;
+            const nombreEncontrado = getNombreResponsableById(activoActual.responsable);
+            if (nombreEncontrado && !nombreEncontrado.includes('Usuario [ID:')) {
+              datosActivoCompletos.responsable = nombreEncontrado;
+            }
+          } else {
+            // Ya es un nombre
+            datosActivoCompletos.responsable = activoActual.responsable;
+            datosActivoCompletos.responsableId = activoActual.responsable;
+          }
         } else if (activoActual.responsableId) {
-          datosActivoCompletos.responsable = getNombreResponsableById(activoActual.responsableId);
+          // Si solo tiene responsableId
           datosActivoCompletos.responsableId = activoActual.responsableId;
+          const nombreEncontrado = getNombreResponsableById(activoActual.responsableId);
+          if (nombreEncontrado && !nombreEncontrado.includes('Usuario [ID:')) {
+            datosActivoCompletos.responsable = nombreEncontrado;
+          }
         }
-      } 
+      }
       
       // SEGUNDO: Si faltan datos, completar con cambios de la solicitud
       if (solicitud.cambios && Array.isArray(solicitud.cambios)) {
@@ -266,28 +286,38 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
           // Para modificación, usar valorAnterior como estado actual
           const valorActual = cambio.valorAnterior;
           
-          if (valorActual !== null && valorActual !== undefined) {
+          if (valorActual !== null && valorActual !== undefined && valorActual !== '') {
             const campo = cambio.campo.toLowerCase();
             
-            // Solo asignar si el campo está vacío
+            // Solo asignar si el campo está vacío o es un valor por defecto genérico
             switch (campo) {
               case 'nombre':
-                if (!datosActivoCompletos.nombre) datosActivoCompletos.nombre = valorActual;
+                if (!datosActivoCompletos.nombre || datosActivoCompletos.nombre.trim() === "") {
+                  datosActivoCompletos.nombre = valorActual;
+                }
                 break;
               case 'categoria':
-                if (!datosActivoCompletos.categoria) datosActivoCompletos.categoria = valorActual;
+                if (!datosActivoCompletos.categoria || datosActivoCompletos.categoria.trim() === "") {
+                  datosActivoCompletos.categoria = valorActual;
+                }
                 break;
               case 'descripcion':
-                if (!datosActivoCompletos.descripcion) datosActivoCompletos.descripcion = valorActual;
+                if (!datosActivoCompletos.descripcion || datosActivoCompletos.descripcion.trim() === "") {
+                  datosActivoCompletos.descripcion = valorActual;
+                }
                 break;
               case 'ubicacion':
-                if (!datosActivoCompletos.ubicacion) datosActivoCompletos.ubicacion = valorActual;
+                if (!datosActivoCompletos.ubicacion || datosActivoCompletos.ubicacion.trim() === "") {
+                  datosActivoCompletos.ubicacion = valorActual;
+                }
                 break;
               case 'estado':
-                if (!datosActivoCompletos.estado) datosActivoCompletos.estado = valorActual;
+                if (!datosActivoCompletos.estado || datosActivoCompletos.estado.trim() === "") {
+                  datosActivoCompletos.estado = valorActual;
+                }
                 break;
               case 'responsableid':
-                if (!datosActivoCompletos.responsable) {
+                if (!datosActivoCompletos.responsable || datosActivoCompletos.responsable.trim() === "") {
                   datosActivoCompletos.responsable = getNombreResponsableById(valorActual);
                   datosActivoCompletos.responsableId = valorActual;
                 }
@@ -297,7 +327,7 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
         });
       }
       
-      // TERCERO: Valores por defecto para campos vacíos
+      // TERCERO: Valores por defecto SOLO para campos que siguen vacíos
       if (!datosActivoCompletos.nombre || datosActivoCompletos.nombre.trim() === "") {
         datosActivoCompletos.nombre = solicitud.tipoSolicitud === 'creacion' 
           ? "Nuevo activo - favor completar" 
@@ -328,7 +358,8 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
       onNavigateToModificarActivo(
         datosActivoCompletos, 
         "solicitudes", 
-        solicitud.tipoSolicitud || 'modificacion'
+        solicitud.tipoSolicitud || 'modificacion',
+        solicitud.cambios || [] // Pasar los cambios rechazados
       );
       
     } catch (error) {

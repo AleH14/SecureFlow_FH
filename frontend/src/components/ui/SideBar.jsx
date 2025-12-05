@@ -33,7 +33,6 @@ const Sidebar = ({
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
-    console.log('Pestaña cambiada a:', tabId);
   };
 
   if (!tabs || tabs.length === 0) {

@@ -19,6 +19,7 @@ const UsuarioPage = () => {
   const [showSolicitudDetalles, setShowSolicitudDetalles] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState(null);
   const [modificarActivoContext, setModificarActivoContext] = useState(null);
+  const [cambiosRechazados, setCambiosRechazados] = useState([]);
   const [solicitudesCount, setSolicitudesCount] = useState(0);
   const [userData, setUserData] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -134,6 +135,7 @@ const UsuarioPage = () => {
     setShowSolicitudDetalles(false);
     setSelectedSolicitud(null);
     setModificarActivoContext(null);
+    setCambiosRechazados([]);
   };
 
   const handleNavigateToNuevoActivo = () => {
@@ -148,8 +150,9 @@ const UsuarioPage = () => {
     setShowNuevoActivo(false);
   };
 
-  const handleNavigateToModificarActivo = (activo, context = null) => {
+  const handleNavigateToModificarActivo = (activo, context = null, tipoSolicitud = null, cambios = []) => {
     setSelectedActivo(activo);
+    setCambiosRechazados(cambios);
     setShowModificarActivo(true);
     setShowSCV(false);
     setShowNuevoActivo(false);
@@ -189,6 +192,7 @@ const UsuarioPage = () => {
         <div className="main-content">
           <ModificarActivo
             activo={selectedActivo}
+            cambiosRechazados={cambiosRechazados}
             onNavigateBack={handleNavigateBack}
             onUpdateActivo={handleUpdateActivo}
             onRefreshSolicitudes={refreshSolicitudesCount}

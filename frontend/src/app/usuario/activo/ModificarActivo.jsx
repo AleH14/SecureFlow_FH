@@ -11,7 +11,7 @@ import {
 } from "./validacionesActivo";
 import { ActivoService } from "@/services";
 
-const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSolicitudes }) => {
+const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSolicitudes, cambiosRechazados }) => {
   const estadosOptions = [
     { value: 'Activo', label: 'Activo' },
     { value: 'Inactivo', label: 'Inactivo' },
@@ -38,26 +38,41 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
   const [showToast, setShowToast] = useState(false);
   const [showResponsablesList, setShowResponsablesList] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [camposModificados, setCamposModificados] = useState({});
   
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (activo) {
+      // Identificar campos que fueron modificados en la solicitud rechazada
+      let modificados = {};
+      if (cambiosRechazados && Array.isArray(cambiosRechazados)) {
+        cambiosRechazados.forEach(cambio => {
+          const campo = cambio.campo.toLowerCase();
+          modificados[campo] = {
+            valorAnterior: cambio.valorAnterior,
+            valorNuevo: cambio.valorNuevo
+          };
+        });
+        setCamposModificados(modificados);
+      }
+
+      // Para campos modificados, usar valorNuevo; para no modificados, usar valor actual
       setFormData({
-        nombre: activo.nombre || "",
+        nombre: modificados['nombre'] ? modificados['nombre'].valorNuevo : (activo.nombre || ""),
         codigo: activo.codigo || "",
-        categoria: activo.categoria || "",
-        descripcion: activo.descripcion || "",
-        ubicacion: activo.ubicacion || "",
-        estado: activo.estado || "",
-        responsableId: activo.responsable?.id || "",
-        responsableNombre: activo.responsable?.nombreCompleto || activo.responsable || "",
+        categoria: modificados['categoria'] ? modificados['categoria'].valorNuevo : (activo.categoria || ""),
+        descripcion: modificados['descripcion'] ? modificados['descripcion'].valorNuevo : (activo.descripcion || ""),
+        ubicacion: modificados['ubicacion'] ? modificados['ubicacion'].valorNuevo : (activo.ubicacion || ""),
+        estado: modificados['estado'] ? modificados['estado'].valorNuevo : (activo.estado || ""),
+        responsableId: modificados['responsableid'] ? modificados['responsableid'].valorNuevo : (activo.responsable?.id || ""),
+        responsableNombre: modificados['responsableid'] ? modificados['responsableid'].valorNuevo : (activo.responsable?.nombreCompleto || activo.responsable || ""),
         justificacion: "",
       });
-      setSearchTerm(activo.responsable?.nombreCompleto || activo.responsable || "");
+      setSearchTerm(modificados['responsableid'] ? modificados['responsableid'].valorNuevo : (activo.responsable?.nombreCompleto || activo.responsable || ""));
     }
-  }, [activo]);
+  }, [activo, cambiosRechazados]);
 
   useEffect(() => {
     cargarResponsablesDisponibles();
@@ -198,6 +213,17 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
         inputRef.current.focus();
       }
     }
+  };
+
+  // Función para verificar si un campo fue modificado en la solicitud rechazada
+  const esCampoModificado = (nombreCampo) => {
+    return camposModificados.hasOwnProperty(nombreCampo.toLowerCase());
+  };
+
+  // Función para obtener el valor que se intentó cambiar
+  const getValorIntentado = (nombreCampo) => {
+    const campo = nombreCampo.toLowerCase();
+    return camposModificados[campo]?.valorNuevo || null;
   };
 
   const handleSelectChange = (name, value) => {
@@ -421,66 +447,149 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                     </div>
                   )}
 
+                  {cambiosRechazados && cambiosRechazados.length > 0 && (
+                    <div
+                      className="p-3 mb-4 rounded"
+                      style={{
+                        backgroundColor: "#fff3cd",
+                        color: "#856404",
+                        fontSize: "0.9rem"
+                      }}
+                    >
+                      <i className="bi bi-info-circle-fill me-2"></i>
+                      <strong>Solicitud rechazada:</strong> Los campos marcados fueron modificados en la solicitud rechazada. 
+                      Los valores actuales (guardados en la base de datos) se muestran en los campos.
+                    </div>
+                  )}
+
                   <Form onSubmit={handleSubmit}>
                     <Row>
                       <Col md={12}>
-                        <Input
-                          type="text"
-                          name="nombre"
-                          label="Nombre del Activo"
-                          placeholder="Digite nombre del activo"
-                          value={formData.nombre}
-                          onChange={handleChange}
-                          error={errors.nombre}
-                          required
-                        />
+                        <div className="mb-3">
+                          <Input
+                            type="text"
+                            name="nombre"
+                            label={
+                              <>
+                                Nombre del Activo
+                                {esCampoModificado('nombre') && (
+                                  <span 
+                                    className="ms-2 badge" 
+                                    style={{backgroundColor: "#ffc107", color: "#000", fontSize: "0.7rem"}}
+                                    title={`Valor intentado: ${getValorIntentado('nombre')}`}
+                                  >
+                                    Campo modificado en solicitud rechazada
+                                  </span>
+                                )}
+                              </>
+                            }
+                            placeholder="Digite nombre del activo"
+                            value={formData.nombre}
+                            onChange={handleChange}
+                            error={errors.nombre}
+                            required
+                          />
+                        </div>
                       </Col>
                     </Row>
 
                     <Row>
                       <Col md={6}>
-                        <Select
-                          name="categoria"
-                          label="Categoría"
-                          placeholder="Seleccione una categoría"
-                          options={categoriasOptions}
-                          value={formData.categoria}
-                          onChange={(e) => handleSelectChange("categoria", e.target.value)}
-                          error={errors.categoria}
-                          required
-                        />
+                        <div className="mb-3">
+                          <Select
+                            name="categoria"
+                            label={
+                              <>
+                                Categoría
+                                {esCampoModificado('categoria') && (
+                                  <span 
+                                    className="ms-2 badge" 
+                                    style={{backgroundColor: "#ffc107", color: "#000", fontSize: "0.7rem"}}
+                                    title={`Valor intentado: ${getValorIntentado('categoria')}`}
+                                  >
+                                    Modificado
+                                  </span>
+                                )}
+                              </>
+                            }
+                            placeholder="Seleccione una categoría"
+                            options={categoriasOptions}
+                            value={formData.categoria}
+                            onChange={(e) => handleSelectChange("categoria", e.target.value)}
+                            error={errors.categoria}
+                            required
+                          />
+                        </div>
                       </Col>
                       <Col md={6}>
-                        <Select
-                          name="estado"
-                          label="Estado"
-                          placeholder="Seleccione un estado"
-                          options={estadosOptions}
-                          value={formData.estado}
-                          onChange={(e) => handleSelectChange("estado", e.target.value)}
-                          error={errors.estado}
-                          required
-                        />
+                        <div className="mb-3">
+                          <Select
+                            name="estado"
+                            label={
+                              <>
+                                Estado
+                                {esCampoModificado('estado') && (
+                                  <span 
+                                    className="ms-2 badge" 
+                                    style={{backgroundColor: "#ffc107", color: "#000", fontSize: "0.7rem"}}
+                                    title={`Valor intentado: ${getValorIntentado('estado')}`}
+                                  >
+                                    Modificado
+                                  </span>
+                                )}
+                              </>
+                            }
+                            placeholder="Seleccione un estado"
+                            options={estadosOptions}
+                            value={formData.estado}
+                            onChange={(e) => handleSelectChange("estado", e.target.value)}
+                            error={errors.estado}
+                            required
+                          />
+                        </div>
                       </Col>
                     </Row>
 
                     <Row>
                       <Col md={6}>
-                        <Input
-                          type="text"
-                          name="ubicacion"
-                          label="Ubicación"
-                          placeholder="Digite ubicación del activo"
-                          value={formData.ubicacion}
-                          onChange={handleChange}
-                          error={errors.ubicacion}
-                          required
-                        />
+                        <div className="mb-3">
+                          <Input
+                            type="text"
+                            name="ubicacion"
+                            label={
+                              <>
+                                Ubicación
+                                {esCampoModificado('ubicacion') && (
+                                  <span 
+                                    className="ms-2 badge" 
+                                    style={{backgroundColor: "#ffc107", color: "#000", fontSize: "0.7rem"}}
+                                    title={`Valor intentado: ${getValorIntentado('ubicacion')}`}
+                                  >
+                                    Modificado
+                                  </span>
+                                )}
+                              </>
+                            }
+                            placeholder="Digite ubicación del activo"
+                            value={formData.ubicacion}
+                            onChange={handleChange}
+                            error={errors.ubicacion}
+                            required
+                          />
+                        </div>
                       </Col>
                       <Col md={6}>
                         <Form.Group className="mb-3 position-relative" ref={dropdownRef}>
                           <Form.Label className="fw-bold" style={{ color: "var(--color-navy)" }}>
                             Responsable <span style={{ color: "red" }}>*</span>
+                            {esCampoModificado('responsableid') && (
+                              <span 
+                                className="ms-2 badge" 
+                                style={{backgroundColor: "#ffc107", color: "#000", fontSize: "0.7rem"}}
+                              >
+                                Modificado
+                              </span>
+                            )}
                           </Form.Label>
                           
                           <div className="input-wrapper">
@@ -573,7 +682,7 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                             >
                               <div className="px-3 py-3 text-center text-muted">
                                 <i className="bi bi-search me-2"></i>
-                                No se encontraron responsables con "{searchTerm}"
+                                No se encontraron responsables con &quot;{searchTerm}&quot;
                               </div>
                             </div>
                           )}
@@ -606,6 +715,14 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                         <Form.Group className="mb-3">
                           <Form.Label className="fw-bold" style={{ color: "var(--color-navy)" }}>
                             Descripción <span style={{ color: "red" }}>*</span>
+                            {esCampoModificado('descripcion') && (
+                              <span 
+                                className="ms-2 badge" 
+                                style={{backgroundColor: "#ffc107", color: "#000", fontSize: "0.7rem"}}
+                              >
+                                Modificado
+                              </span>
+                            )}
                           </Form.Label>
                           <Form.Control
                             as="textarea"
