@@ -181,7 +181,10 @@ const SeguridadPage = () => {
               onNavigateToDetalles={handleNavigateToDetalles}
               onSolicitudesLoaded={(solicitudes) => {
                 const pendingCount = solicitudes.filter(s => s.estadoGeneral === 'Pendiente').length;
-                setPendingRequestsCount(pendingCount);
+                // Usar setTimeout para evitar actualizar estado durante renderizado
+                setTimeout(() => {
+                  setPendingRequestsCount(pendingCount);
+                }, 0);
               }}
             />
           </div>
