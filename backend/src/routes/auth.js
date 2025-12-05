@@ -37,11 +37,16 @@ router.post('/login', asyncHandler(async (req, res) => {
   }
 
   try {
-    // Buscar usuario por email
-    const user = await User.findOne({ email: sanitizedEmail });
+   const user = await User.findOne({ email: sanitizedEmail });
     
+     // Si el usuario no existe
     if (!user) {
       return sendError(res, 401, 'Credenciales inválidas');
+    }
+
+    // Si el usuario existe pero está inactivo
+    if (user.estado !== "activo") {
+      return sendError(res, 401, 'Cuenta inactiva contacta al administrador');
     }
 
     // Verificar contraseña
@@ -184,6 +189,7 @@ router.post('/register', asyncHandler(async (req, res) => {
     departamento: sanitizedData.departamento,
     rol: sanitizedData.rol,
     contrasenaHash,
+    estado: "activo", 
     fechaCreacion: new Date()
   });
 

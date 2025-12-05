@@ -108,9 +108,21 @@ const LoginForm = () => {
           break;
       }
     } catch (error) {
-      setErrors({
-        general: "Credenciales inválidas",
-      });
+    let errorMessage = "Error al iniciar sesión";
+    
+    if (error.response?.data?.message) {
+      const backendMessage = error.response.data.message;
+      
+      if (backendMessage.includes("Cuenta inactiva contacta al administrador")) {
+        errorMessage = "Cuenta inactiva. Contacta al administrador.";
+      } else {
+        errorMessage = "Credenciales inválidas";
+      }
+    }
+
+    setErrors({
+      general: errorMessage,
+    });
     } finally {
       setLoading(false);
     }

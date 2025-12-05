@@ -13,8 +13,11 @@ const auth = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_in_production');
     
-    // Buscar usuario para verificar que aún existe
-    const user = await User.findById(decoded.id).select('-contrasenaHash');
+     // Buscar usuario activo para verificar que aún existe
+    const user = await User.findOne({ 
+      _id: decoded.id, 
+      estado: "activo" 
+    }).select('-contrasenaHash');
     
     if (!user) {
       return sendError(res, 401, 'Token inválido. Usuario no encontrado');

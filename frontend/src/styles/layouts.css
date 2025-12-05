@@ -602,6 +602,10 @@
   background-color: rgba(249, 226, 229, 0.8);
   color: red
 }
+.table-cell .action-btn.activar-btn {
+  background-color: rgba(228, 249, 226, 0.8);
+  color: rgb(24, 146, 22)
+}
 
 .table-cell .action-btn:hover {
   opacity: 0.9;

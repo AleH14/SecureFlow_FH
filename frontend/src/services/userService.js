@@ -10,9 +10,10 @@ export const getCurrentUser = async () => {
   }
 };
 
-export const getUsers = async () => {
+export const getUsers = async (includeInactive = false) => {
   try {
-    const response = await api.get("/users");
+    const params = includeInactive ? '?includeInactive=true' : '';
+    const response = await api.get(`/users${params}`);
     return response.data; // Devolver la respuesta completa que incluye {success, message, data, timestamp}
   } catch (error) {
     console.error('Error obteniendo usuarios:', error);
@@ -36,6 +37,16 @@ export const updateUser = async (userId, userData) => {
     return response.data;
   } catch (error) {
     
+    throw error;
+  }
+};
+
+export const reactivateUser = async (userId) => {
+  try {
+    const response = await api.put(`/users/${userId}/reactivate`);
+    return response.data;
+  } catch (error) {
+    console.error('Error reactivando usuario:', error);
     throw error;
   }
 };
