@@ -23,6 +23,21 @@ const InventoryBase = ({
   const [filteredActivos, setFilteredActivos] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
 
+  // Definir categorías y estados fijos
+  const categoriasFijas = [
+    { value: "Datos", label: "Datos" },
+    { value: "Sistemas", label: "Sistemas" },
+    { value: "Infraestructura", label: "Infraestructura" },
+    { value: "Personas", label: "Personas" }
+  ];
+
+  const estadosFijos = [
+    { value: "Activo", label: "Activo" },
+    { value: "Inactivo", label: "Inactivo" },
+    { value: "En Mantenimiento", label: "En Mantenimiento" },
+    { value: "En Revision", label: "En Revisión" }
+  ];
+
   // Función para cargar activos desde la API
   const loadActivos = async () => {
     try {
@@ -144,12 +159,12 @@ const InventoryBase = ({
           }
         }
 
-        // Filtro por categoría
+        // Filtro por categoría - usar valor exacto
         if (filters.category && activo.categoria !== filters.category) {
           return false;
         }
 
-        // Filtro por estado
+        // Filtro por estado - usar valor exacto
         if (filters.estado && activo.estado !== filters.estado) {
           return false;
         }
@@ -164,14 +179,12 @@ const InventoryBase = ({
   );
 
   const handleHistorialClick = (activo) => {
-    console.log("Navegando al historial de:", activo.nombre);
     if (onNavigateToSCV) {
       onNavigateToSCV(activo);
     }
   };
 
   const handleModificarClick = (activo) => {
-    console.log("Modificando activo:", activo.nombre);
     if (onNavigateToModificarActivo) {
       onNavigateToModificarActivo(activo, "inventory");
     }
@@ -197,25 +210,24 @@ const InventoryBase = ({
   const getEstadoBadgeStyle = (estado) => {
     if (role !== "usuario") return undefined;
 
-    switch (estado) {
+    // Mapear estados del backend a los estilos visuales
+    switch (estado.toLowerCase()) {
       case "activo":
         return { backgroundColor: "#28a745", color: "white" };
+      case "mantenimiento":
       case "en mantenimiento":
         return { backgroundColor: "#ffc107", color: "black" };
       case "inactivo":
         return { backgroundColor: "#dc3545", color: "white" };
-      case "en evaluación":
+      case "en revision":
+      case "en revisión":
         return { backgroundColor: "#17a2b8", color: "white" };
-      case "dado de baja":
-        return { backgroundColor: "#495057", color: "white" };
-      case "obsoleto":
-        return { backgroundColor: "#6c757d", color: "white" };
       default:
         return { backgroundColor: "#6c757d", color: "white" };
     }
   };
 
-  // Campos de búsqueda por rol
+  // Campos de búsqueda por rol - ahora usamos categorías y estados fijos para todos los roles
   const getSearchFields = () => {
     const baseFields = [
       {
@@ -226,71 +238,21 @@ const InventoryBase = ({
       },
     ];
 
-    // Categorías específicas por rol
-    let categoryOptions = [];
-    switch (role) {
-      case "admin":
-        categoryOptions = [
-          { value: "Sistemas", label: "Sistemas" },
-          { value: "Hardware", label: "Hardware" },
-          { value: "Software", label: "Software" },
-          { value: "Redes", label: "Redes" },
-          { value: "Seguridad", label: "Seguridad" },
-        ];
-        break;
-      case "auditor":
-      case "responsable_seguridad":
-        categoryOptions = [
-          { value: "Infraestructura", label: "Infraestructura" },
-          { value: "Base de Datos", label: "Base de Datos" },
-          { value: "Respaldo", label: "Respaldo" },
-          { value: "Seguridad", label: "Seguridad" },
-        ];
-        break;
-      case "usuario":
-      default:
-        categoryOptions = [
-          { value: "Infraestructura", label: "Infraestructura" },
-          { value: "Base de Datos", label: "Base de Datos" },
-          { value: "Respaldo", label: "Respaldo" },
-          { value: "Seguridad", label: "Seguridad" },
-        ];
-        break;
-    }
-
-    // Estados específicos por rol
-    let estadoOptions = [];
-    if (role === "usuario") {
-      estadoOptions = [
-        { value: "activo", label: "Activo" },
-        { value: "inactivo", label: "Inactivo" },
-        { value: "en mantenimiento", label: "En mantenimiento" },
-        { value: "dado de baja", label: "Dado de baja" },
-        { value: "obsoleto", label: "Obsoleto" },
-        { value: "en evaluación", label: "En evaluación" },
-      ];
-    } else {
-      estadoOptions = [
-        { value: "Activo", label: "Activo" },
-        { value: "Mantenimiento", label: "Mantenimiento" },
-        { value: "Inactivo", label: "Inactivo" },
-        { value: "En Revision", label: "En Revisión" },
-      ];
-    }
-
     return [
       ...baseFields,
       {
         name: "category",
         label: "Categoría",
         type: "select",
-        options: categoryOptions,
+        options: categoriasFijas,
+        placeholder: "Seleccione categoría"
       },
       {
         name: "estado",
         label: "Estado",
         type: "select",
-        options: estadoOptions,
+        options: estadosFijos,
+        placeholder: "Seleccione estado"
       },
     ];
   };

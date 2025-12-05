@@ -407,7 +407,7 @@ router.put('/:id', auth, asyncHandler(async (req, res) => {
     }
     
     if (estado !== undefined) {
-      const validStates = ['Activo', 'Inactivo', 'Mantenimiento', 'En Revision'];
+      const validStates = ['Activo', 'Inactivo', 'En Mantenimiento', 'En Revision'];
       if (!validStates.includes(estado)) {
         return sendError(res, 400, 'Estado inválido');
       }

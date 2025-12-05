@@ -15,7 +15,7 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
   const estadosOptions = [
     { value: 'Activo', label: 'Activo' },
     { value: 'Inactivo', label: 'Inactivo' },
-    { value: 'Mantenimiento', label: 'Mantenimiento' },
+    { value: 'En Mantenimiento', label: 'En Mantenimiento' },
     { value: 'En Revision', label: 'En Revisión' }
   ];
 
