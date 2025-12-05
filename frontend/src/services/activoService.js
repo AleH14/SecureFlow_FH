@@ -49,3 +49,27 @@ export const historyCompleteRequestByActivoId = async (id) => {
         throw error;
     }
 }
+
+export const getResponsablesDisponibles = async () => {
+  try {
+    const response = await api.get("/activos/responsables/disponibles");
+
+    // El backend devuelve {success, message, data, timestamp}
+    // Necesitamos extraer el array de usuarios
+    if (response.data && response.data.success && response.data.data) {
+      return response.data.data; // Devuelve el array de usuarios directamente
+    }
+    
+    // Si la respuesta es directamente un array (formato antiguo)
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    // Si no, devolver la respuesta completa
+    return response.data;
+    
+  } catch (error) {
+    console.error('Error obteniendo responsables disponibles:', error);
+    throw error;
+  }
+};

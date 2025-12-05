@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import { FaArrowLeft } from "react-icons/fa";
+import React, { useState, useEffect, useRef } from "react";
+import { Container, Row, Col, Form } from "react-bootstrap";
+import { FaArrowLeft, FaChevronDown, FaSearch } from "react-icons/fa";
 import { Input, Button, Card, Select } from "../../../components/ui";
 import Toast from "../../../components/ui/Toast";
 import {
@@ -12,7 +12,6 @@ import {
 import { ActivoService } from "@/services";
 
 const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSolicitudes }) => {
-  // Estados válidos para modificación (deben coincidir con el backend)
   const estadosOptions = [
     { value: 'Activo', label: 'Activo' },
     { value: 'Inactivo', label: 'Inactivo' },
@@ -27,16 +26,22 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
     descripcion: "",
     ubicacion: "",
     estado: "",
-    responsable: "",
+    responsableId: "",
+    responsableNombre: "",
     justificacion: "",
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  
-  // Estados para Toast
+  const [usuariosOptions, setUsuariosOptions] = useState([]);
+  const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [showResponsablesList, setShowResponsablesList] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
 
-  // Cargar datos del activo cuando el componente se monta o cuando cambia el prop 'activo'
   useEffect(() => {
     if (activo) {
       setFormData({
@@ -46,11 +51,79 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
         descripcion: activo.descripcion || "",
         ubicacion: activo.ubicacion || "",
         estado: activo.estado || "",
-        responsable: activo.responsable || "",
+        responsableId: activo.responsable?.id || "",
+        responsableNombre: activo.responsable?.nombreCompleto || activo.responsable || "",
         justificacion: "",
       });
+      setSearchTerm(activo.responsable?.nombreCompleto || activo.responsable || "");
     }
   }, [activo]);
+
+  useEffect(() => {
+    cargarResponsablesDisponibles();
+    
+    // Cerrar dropdown al hacer clic fuera
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowResponsablesList(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Filtrar usuarios basado en el término de búsqueda
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setUsuariosFiltrados(usuariosOptions);
+    } else {
+      const term = searchTerm.toLowerCase();
+      const filtered = usuariosOptions.filter(usuario =>
+        usuario.value.toLowerCase().includes(term) ||
+        (usuario.email && usuario.email.toLowerCase().includes(term))
+      );
+      setUsuariosFiltrados(filtered);
+    }
+  }, [searchTerm, usuariosOptions]);
+
+  const cargarResponsablesDisponibles = async () => {
+    setLoadingUsuarios(true);
+    try {
+      const response = await ActivoService.getResponsablesDisponibles();
+      
+      let responsablesData = [];
+      
+      if (Array.isArray(response)) {
+        responsablesData = response;
+      } else if (response && response.data && Array.isArray(response.data)) {
+        responsablesData = response.data;
+      } else if (response && response.success && Array.isArray(response.data)) {
+        responsablesData = response.data;
+      }
+      
+      const responsablesFiltrados = responsablesData
+        .map(user => ({
+          id: user.id || user._id,
+          value: user.nombreCompleto || `${user.nombre} ${user.apellido}`,
+          label: user.nombreCompleto || `${user.nombre} ${user.apellido}`,
+          email: user.email || ''
+        }))
+        .filter(user => user.value && user.value.trim() !== "")
+        .sort((a, b) => a.value.localeCompare(b.value));
+      
+      setUsuariosOptions(responsablesFiltrados);
+      setUsuariosFiltrados(responsablesFiltrados);
+      
+    } catch (error) {
+      setUsuariosOptions([]);
+      setUsuariosFiltrados([]);
+    } finally {
+      setLoadingUsuarios(false);
+    }
+  };
 
   const handleBack = () => {
     if (onNavigateBack) {
@@ -60,40 +133,111 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
+    
+    if (name === "responsableNombre") {
+      setSearchTerm(value);
+      setFormData((prev) => ({
         ...prev,
-        [name]: "",
+        responsableNombre: value,
+        responsableId: ""
       }));
+      
+      // Mostrar lista si hay texto y ocultar si está vacío
+      if (value.trim() !== "") {
+        setShowResponsablesList(true);
+      } else {
+        setShowResponsablesList(false);
+      }
+      
+      if (errors.responsableNombre) {
+        setErrors((prev) => ({
+          ...prev,
+          responsableNombre: "",
+        }));
+      }
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+
+      if (errors[name]) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: "",
+        }));
+      }
     }
 
-    // Clear toast when form is modified
     if (showToast) {
       setShowToast(false);
     }
   };
 
+  const handleSelectResponsable = (usuario) => {
+    setFormData(prev => ({
+      ...prev,
+      responsableNombre: usuario.value,
+      responsableId: usuario.id
+    }));
+    setSearchTerm(usuario.value);
+    setShowResponsablesList(false);
+    
+    if (errors.responsableNombre) {
+      setErrors(prev => ({
+        ...prev,
+        responsableNombre: ""
+      }));
+    }
+  };
+
+  const toggleResponsablesList = () => {
+    if (!loadingUsuarios) {
+      setShowResponsablesList(!showResponsablesList);
+      if (!showResponsablesList && inputRef.current) {
+        inputRef.current.focus();
+      }
+    }
+  };
+
+  const handleSelectChange = (name, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validar campos requeridos (excepto justificación que se valida después)
     const validationData = { ...formData };
-    delete validationData.justificacion; // Remover justificación de la validación inicial
+    delete validationData.justificacion;
+    delete validationData.responsableId;
+    delete validationData.responsableNombre;
 
     const newErrors = validateActivoForm(validationData);
 
-    // Validar justificación por separado
+    if (!formData.responsableNombre || formData.responsableNombre.trim() === "") {
+      newErrors.responsableNombre = "Debe seleccionar un responsable de la lista";
+    } else if (!formData.responsableId || formData.responsableId.trim() === "") {
+      const usuarioValido = usuariosOptions.find(
+        usuario => usuario.value === formData.responsableNombre
+      );
+      
+      if (!usuarioValido) {
+        newErrors.responsableNombre = "El responsable seleccionado no es válido. Seleccione de la lista.";
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          responsableId: usuarioValido.id
+        }));
+      }
+    }
+
     if (!formData.justificacion || formData.justificacion.trim() === "") {
       newErrors.justificacion = "La justificación del cambio es requerida";
     } else if (formData.justificacion.length < 10) {
-      newErrors.justificacion =
-        "La justificación debe tener al menos 10 caracteres";
+      newErrors.justificacion = "La justificación debe tener al menos 10 caracteres";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -105,61 +249,62 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
     setErrors({});
 
     try {
-      // Preparar datos para el backend
       const updateData = {
         nombre: formData.nombre.trim(),
         categoria: formData.categoria,
         descripcion: formData.descripcion.trim(),
         ubicacion: formData.ubicacion.trim(),
         estado: formData.estado,
-        comentario: formData.justificacion.trim() // El backend espera 'comentario' en lugar de 'justificacion'
+        comentario: formData.justificacion.trim(),
       };
 
-      // Llamar al servicio para actualizar el activo
+      const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (formData.responsableId && objectIdRegex.test(formData.responsableId)) {
+        updateData.responsableId = formData.responsableId;
+      } else {
+        const usuarioReal = usuariosOptions.find(
+          usuario => usuario.value === formData.responsableNombre
+        );
+        if (usuarioReal && usuarioReal.id && objectIdRegex.test(usuarioReal.id)) {
+          updateData.responsableId = usuarioReal.id;
+        }
+      }
+
+      if (!activo.id || !objectIdRegex.test(activo.id)) {
+        throw new Error('ID de activo inválido');
+      }
+
       const response = await ActivoService.updateActivo(activo.id, updateData);
       
-      console.log('Activo actualizado exitosamente:', response);
-      
-      // Mostrar toast de éxito
       setShowToast(true);
       
-      // Actualizar el contador de solicitudes
       if (onRefreshSolicitudes) {
         onRefreshSolicitudes();
       }
 
-      // Si se proporcionó la función onUpdateActivo, llamarla con los datos actualizados del backend
       if (onUpdateActivo && response.activo) {
         onUpdateActivo(response.activo);
       }
 
-      // Navegar de vuelta después de 2 segundos
       setTimeout(() => {
         if (onNavigateBack) {
           onNavigateBack();
         }
-      }, 2000);
+      }, 3000);
 
     } catch (error) {
-      console.error('Error actualizando activo:', error);
-      
       let errorMessage = "Error al actualizar el activo. Por favor intenta de nuevo.";
       
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
-      } else if (error.response?.status === 400) {
-        errorMessage = "Datos inválidos. Verifica la información ingresada.";
-      } else if (error.response?.status === 401) {
-        errorMessage = "No tienes permisos para modificar este activo. Inicia sesión nuevamente.";
-      } else if (error.response?.status === 403) {
-        errorMessage = "No tienes permisos para modificar este activo.";
-      } else if (error.response?.status === 404) {
-        errorMessage = "El activo no fue encontrado.";
-      } else if (error.response?.status >= 500) {
-        errorMessage = "Error interno del servidor. Intenta más tarde.";
+        
+        if (error.response.data.message.includes('ID de activo inválido')) {
+          errorMessage = "El ID del activo no es válido. Por favor, recarga la página e intenta nuevamente.";
+        }
+      } else if (error.message && error.message.includes('ID de activo inválido')) {
+        errorMessage = "El ID del activo no es válido. Por favor, recarga la página e intenta nuevamente.";
       }
       
-      // Mostrar error en el formulario
       setErrors({
         general: errorMessage,
       });
@@ -169,7 +314,6 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
   };
 
   const handleReset = () => {
-    // Reset to original activo data
     if (activo) {
       setFormData({
         nombre: activo.nombre || "",
@@ -178,13 +322,15 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
         descripcion: activo.descripcion || "",
         ubicacion: activo.ubicacion || "",
         estado: activo.estado || "",
-        responsable: activo.responsable || "",
+        responsableId: activo.responsable?.id || "",
+        responsableNombre: activo.responsable?.nombreCompleto || activo.responsable || "",
         justificacion: "",
       });
+      setSearchTerm(activo.responsable?.nombreCompleto || activo.responsable || "");
     }
     setErrors({});
-    // Cerrar toast si está abierto
     setShowToast(false);
+    setShowResponsablesList(false);
   };
 
   if (!activo) {
@@ -202,15 +348,14 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
     <>
       <Toast
         show={showToast}
-        message="Solicitud enviada"
+        message="¡Solicitud de modificación enviada exitosamente!"
         variant="success"
         autohide={true}
-        delay={2000}
+        delay={3000}
         onClose={() => setShowToast(false)}
       />
       
       <div className="modificar-activo-page">
-        {/* Botón volver */}
         <div className="mb-3">
           <Button
             type="button"
@@ -224,7 +369,6 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
           </Button>
         </div>
 
-        {/* Título con código y versión del activo en blanco */}
         <div className="user-header">
           <div className="user-header-text">
             <h2 style={{ color: "white" }}>Modificar Activo de Información</h2>
@@ -239,7 +383,6 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
           </div>
         </div>
 
-        {/* Formulario */}
         <Container fluid>
           <Row className="justify-content-center">
             <Col xs={12} lg={8} xl={6}>
@@ -250,7 +393,6 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                     requerida
                   </p>
 
-                  {/* Alert informativo */}
                   <div
                     className="p-3 mb-4 rounded"
                     style={{
@@ -279,8 +421,7 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                     </div>
                   )}
 
-                  <form onSubmit={handleSubmit}>
-                    {/* Primera fila: Nombre */}
+                  <Form onSubmit={handleSubmit}>
                     <Row>
                       <Col md={12}>
                         <Input
@@ -290,21 +431,12 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                           placeholder="Digite nombre del activo"
                           value={formData.nombre}
                           onChange={handleChange}
+                          error={errors.nombre}
                           required
                         />
-                        {errors.nombre && (
-                          <div
-                            className="text-danger small"
-                            style={{ marginTop: "2px", marginBottom: "0" }}
-                          >
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            {errors.nombre}
-                          </div>
-                        )}
                       </Col>
                     </Row>
 
-                    {/* Segunda fila: Categoría y Estado */}
                     <Row>
                       <Col md={6}>
                         <Select
@@ -313,18 +445,10 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                           placeholder="Seleccione una categoría"
                           options={categoriasOptions}
                           value={formData.categoria}
-                          onChange={handleChange}
+                          onChange={(e) => handleSelectChange("categoria", e.target.value)}
+                          error={errors.categoria}
                           required
                         />
-                        {errors.categoria && (
-                          <div
-                            className="text-danger small"
-                            style={{ marginTop: "2px", marginBottom: "0" }}
-                          >
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            {errors.categoria}
-                          </div>
-                        )}
                       </Col>
                       <Col md={6}>
                         <Select
@@ -333,22 +457,13 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                           placeholder="Seleccione un estado"
                           options={estadosOptions}
                           value={formData.estado}
-                          onChange={handleChange}
+                          onChange={(e) => handleSelectChange("estado", e.target.value)}
+                          error={errors.estado}
                           required
                         />
-                        {errors.estado && (
-                          <div
-                            className="text-danger small"
-                            style={{ marginTop: "2px", marginBottom: "0" }}
-                          >
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            {errors.estado}
-                          </div>
-                        )}
                       </Col>
                     </Row>
 
-                    {/* Tercera fila: Ubicación y Responsable */}
                     <Row>
                       <Col md={6}>
                         <Input
@@ -358,110 +473,210 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                           placeholder="Digite ubicación del activo"
                           value={formData.ubicacion}
                           onChange={handleChange}
+                          error={errors.ubicacion}
                           required
                         />
-                        {errors.ubicacion && (
-                          <div
-                            className="text-danger small"
-                            style={{ marginTop: "2px", marginBottom: "0" }}
-                          >
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            {errors.ubicacion}
-                          </div>
-                        )}
                       </Col>
                       <Col md={6}>
-                        <Input
-                          type="text"
-                          name="responsable"
-                          label="Responsable"
-                          placeholder="Digite nombre del responsable"
-                          value={formData.responsable}
-                          onChange={handleChange}
-                          required
-                        />
+                        <Form.Group className="mb-3 position-relative" ref={dropdownRef}>
+                          <Form.Label className="fw-bold" style={{ color: "var(--color-navy)" }}>
+                            Responsable <span style={{ color: "red" }}>*</span>
+                          </Form.Label>
+                          
+                          <div className="input-wrapper">
+                            <div className="input-icon-left">
+                              <FaSearch className="text-muted" />
+                            </div>
+                            <Form.Control
+                              ref={inputRef}
+                              type="text"
+                              id="responsableNombre"
+                              name="responsableNombre"
+                              className="custom-input has-left-icon"
+                              value={formData.responsableNombre}
+                              onChange={handleChange}
+                              placeholder="Buscar responsable..."
+                              required
+                              disabled={loadingUsuarios}
+                              isInvalid={!!errors.responsableNombre}
+                              style={{
+                                padding: "8px 12px",
+                                paddingLeft: "40px",
+                                fontSize: "14px",
+                                backgroundColor: "white",
+                                color: "black",
+                              }}
+                            />
+                            <div className="input-icon-right">
+                              <button
+                                type="button"
+                                className="btn btn-link p-0 border-0 bg-transparent"
+                                onClick={toggleResponsablesList}
+                                disabled={loadingUsuarios}
+                                style={{
+                                  color: "#6c757d",
+                                  cursor: loadingUsuarios ? "not-allowed" : "pointer"
+                                }}
+                              >
+                                <FaChevronDown className={showResponsablesList ? "rotate-180" : ""} />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {showResponsablesList && usuariosFiltrados.length > 0 && (
+                            <div 
+                              className="position-absolute w-100 mt-1 bg-white border rounded shadow-lg"
+                              style={{ 
+                                zIndex: 1000, 
+                                maxHeight: "250px", 
+                                overflowY: "auto",
+                                top: "100%",
+                                left: 0
+                              }}
+                            >
+                              <div className="px-3 py-2 border-bottom bg-light">
+                                <small className="text-muted">
+                                  {usuariosFiltrados.length} de {usuariosOptions.length} responsables
+                                </small>
+                              </div>
+                              
+                              {usuariosFiltrados.map((usuario) => (
+                                <div
+                                  key={usuario.id}
+                                  className="px-3 py-2 hover-bg-light cursor-pointer"
+                                  onClick={() => handleSelectResponsable(usuario)}
+                                  style={{
+                                    borderBottom: "1px solid #f0f0f0",
+                                    cursor: "pointer",
+                                    transition: "background-color 0.2s"
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                >
+                                  <div className="fw-medium">{usuario.label}</div>
+                                  {usuario.email && (
+                                    <div className="text-muted small">{usuario.email}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {showResponsablesList && usuariosFiltrados.length === 0 && (
+                            <div 
+                              className="position-absolute w-100 mt-1 bg-white border rounded shadow-lg"
+                              style={{ 
+                                zIndex: 1000, 
+                                top: "100%",
+                                left: 0
+                              }}
+                            >
+                              <div className="px-3 py-3 text-center text-muted">
+                                <i className="bi bi-search me-2"></i>
+                                No se encontraron responsables con "{searchTerm}"
+                              </div>
+                            </div>
+                          )}
+                          
+                          {errors.responsableNombre && (
+                            <Form.Control.Feedback type="invalid" className="d-block">
+                              <i className="bi bi-exclamation-circle me-1"></i>
+                              {errors.responsableNombre}
+                            </Form.Control.Feedback>
+                          )}
+                          
+                          {loadingUsuarios && (
+                            <div className="text-info small mt-1">
+                              <i className="bi bi-hourglass-split me-1"></i>
+                              Cargando lista de responsables...
+                            </div>
+                          )}
+                          
+                          <input 
+                            type="hidden" 
+                            name="responsableId" 
+                            value={formData.responsableId} 
+                          />
+                        </Form.Group>
                       </Col>
                     </Row>
 
-                    {/* Cuarta fila: Descripción */}
                     <Row>
                       <Col md={12}>
-                        <label
-                          className="form-label fw-bold"
-                          style={{ color: "var(--color-navy)" }}
-                        >
-                          Descripción <span style={{ color: "red" }}>*</span>
-                        </label>
-                        <textarea
-                          name="descripcion"
-                          placeholder="Digite descripción del activo"
-                          value={formData.descripcion}
-                          onChange={handleChange}
-                          rows={4}
-                          required
-                          style={{
-                            resize: "vertical",
-                            width: "100%",
-                            padding: "8px 12px",
-                            border: "1px solid #ced4da",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            minHeight: "100px",
-                            backgroundColor: "white",
-                            color: "black",
-                          }}
-                        />
-                        {errors.descripcion && (
-                          <div className="text-danger small mt-1">
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            {errors.descripcion}
-                          </div>
-                        )}
+                        <Form.Group className="mb-3">
+                          <Form.Label className="fw-bold" style={{ color: "var(--color-navy)" }}>
+                            Descripción <span style={{ color: "red" }}>*</span>
+                          </Form.Label>
+                          <Form.Control
+                            as="textarea"
+                            name="descripcion"
+                            placeholder="Digite descripción del activo"
+                            value={formData.descripcion}
+                            onChange={handleChange}
+                            rows={4}
+                            required
+                            isInvalid={!!errors.descripcion}
+                            style={{
+                              resize: "vertical",
+                              width: "100%",
+                              padding: "8px 12px",
+                              border: "1px solid #ced4da",
+                              borderRadius: "4px",
+                              fontSize: "14px",
+                              minHeight: "100px",
+                              backgroundColor: "white",
+                              color: "black",
+                            }}
+                          />
+                          {errors.descripcion && (
+                            <Form.Control.Feedback type="invalid" className="d-block">
+                              <i className="bi bi-exclamation-circle me-1"></i>
+                              {errors.descripcion}
+                            </Form.Control.Feedback>
+                          )}
+                        </Form.Group>
                       </Col>
                     </Row>
 
-                    {/* Quinta fila: Justificación del cambio */}
                     <Row>
                       <Col md={12}>
-                        <label
-                          className="form-label fw-bold"
-                          style={{ color: "var(--color-navy)" }}
-                        >
-                          Justificación del Cambio{" "}
-                          <span style={{ color: "red" }}>*</span>
-                        </label>
-                        <textarea
-                          name="justificacion"
-                          placeholder="Digite la justificación para los cambios realizados en el activo"
-                          value={formData.justificacion}
-                          onChange={handleChange}
-                          rows={3}
-                          required
-                          style={{
-                            resize: "vertical",
-                            width: "100%",
-                            padding: "8px 12px",
-                            border: "1px solid #ced4da",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            minHeight: "80px",
-                            backgroundColor: "white",
-                            color: "black",
-                          }}
-                        />
-                        {errors.justificacion && (
-                          <div className="text-danger small mt-1">
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            {errors.justificacion}
-                          </div>
-                        )}
+                        <Form.Group className="mb-3">
+                          <Form.Label className="fw-bold" style={{ color: "var(--color-navy)" }}>
+                            Justificación del Cambio <span style={{ color: "red" }}>*</span>
+                          </Form.Label>
+                          <Form.Control
+                            as="textarea"
+                            name="justificacion"
+                            placeholder="Digite la justificación para los cambios realizados en el activo"
+                            value={formData.justificacion}
+                            onChange={handleChange}
+                            rows={3}
+                            required
+                            isInvalid={!!errors.justificacion}
+                            style={{
+                              resize: "vertical",
+                              width: "100%",
+                              padding: "8px 12px",
+                              border: "1px solid #ced4da",
+                              borderRadius: "4px",
+                              fontSize: "14px",
+                              minHeight: "80px",
+                              backgroundColor: "white",
+                              color: "black",
+                            }}
+                          />
+                          {errors.justificacion && (
+                            <Form.Control.Feedback type="invalid" className="d-block">
+                              <i className="bi bi-exclamation-circle me-1"></i>
+                              {errors.justificacion}
+                            </Form.Control.Feedback>
+                          )}
+                        </Form.Group>
                       </Col>
                     </Row>
 
-                    {/* Información de solo lectura - Código oculto pero presente para validación */}
                     <input type="hidden" name="codigo" value={formData.codigo} />
 
-                    {/* Botones */}
                     <Row>
                       <Col md={12}>
                         <div className="d-flex justify-content-center gap-3 mt-4">
@@ -470,7 +685,7 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                             variant="outline"
                             size="lg"
                             onClick={handleReset}
-                            disabled={loading}
+                            disabled={loading || loadingUsuarios}
                           >
                             Restablecer Cambios
                           </Button>
@@ -480,20 +695,57 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                             variant="primary"
                             size="lg"
                             loading={loading}
-                            disabled={loading}
+                            disabled={loading || loadingUsuarios}
                           >
-                            Actualizar Activo
+                            {loading ? 'Enviando...' : 'Actualizar Activo'}
                           </Button>
                         </div>
                       </Col>
                     </Row>
-                  </form>
+                  </Form>
                 </Card.Body>
               </Card>
             </Col>
           </Row>
         </Container>
       </div>
+      
+      <style jsx>{`
+        .rotate-180 {
+          transform: rotate(180deg);
+          transition: transform 0.3s ease;
+        }
+        .hover-bg-light:hover {
+          background-color: #f8f9fa !important;
+        }
+        .cursor-pointer {
+          cursor: pointer;
+        }
+        .input-wrapper {
+          position: relative;
+        }
+        .input-icon-left {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 10;
+          color: #6c757d;
+        }
+        .input-icon-right {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 10;
+        }
+        .custom-input.has-left-icon {
+          padding-left: 40px !important;
+        }
+        .custom-input.has-right-icon {
+          padding-right: 40px !important;
+        }
+      `}</style>
     </>
   );
 };

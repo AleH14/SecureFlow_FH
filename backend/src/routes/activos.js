@@ -866,4 +866,36 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
   }
 }));
 
+// @route   GET /api/activos/responsables/disponibles
+// @desc    Get available users for asset responsibility (users with role "usuario")
+// @access  Private (All authenticated users)
+router.get('/responsables/disponibles', auth, asyncHandler(async (req, res) => {
+  try {
+    // Filtrar SOLO por rol "usuario"
+    const filter = {
+      rol: 'usuario'
+    };
+
+    // Obtener usuarios con rol "usuario"
+    const users = await User.find(filter)
+      .select('_id nombre apellido email') //id, nombre, apellido, email
+      .sort({ nombre: 1, apellido: 1 })
+      .limit(100);
+
+    // Formatear respuesta - AHORA CON ID
+    const formattedUsers = users.map(user => ({
+      id: user._id, // AÑADIDO: Incluir el ID
+      nombreCompleto: `${user.nombre} ${user.apellido}`,
+      email: user.email
+    }));
+    
+    // Enviar solo el array de usuarios
+    sendResponse(res, 200, `${formattedUsers.length} responsables disponibles obtenidos`, formattedUsers);
+
+  } catch (error) {
+    console.error('Error obteniendo responsables disponibles:', error);
+    return sendError(res, 500, 'Error interno del servidor');
+  }
+}));
+
 module.exports = router;
