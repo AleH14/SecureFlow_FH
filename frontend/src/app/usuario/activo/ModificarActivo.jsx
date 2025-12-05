@@ -3,14 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { FaArrowLeft } from "react-icons/fa";
-import { Input, Button, Card, Select, Alert } from "../../../components/ui";
+import { Input, Button, Card, Select } from "../../../components/ui";
+import Toast from "../../../components/ui/Toast";
 import {
   validateActivoForm,
   categoriasOptions,
 } from "./validacionesActivo";
 import { ActivoService } from "@/services";
 
-const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
+const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSolicitudes }) => {
   // Estados válidos para modificación (deben coincidir con el backend)
   const estadosOptions = [
     { value: 'Activo', label: 'Activo' },
@@ -31,7 +32,9 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  
+  // Estados para Toast
+  const [showToast, setShowToast] = useState(false);
 
   // Cargar datos del activo cuando el componente se monta o cuando cambia el prop 'activo'
   useEffect(() => {
@@ -70,9 +73,9 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
       }));
     }
 
-    // Clear success message when form is modified
-    if (successMessage) {
-      setSuccessMessage("");
+    // Clear toast when form is modified
+    if (showToast) {
+      setShowToast(false);
     }
   };
 
@@ -117,18 +120,26 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
       
       console.log('Activo actualizado exitosamente:', response);
       
-      // El backend devuelve tanto el activo como la solicitud de cambio
-      const solicitudCodigo = response.solicitud?.codigoSolicitud || '';
+      // Mostrar toast de éxito
+      setShowToast(true);
       
-      setSuccessMessage(
-        `El activo "${formData.nombre}" ha sido actualizado exitosamente. ` +
-        `Se ha generado la solicitud de modificación: ${solicitudCodigo}`
-      );
+      // Actualizar el contador de solicitudes
+      if (onRefreshSolicitudes) {
+        onRefreshSolicitudes();
+      }
 
       // Si se proporcionó la función onUpdateActivo, llamarla con los datos actualizados del backend
       if (onUpdateActivo && response.activo) {
         onUpdateActivo(response.activo);
       }
+
+      // Navegar de vuelta después de 2 segundos
+      setTimeout(() => {
+        if (onNavigateBack) {
+          onNavigateBack();
+        }
+      }, 2000);
+
     } catch (error) {
       console.error('Error actualizando activo:', error);
       
@@ -148,6 +159,7 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
         errorMessage = "Error interno del servidor. Intenta más tarde.";
       }
       
+      // Mostrar error en el formulario
       setErrors({
         general: errorMessage,
       });
@@ -171,15 +183,13 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
       });
     }
     setErrors({});
-    setSuccessMessage("");
+    // Cerrar toast si está abierto
+    setShowToast(false);
   };
 
   if (!activo) {
     return (
       <div className="modificar-activo-page">
-        <Alert variant="warning">
-          No se ha seleccionado ningún activo para modificar.
-        </Alert>
         <Button onClick={handleBack}>
           <FaArrowLeft className="me-2" />
           Volver al inventario
@@ -189,301 +199,302 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo }) => {
   }
 
   return (
-    <div className="modificar-activo-page">
-      {/* Botón volver */}
-      <div className="mb-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleBack}
-          className="d-flex align-items-center"
-          style={{ color: "white", borderColor: "white" }}
-        >
-          <FaArrowLeft className="me-2" />
-          Volver al inventario
-        </Button>
-      </div>
+    <>
+      <Toast
+        show={showToast}
+        message="Solicitud enviada"
+        variant="success"
+        autohide={true}
+        delay={2000}
+        onClose={() => setShowToast(false)}
+      />
+      
+      <div className="modificar-activo-page">
+        {/* Botón volver */}
+        <div className="mb-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            className="d-flex align-items-center"
+            style={{ color: "white", borderColor: "white" }}
+          >
+            <FaArrowLeft className="me-2" />
+            Volver al inventario
+          </Button>
+        </div>
 
-      {/* Título con código y versión del activo en blanco */}
-      <div className="user-header">
-        <div className="user-header-text">
-          <h2 style={{ color: "white" }}>Modificar Activo de Información</h2>
-          <div style={{ color: "white" }}>
-            <span style={{ fontSize: "1.1rem", fontWeight: "bold" }}>
-              Código: {activo.codigo}
-            </span>
-            <span style={{ fontSize: "1rem", marginLeft: "1rem" }}>
-              Versión: {activo.version || "v1.0.0"}
-            </span>
+        {/* Título con código y versión del activo en blanco */}
+        <div className="user-header">
+          <div className="user-header-text">
+            <h2 style={{ color: "white" }}>Modificar Activo de Información</h2>
+            <div style={{ color: "white" }}>
+              <span style={{ fontSize: "1.1rem", fontWeight: "bold" }}>
+                Código: {activo.codigo}
+              </span>
+              <span style={{ fontSize: "1rem", marginLeft: "1rem" }}>
+                Versión: {activo.version || "v1.0.0"}
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* Formulario */}
+        <Container fluid>
+          <Row className="justify-content-center">
+            <Col xs={12} lg={8} xl={6}>
+              <Card className="shadow-lg" style={{ backgroundColor: "#FFEEEE" }}>
+                <Card.Body className="p-4">
+                  <p className="text-muted text-center">
+                    Panel de modificación de activo - Modifique la información
+                    requerida
+                  </p>
+
+                  {/* Alert informativo */}
+                  <div
+                    className="p-3 mb-4 rounded"
+                    style={{
+                      backgroundColor: "#F2F8FF",
+                      color: "#8b7f7fff",
+                      fontSize: "0.9rem"
+                    }}
+                  >
+                    <strong>Proceso de Control de Cambios ISO 27001:</strong>{" "}
+                    Todas las modificaciones requieren aprobación del responsable
+                    de seguridad. Se creará automáticamente una solicitud de cambio pendiente de
+                    revisión. Solo se pueden modificar activos de los cuales eres responsable.
+                  </div>
+
+                  {errors.general && (
+                    <div
+                      className="p-3 mb-4 rounded"
+                      style={{
+                        backgroundColor: "#f8d7da",
+                        color: "#721c24",
+                        fontSize: "0.9rem"
+                      }}
+                    >
+                      <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                      {errors.general}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSubmit}>
+                    {/* Primera fila: Nombre */}
+                    <Row>
+                      <Col md={12}>
+                        <Input
+                          type="text"
+                          name="nombre"
+                          label="Nombre del Activo"
+                          placeholder="Digite nombre del activo"
+                          value={formData.nombre}
+                          onChange={handleChange}
+                          required
+                        />
+                        {errors.nombre && (
+                          <div
+                            className="text-danger small"
+                            style={{ marginTop: "2px", marginBottom: "0" }}
+                          >
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {errors.nombre}
+                          </div>
+                        )}
+                      </Col>
+                    </Row>
+
+                    {/* Segunda fila: Categoría y Estado */}
+                    <Row>
+                      <Col md={6}>
+                        <Select
+                          name="categoria"
+                          label="Categoría"
+                          placeholder="Seleccione una categoría"
+                          options={categoriasOptions}
+                          value={formData.categoria}
+                          onChange={handleChange}
+                          required
+                        />
+                        {errors.categoria && (
+                          <div
+                            className="text-danger small"
+                            style={{ marginTop: "2px", marginBottom: "0" }}
+                          >
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {errors.categoria}
+                          </div>
+                        )}
+                      </Col>
+                      <Col md={6}>
+                        <Select
+                          name="estado"
+                          label="Estado"
+                          placeholder="Seleccione un estado"
+                          options={estadosOptions}
+                          value={formData.estado}
+                          onChange={handleChange}
+                          required
+                        />
+                        {errors.estado && (
+                          <div
+                            className="text-danger small"
+                            style={{ marginTop: "2px", marginBottom: "0" }}
+                          >
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {errors.estado}
+                          </div>
+                        )}
+                      </Col>
+                    </Row>
+
+                    {/* Tercera fila: Ubicación y Responsable */}
+                    <Row>
+                      <Col md={6}>
+                        <Input
+                          type="text"
+                          name="ubicacion"
+                          label="Ubicación"
+                          placeholder="Digite ubicación del activo"
+                          value={formData.ubicacion}
+                          onChange={handleChange}
+                          required
+                        />
+                        {errors.ubicacion && (
+                          <div
+                            className="text-danger small"
+                            style={{ marginTop: "2px", marginBottom: "0" }}
+                          >
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {errors.ubicacion}
+                          </div>
+                        )}
+                      </Col>
+                      <Col md={6}>
+                        <Input
+                          type="text"
+                          name="responsable"
+                          label="Responsable"
+                          placeholder="Digite nombre del responsable"
+                          value={formData.responsable}
+                          onChange={handleChange}
+                          required
+                        />
+                      </Col>
+                    </Row>
+
+                    {/* Cuarta fila: Descripción */}
+                    <Row>
+                      <Col md={12}>
+                        <label
+                          className="form-label fw-bold"
+                          style={{ color: "var(--color-navy)" }}
+                        >
+                          Descripción <span style={{ color: "red" }}>*</span>
+                        </label>
+                        <textarea
+                          name="descripcion"
+                          placeholder="Digite descripción del activo"
+                          value={formData.descripcion}
+                          onChange={handleChange}
+                          rows={4}
+                          required
+                          style={{
+                            resize: "vertical",
+                            width: "100%",
+                            padding: "8px 12px",
+                            border: "1px solid #ced4da",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            minHeight: "100px",
+                            backgroundColor: "white",
+                            color: "black",
+                          }}
+                        />
+                        {errors.descripcion && (
+                          <div className="text-danger small mt-1">
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {errors.descripcion}
+                          </div>
+                        )}
+                      </Col>
+                    </Row>
+
+                    {/* Quinta fila: Justificación del cambio */}
+                    <Row>
+                      <Col md={12}>
+                        <label
+                          className="form-label fw-bold"
+                          style={{ color: "var(--color-navy)" }}
+                        >
+                          Justificación del Cambio{" "}
+                          <span style={{ color: "red" }}>*</span>
+                        </label>
+                        <textarea
+                          name="justificacion"
+                          placeholder="Digite la justificación para los cambios realizados en el activo"
+                          value={formData.justificacion}
+                          onChange={handleChange}
+                          rows={3}
+                          required
+                          style={{
+                            resize: "vertical",
+                            width: "100%",
+                            padding: "8px 12px",
+                            border: "1px solid #ced4da",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            minHeight: "80px",
+                            backgroundColor: "white",
+                            color: "black",
+                          }}
+                        />
+                        {errors.justificacion && (
+                          <div className="text-danger small mt-1">
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {errors.justificacion}
+                          </div>
+                        )}
+                      </Col>
+                    </Row>
+
+                    {/* Información de solo lectura - Código oculto pero presente para validación */}
+                    <input type="hidden" name="codigo" value={formData.codigo} />
+
+                    {/* Botones */}
+                    <Row>
+                      <Col md={12}>
+                        <div className="d-flex justify-content-center gap-3 mt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            onClick={handleReset}
+                            disabled={loading}
+                          >
+                            Restablecer Cambios
+                          </Button>
+
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="lg"
+                            loading={loading}
+                            disabled={loading}
+                          >
+                            Actualizar Activo
+                          </Button>
+                        </div>
+                      </Col>
+                    </Row>
+                  </form>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
       </div>
-
-      {/* Formulario */}
-      <Container fluid>
-        <Row className="justify-content-center">
-          <Col xs={12} lg={8} xl={6}>
-            <Card className="shadow-lg" style={{ backgroundColor: "#FFEEEE" }}>
-              <Card.Body className="p-4">
-                <p className="text-muted text-center">
-                  Panel de modificación de activo - Modifique la información
-                  requerida
-                </p>
-
-                {/* Alert informativo */}
-                <div
-                  className="p-3 mb-4 rounded"
-                  style={{
-                    backgroundColor: "#F2F8FF",
-                    color: "#8b7f7fff",
-                    fontSize: "0.9rem"
-                  }}
-                >
-                  <strong>Proceso de Control de Cambios ISO 27001:</strong>{" "}
-                  Todas las modificaciones requieren aprobación del responsable
-                  de seguridad. Se creará automáticamente una solicitud de cambio pendiente de
-                  revisión. Solo se pueden modificar activos de los cuales eres responsable.
-                </div>
-
-                {successMessage && (
-                  <Alert
-                    variant="success"
-                    dismissible
-                    onClose={() => setSuccessMessage("")}
-                  >
-                    <i className="bi bi-check-circle-fill me-2"></i>
-                    {successMessage}
-                  </Alert>
-                )}
-
-                {errors.general && (
-                  <Alert
-                    variant="danger"
-                    dismissible
-                    onClose={() =>
-                      setErrors((prev) => ({ ...prev, general: "" }))
-                    }
-                  >
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    {errors.general}
-                  </Alert>
-                )}
-
-                <form onSubmit={handleSubmit}>
-                  {/* Primera fila: Nombre */}
-                  <Row>
-                    <Col md={12}>
-                      <Input
-                        type="text"
-                        name="nombre"
-                        label="Nombre del Activo"
-                        placeholder="Digite nombre del activo"
-                        value={formData.nombre}
-                        onChange={handleChange}
-                        required
-                      />
-                      {errors.nombre && (
-                        <div
-                          className="text-danger small"
-                          style={{ marginTop: "2px", marginBottom: "0" }}
-                        >
-                          <i className="bi bi-exclamation-circle me-1"></i>
-                          {errors.nombre}
-                        </div>
-                      )}
-                    </Col>
-                  </Row>
-
-                  {/* Segunda fila: Categoría y Estado */}
-                  <Row>
-                    <Col md={6}>
-                      <Select
-                        name="categoria"
-                        label="Categoría"
-                        placeholder="Seleccione una categoría"
-                        options={categoriasOptions}
-                        value={formData.categoria}
-                        onChange={handleChange}
-                        required
-                      />
-                      {errors.categoria && (
-                        <div
-                          className="text-danger small"
-                          style={{ marginTop: "2px", marginBottom: "0" }}
-                        >
-                          <i className="bi bi-exclamation-circle me-1"></i>
-                          {errors.categoria}
-                        </div>
-                      )}
-                    </Col>
-                    <Col md={6}>
-                      <Select
-                        name="estado"
-                        label="Estado"
-                        placeholder="Seleccione un estado"
-                        options={estadosOptions}
-                        value={formData.estado}
-                        onChange={handleChange}
-                        required
-                      />
-                      {errors.estado && (
-                        <div
-                          className="text-danger small"
-                          style={{ marginTop: "2px", marginBottom: "0" }}
-                        >
-                          <i className="bi bi-exclamation-circle me-1"></i>
-                          {errors.estado}
-                        </div>
-                      )}
-                    </Col>
-                  </Row>
-
-                  {/* Tercera fila: Ubicación y Responsable */}
-                  <Row>
-                    <Col md={6}>
-                      <Input
-                        type="text"
-                        name="ubicacion"
-                        label="Ubicación"
-                        placeholder="Digite ubicación del activo"
-                        value={formData.ubicacion}
-                        onChange={handleChange}
-                        required
-                      />
-                      {errors.ubicacion && (
-                        <div
-                          className="text-danger small"
-                          style={{ marginTop: "2px", marginBottom: "0" }}
-                        >
-                          <i className="bi bi-exclamation-circle me-1"></i>
-                          {errors.ubicacion}
-                        </div>
-                      )}
-                    </Col>
-                    <Col md={6}>
-                      <Input
-                        type="text"
-                        name="responsable"
-                        label="Responsable"
-                        placeholder="Digite nombre del responsable"
-                        value={formData.responsable}
-                        onChange={handleChange}
-                        required
-                      />
-                    </Col>
-                  </Row>
-
-                  {/* Cuarta fila: Descripción */}
-                  <Row>
-                    <Col md={12}>
-                      <label
-                        className="form-label fw-bold"
-                        style={{ color: "var(--color-navy)" }}
-                      >
-                        Descripción <span style={{ color: "red" }}>*</span>
-                      </label>
-                      <textarea
-                        name="descripcion"
-                        placeholder="Digite descripción del activo"
-                        value={formData.descripcion}
-                        onChange={handleChange}
-                        rows={4}
-                        required
-                        style={{
-                          resize: "vertical",
-                          width: "100%",
-                          padding: "8px 12px",
-                          border: "1px solid #ced4da",
-                          borderRadius: "4px",
-                          fontSize: "14px",
-                          minHeight: "100px",
-                          backgroundColor: "white",
-                          color: "black",
-                        }}
-                      />
-                      {errors.descripcion && (
-                        <div className="text-danger small mt-1">
-                          <i className="bi bi-exclamation-circle me-1"></i>
-                          {errors.descripcion}
-                        </div>
-                      )}
-                    </Col>
-                  </Row>
-
-                  {/* Quinta fila: Justificación del cambio */}
-                  <Row>
-                    <Col md={12}>
-                      <label
-                        className="form-label fw-bold"
-                        style={{ color: "var(--color-navy)" }}
-                      >
-                        Justificación del Cambio{" "}
-                        <span style={{ color: "red" }}>*</span>
-                      </label>
-                      <textarea
-                        name="justificacion"
-                        placeholder="Digite la justificación para los cambios realizados en el activo"
-                        value={formData.justificacion}
-                        onChange={handleChange}
-                        rows={3}
-                        required
-                        style={{
-                          resize: "vertical",
-                          width: "100%",
-                          padding: "8px 12px",
-                          border: "1px solid #ced4da",
-                          borderRadius: "4px",
-                          fontSize: "14px",
-                          minHeight: "80px",
-                          backgroundColor: "white",
-                          color: "black",
-                        }}
-                      />
-                      {errors.justificacion && (
-                        <div className="text-danger small mt-1">
-                          <i className="bi bi-exclamation-circle me-1"></i>
-                          {errors.justificacion}
-                        </div>
-                      )}
-                    </Col>
-                  </Row>
-
-                  {/* Información de solo lectura - Código oculto pero presente para validación */}
-                  <input type="hidden" name="codigo" value={formData.codigo} />
-
-                  {/* Botones */}
-                  <Row>
-                    <Col md={12}>
-                      <div className="d-flex justify-content-center gap-3 mt-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="lg"
-                          onClick={handleReset}
-                          disabled={loading}
-                        >
-                          Restablecer Cambios
-                        </Button>
-
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          size="lg"
-                          loading={loading}
-                          disabled={loading}
-                        >
-                          Actualizar Activo
-                        </Button>
-                      </div>
-                    </Col>
-                  </Row>
-                </form>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
-    </div>
+    </>
   );
 };
 

@@ -10,7 +10,7 @@ import {
   categoriasOptions,
 } from "./validacionesActivo";
 
-const NuevoActivo = ({ onNavigateBack }) => {
+const NuevoActivo = ({ onNavigateBack, onRefreshSolicitudes}) => {
   const [formData, setFormData] = useState({
     nombre: "",
     codigo: "(Se generará automáticamente)",
@@ -101,6 +101,10 @@ const NuevoActivo = ({ onNavigateBack }) => {
         `El activo "${formData.nombre}" ha sido creado exitosamente con el código: ${codigoGenerado}. ` +
         `Se ha generado la solicitud de aprobación: ${solicitudCodigo}`
       );
+       // Actualizar el contador de solicitudes
+      if (onRefreshSolicitudes) {
+        onRefreshSolicitudes();
+      }
 
       // Limpiar formulario
       setFormData({

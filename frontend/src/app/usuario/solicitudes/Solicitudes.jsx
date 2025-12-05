@@ -4,7 +4,7 @@ import { SearchBar, Table, Button } from "../../../components/ui";
 import { FaCheck, FaTimes, FaClock } from "react-icons/fa";
 import { RequestService } from "@/services";
 
-const Solicitudes = ({ onNavigateToDetalles }) => {
+const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,6 +21,10 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       if (response && response.success && response.data) {
         setSolicitudes(response.data.solicitudes || []);
         console.log(`Cargadas ${response.data.solicitudes?.length || 0} solicitudes`);
+          // Actualizar el contador cuando se cargan las solicitudes
+        if (onRefreshCount) {
+          onRefreshCount();
+        }
       } else {
         throw new Error('Formato de respuesta inesperado');
       }
