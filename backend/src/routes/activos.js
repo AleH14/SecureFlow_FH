@@ -871,12 +871,13 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
 // @access  Private (All authenticated users)
 router.get('/responsables/disponibles', auth, asyncHandler(async (req, res) => {
   try {
-    // Filtrar SOLO por rol "usuario"
+    // Filtrar SOLO por rol "usuario" y estado "activo"
     const filter = {
-      rol: 'usuario'
+      rol: 'usuario',
+      estado: 'activo'  
     };
 
-    // Obtener usuarios con rol "usuario"
+    // Obtener usuarios con filtros
     const users = await User.find(filter)
       .select('_id nombre apellido email') //id, nombre, apellido, email
       .sort({ nombre: 1, apellido: 1 })
@@ -884,9 +885,9 @@ router.get('/responsables/disponibles', auth, asyncHandler(async (req, res) => {
 
     // Formatear respuesta - AHORA CON ID
     const formattedUsers = users.map(user => ({
-      id: user._id, // AÑADIDO: Incluir el ID
+      id: user._id, //Incluir el ID
       nombreCompleto: `${user.nombre} ${user.apellido}`,
-      email: user.email
+      email: user.email,
     }));
     
     // Enviar solo el array de usuarios
