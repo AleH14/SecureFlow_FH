@@ -22,8 +22,34 @@ export const getActivos = async () => {
 };
 
 export const getActivoById = async (id) => {
-    const response = await api.get(`/activos/${id}`);
-    return response.data.activo;
+    try {
+        const response = await api.get(`/activos/${id}`);
+        
+        // Manejar diferentes estructuras de respuesta del backend
+        if (response.data) {
+            // Si tiene estructura {success, data: {activo: ...}}
+            if (response.data.success && response.data.data && response.data.data.activo) {
+                return response.data.data.activo;
+            }
+            // Si tiene estructura {activo: ...}
+            if (response.data.activo) {
+                return response.data.activo;
+            }
+            // Si tiene estructura {success, data: activo}
+            if (response.data.success && response.data.data) {
+                return response.data.data;
+            }
+            // Si response.data es directamente el activo
+            if (response.data._id || response.data.id) {
+                return response.data;
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error obteniendo activo por ID:', error);
+        throw error;
+    }
 };
 export const updateActivo = async (id, activoData) => {
     try {
@@ -49,3 +75,27 @@ export const historyCompleteRequestByActivoId = async (id) => {
         throw error;
     }
 }
+
+export const getResponsablesDisponibles = async () => {
+  try {
+    const response = await api.get("/activos/responsables/disponibles");
+
+    // El backend devuelve {success, message, data, timestamp}
+    // Necesitamos extraer el array de usuarios
+    if (response.data && response.data.success && response.data.data) {
+      return response.data.data; // Devuelve el array de usuarios directamente
+    }
+    
+    // Si la respuesta es directamente un array (formato antiguo)
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    // Si no, devolver la respuesta completa
+    return response.data;
+    
+  } catch (error) {
+    console.error('Error obteniendo responsables disponibles:', error);
+    throw error;
+  }
+};

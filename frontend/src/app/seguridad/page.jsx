@@ -9,6 +9,7 @@ import Solicitudes from "./solicitudes/Solicitudes";
 import Revision from "./revision/Revision"; // Componente para aprobar/rechazar
 import RevisionVista from "./revision/RevisionVista"; // Componente para solo ver
 import { RequestService } from "../../services";
+import { getCurrentUser } from "../../services/userService"; // Importa la función para obtener el usuario actual
 
 const SeguridadPage = () => {
   const [activeTab, setActiveTab] = useState("panel-revision");
@@ -18,6 +19,7 @@ const SeguridadPage = () => {
   const [showRevision, setShowRevision] = useState(false);
   const [showRevisionVista, setShowRevisionVista] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [userData, setUserData] = useState(null); //almacenar datos del usuario
 
   // Cargar conteo al montar el componente
   useEffect(() => {
@@ -53,6 +55,23 @@ const SeguridadPage = () => {
       iconName: "FaBoxes"
     }
   ];
+
+  // Obtener el usuario actual
+    useEffect(() => {
+      const fetchCurrentUser = async () => {
+        try {
+          const response = await getCurrentUser(); // Esto devuelve {success, message, data}
+  
+          if (response.success && response.data) {
+            setUserData(response.data); // response.data contiene la info del usuario
+          }
+        } catch (error) {
+          console.error("Error al obtener usuario:", error);
+        }
+      };
+  
+      fetchCurrentUser();
+    }, []); // El array vacío [] significa que se ejecuta solo una vez al montar el componente
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -162,7 +181,10 @@ const SeguridadPage = () => {
               onNavigateToDetalles={handleNavigateToDetalles}
               onSolicitudesLoaded={(solicitudes) => {
                 const pendingCount = solicitudes.filter(s => s.estadoGeneral === 'Pendiente').length;
-                setPendingRequestsCount(pendingCount);
+                // Usar setTimeout para evitar actualizar estado durante renderizado
+                setTimeout(() => {
+                  setPendingRequestsCount(pendingCount);
+                }, 0);
               }}
             />
           </div>
@@ -181,7 +203,8 @@ const SeguridadPage = () => {
     <GradientLayout>
       <Header
         showUser={true}
-        userName="Responsable de Seguridad"
+        userName={userData ? `${userData.nombre} ${userData.apellido}` : "Responsable de Seguridad"}
+        userRole="Responsable de Seguridad"
         userIcon={FaUserCircle}
       />
 

@@ -100,13 +100,15 @@ const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
       ? solicitudes.map(transformSolicitud) 
       : [];
     
-    // Notificar al componente padre sobre las solicitudes cargadas
-    if (onSolicitudesLoaded && transformed.length > 0) {
-      onSolicitudesLoaded(transformed);
-    }
-    
     return transformed;
-  }, [solicitudes, onSolicitudesLoaded]);
+  }, [solicitudes]);
+
+  // Notificar al componente padre sobre las solicitudes cargadas usando useEffect
+  useEffect(() => {
+    if (onSolicitudesLoaded && solicitudesTransformadas.length > 0) {
+      onSolicitudesLoaded(solicitudesTransformadas);
+    }
+  }, [solicitudesTransformadas, onSolicitudesLoaded]);
 
   const solicitudesToShow = isFiltered ? filteredSolicitudes : solicitudesTransformadas;
 

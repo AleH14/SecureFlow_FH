@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Button, Card, Modal } from "../../../components/ui";
-import Table from "../../../components/ui/Table"; 
+import Table from "../../../components/ui/Table";
 import Toast from "../../../components/ui/Toast";
 import { FaArrowLeft, FaShieldAlt, FaInfoCircle, FaEdit } from "react-icons/fa";
 import { RequestService } from "@/services";
@@ -29,7 +29,7 @@ const Revision = ({
       categoriaAdecuada: false,
     }
   );
-  
+
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -43,8 +43,10 @@ const Revision = ({
         try {
           setLoading(true);
           setError(null);
-          const response = await RequestService.getRequestById(initialSolicitud._id);
-          
+          const response = await RequestService.getRequestById(
+            initialSolicitud._id
+          );
+
           if (response && response.success && response.data) {
             // Transformar datos del backend al formato del frontend
             const detailedSolicitud = {
@@ -52,18 +54,23 @@ const Revision = ({
               // Datos adicionales del backend
               activo: response.data.activo,
               cambios: response.data.cambios || [],
-              solicitante: response.data.solicitante?.nombreCompleto || initialSolicitud.solicitante,
-              nombreSolicitante: response.data.solicitante?.nombreCompleto || initialSolicitud.solicitante,
+              solicitante:
+                response.data.solicitante?.nombreCompleto ||
+                initialSolicitud.solicitante,
+              nombreSolicitante:
+                response.data.solicitante?.nombreCompleto ||
+                initialSolicitud.solicitante,
               responsableSeguridad: response.data.responsableSeguridad,
               comentarioSeguridad: response.data.comentarioSeguridad,
               fechaRevision: response.data.fechaRevision,
-              tipoOperacion: response.data.tipoOperacion || initialSolicitud.tipoOperacion // Preservar tipo de operación
+              tipoOperacion:
+                response.data.tipoOperacion || initialSolicitud.tipoOperacion, // Preservar tipo de operación
             };
             setSolicitud(detailedSolicitud);
           }
         } catch (err) {
-          console.error('Error cargando detalles de solicitud:', err);
-          setError('Error al cargar los detalles de la solicitud');
+          console.error("Error cargando detalles de solicitud:", err);
+          setError("Error al cargar los detalles de la solicitud");
           // Mantener la solicitud inicial si falla la carga de detalles
           setSolicitud(initialSolicitud);
         } finally {
@@ -102,38 +109,38 @@ const Revision = ({
   // Generar comentario basado en checklist
   const generateCommentFromChecklist = () => {
     const comments = [];
-    
+
     if (checklist.informacionCompleta) {
       comments.push("✓ Información completa y clara");
     } else {
       comments.push("✗ Información incompleta o confusa del cambio");
     }
-    
+
     if (checklist.justificacionClara) {
       comments.push("✓ Justificación del cambio adecuada");
     } else {
       comments.push("✗ Justificación no adecuada del cambio");
     }
-    
+
     if (checklist.impactoDocumentado) {
       comments.push("✓ Impacto del cambio documentado");
     } else {
       comments.push("✗ Impacto del cambio no especificado");
     }
-    
+
     if (checklist.categoriaAdecuada) {
       comments.push("✓ Categorización apropiada");
     } else {
       comments.push("✗ Categoría asignada inapropiada");
     }
-    
-    return comments.join('\n');
+
+    return comments.join("\n");
   };
 
   // Manejar limpiar comentario
   const handleClearComment = () => {
-    setRevisionComment('');
-    if (externalSetComment) externalSetComment('');
+    setRevisionComment("");
+    if (externalSetComment) externalSetComment("");
   };
 
   // Manejar usar comentario del checklist
@@ -164,7 +171,7 @@ const Revision = ({
     setToastMessage(message);
     setToastVariant(variant);
     setShowToast(true);
-    
+
     // Esperar un momento antes de navegar para que se vea el toast
     setTimeout(() => {
       if (onNavigateBack) onNavigateBack();
@@ -174,8 +181,10 @@ const Revision = ({
   // Confirmar aprobación
   const confirmApprove = async () => {
     if (!revisionComment.trim()) {
-      setToastMessage('El comentario de revisión es requerido para aprobar la solicitud');
-      setToastVariant('warning');
+      setToastMessage(
+        "El comentario de revisión es requerido para aprobar la solicitud"
+      );
+      setToastVariant("warning");
       setShowToast(true);
       setShowApproveModal(false);
       return;
@@ -184,51 +193,52 @@ const Revision = ({
     try {
       setSubmittingReview(true);
       setShowApproveModal(false);
-      
-      console.log('Enviando aprobación:', {
+
+      console.log("Enviando aprobación:", {
         id: solicitud._id,
-        estado: 'Aprobado',
-        comentario: revisionComment
+        estado: "Aprobado",
+        comentario: revisionComment,
       });
-      
+
       const response = await RequestService.reviewRequest(
         solicitud._id,
-        'Aprobado',
+        "Aprobado",
         revisionComment
       );
-      
-      console.log('Respuesta de aprobación:', response);
-      
+
+      console.log("Respuesta de aprobación:", response);
+
       // Actualizar el estado local de la solicitud
-      setSolicitud(prevSolicitud => ({
+      setSolicitud((prevSolicitud) => ({
         ...prevSolicitud,
-        estadoGeneral: 'Aprobado',
+        estadoGeneral: "Aprobado",
         comentarioSeguridad: revisionComment,
         fechaRevision: new Date().toISOString(),
         responsableSeguridad: {
-          nombreCompleto: 'Responsable de Seguridad' // Se actualizará con datos reales del backend
-        }
+          nombreCompleto: "Responsable de Seguridad", // Se actualizará con datos reales del backend
+        },
       }));
-      
+
       if (onApprove) {
         onApprove();
       }
-      
+
       showSuccessToastAndNavigate(
         "Solicitud aprobada exitosamente. Los cambios se han guardado en la base de datos.",
         "success"
       );
     } catch (error) {
-      console.error('Error aprobando solicitud:', error);
-      let errorMessage = 'Error al aprobar la solicitud. Por favor intenta de nuevo.';
-      
+      console.error("Error aprobando solicitud:", error);
+      let errorMessage =
+        "Error al aprobar la solicitud. Por favor intenta de nuevo.";
+
       if (error.response) {
-        console.error('Error response:', error.response.data);
+        console.error("Error response:", error.response.data);
         errorMessage = error.response.data.message || errorMessage;
       }
-      
+
       setToastMessage(errorMessage);
-      setToastVariant('error');
+      setToastVariant("error");
       setShowToast(true);
     } finally {
       setSubmittingReview(false);
@@ -238,8 +248,10 @@ const Revision = ({
   // Confirmar rechazo
   const confirmReject = async () => {
     if (!revisionComment.trim()) {
-      setToastMessage('El comentario de revisión es requerido para rechazar la solicitud');
-      setToastVariant('warning');
+      setToastMessage(
+        "El comentario de revisión es requerido para rechazar la solicitud"
+      );
+      setToastVariant("warning");
       setShowToast(true);
       setShowRejectModal(false);
       return;
@@ -248,51 +260,52 @@ const Revision = ({
     try {
       setSubmittingReview(true);
       setShowRejectModal(false);
-      
-      console.log('Enviando rechazo:', {
+
+      console.log("Enviando rechazo:", {
         id: solicitud._id,
-        estado: 'Rechazado',
-        comentario: revisionComment
+        estado: "Rechazado",
+        comentario: revisionComment,
       });
-      
+
       const response = await RequestService.reviewRequest(
         solicitud._id,
-        'Rechazado',
+        "Rechazado",
         revisionComment
       );
-      
-      console.log('Respuesta de rechazo:', response);
-      
+
+      console.log("Respuesta de rechazo:", response);
+
       // Actualizar el estado local de la solicitud
-      setSolicitud(prevSolicitud => ({
+      setSolicitud((prevSolicitud) => ({
         ...prevSolicitud,
-        estadoGeneral: 'Rechazado',
+        estadoGeneral: "Rechazado",
         comentarioSeguridad: revisionComment,
         fechaRevision: new Date().toISOString(),
         responsableSeguridad: {
-          nombreCompleto: 'Responsable de Seguridad' // Se actualizará con datos reales del backend
-        }
+          nombreCompleto: "Responsable de Seguridad", // Se actualizará con datos reales del backend
+        },
       }));
-      
+
       if (onReject) {
         onReject();
       }
-      
+
       showSuccessToastAndNavigate(
         "Solicitud rechazada exitosamente. Los cambios se han guardado en la base de datos.",
         "success"
       );
     } catch (error) {
-      console.error('Error rechazando solicitud:', error);
-      let errorMessage = 'Error al rechazar la solicitud. Por favor intenta de nuevo.';
-      
+      console.error("Error rechazando solicitud:", error);
+      let errorMessage =
+        "Error al rechazar la solicitud. Por favor intenta de nuevo.";
+
       if (error.response) {
-        console.error('Error response:', error.response.data);
+        console.error("Error response:", error.response.data);
         errorMessage = error.response.data.message || errorMessage;
       }
-      
+
       setToastMessage(errorMessage);
-      setToastVariant('error');
+      setToastVariant("error");
       setShowToast(true);
     } finally {
       setSubmittingReview(false);
@@ -311,15 +324,29 @@ const Revision = ({
   };
 
   // Datos para la tabla de cambios
+  // Datos para la tabla de cambios - MODIFICA ESTE BLOCO
   const cambiosTableData =
-    solicitud.cambios?.map((cambio, index) => ({
-      id: index,
-      campo: cambio.campo,
-      valorAnterior: cambio.valorAnterior,
-      valorModificado: cambio.valorNuevo,
-    })) || [];
+    solicitud.cambios?.map((cambio, index) => {
+      let valorAnterior = cambio.valorAnterior;
 
-  // Columnas para la tabla de cambios 
+      // Si es creación, mostrar "Sin valor anterior"
+      if (solicitud.tipoOperacion === "creacion") {
+        valorAnterior = "Sin valor anterior";
+      }
+      // Si no es creación pero el valor anterior está vacío
+      else if (!valorAnterior || valorAnterior.trim() === "") {
+        valorAnterior = "Vacío";
+      }
+
+      return {
+        id: index,
+        campo: cambio.campo,
+        valorAnterior: valorAnterior,
+        valorModificado: cambio.valorNuevo,
+      };
+    }) || [];
+
+  // Columnas para la tabla de cambios
   const cambiosTableColumns = [
     {
       key: "campo",
@@ -327,17 +354,28 @@ const Revision = ({
       render: (row) => <span className="text-dark fw-bold">{row.campo}</span>,
       cellStyle: {
         minWidth: "150px",
-        maxWidth: "200px"
-      }
+        maxWidth: "200px",
+      },
     },
     {
       key: "valorAnterior",
       label: "Valor anterior",
-      render: (row) => <span className="text-dark">{row.valorAnterior}</span>,
+      render: (row) => {
+        // Si es "Sin valor anterior" o "Vacío", mostrarlo en gris 
+        if (
+          row.valorAnterior === "Sin valor anterior" ||
+          row.valorAnterior === "Vacío"
+        ) {
+          return (
+            <span className="text-muted">{row.valorAnterior}</span>
+          );
+        }
+        return <span className="text-dark">{row.valorAnterior}</span>;
+      },
       cellStyle: {
         minWidth: "200px",
-        maxWidth: "250px"
-      }
+        maxWidth: "250px",
+      },
     },
     {
       key: "valorModificado",
@@ -345,8 +383,8 @@ const Revision = ({
       render: (row) => <span className="text-dark">{row.valorModificado}</span>,
       cellStyle: {
         minWidth: "200px",
-        maxWidth: "250px"
-      }
+        maxWidth: "250px",
+      },
     },
   ];
 
@@ -367,7 +405,9 @@ const Revision = ({
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Cargando...</span>
           </div>
-          <p className="mt-2 text-white">Cargando detalles de la solicitud...</p>
+          <p className="mt-2 text-white">
+            Cargando detalles de la solicitud...
+          </p>
         </div>
       </div>
     );
@@ -388,7 +428,7 @@ const Revision = ({
         </Button>
         <div className="alert alert-warning">
           <h5>Error al cargar la solicitud</h5>
-          <p>{error || 'No se encontró la información de la solicitud'}</p>
+          <p>{error || "No se encontró la información de la solicitud"}</p>
         </div>
       </div>
     );
@@ -422,10 +462,14 @@ const Revision = ({
       {/* Título y código */}
       <div className="d-flex justify-content-between align-items-start mb-3 mb-lg-4">
         <div className="text-white">
-          <h2 className="fw-bold mb-1 h4-responsive">Revisión de Solicitud de Cambio</h2>
-          <h6 className="text-white-50 h6-responsive">Código: {solicitud.codigoSolicitud}</h6>
+          <h2 className="fw-bold mb-1 h4-responsive">
+            Revisión de Solicitud de Cambio
+          </h2>
+          <h6 className="text-white-50 h6-responsive">
+            Código: {solicitud.codigoSolicitud}
+          </h6>
         </div>
-        
+
         {/* Botones de acción para el responsable de seguridad */}
         {solicitud.estadoGeneral === "Pendiente" && (
           <div className="d-flex gap-2">
@@ -442,7 +486,7 @@ const Revision = ({
                   Procesando...
                 </>
               ) : (
-                'Aprobar'
+                "Aprobar"
               )}
             </Button>
             <Button
@@ -458,7 +502,7 @@ const Revision = ({
                   Procesando...
                 </>
               ) : (
-                'Rechazar'
+                "Rechazar"
               )}
             </Button>
           </div>
@@ -471,7 +515,7 @@ const Revision = ({
           {/* Checklist de Evaluación */}
           {solicitud.estadoGeneral === "Pendiente" && (
             <>
-              <Card style={{ backgroundColor: '#FFEEEE' }}>
+              <Card style={{ backgroundColor: "#FFEEEE" }}>
                 <div className="card-body p-2 p-lg-3">
                   {/* Encabezado del Checklist */}
                   <div className="bg-warning p-2 p-lg-3 rounded mb-2 mb-lg-3">
@@ -480,7 +524,7 @@ const Revision = ({
                       Checklist de Evaluación
                     </h5>
                   </div>
-                  
+
                   {/* Items del Checklist */}
                   <div className="checklist-items">
                     <div className="checklist-item mb-3">
@@ -489,13 +533,19 @@ const Revision = ({
                           className="form-check-input"
                           type="checkbox"
                           checked={checklist.informacionCompleta}
-                          onChange={() => handleChecklistChange('informacionCompleta')}
+                          onChange={() =>
+                            handleChecklistChange("informacionCompleta")
+                          }
                           id="check1"
                         />
-                        <label className="form-check-label text-dark" htmlFor="check1">
+                        <label
+                          className="form-check-label text-dark"
+                          htmlFor="check1"
+                        >
                           <strong>Información completa y clara</strong>
                           <small className="text-muted d-block mt-1">
-                            Todos los campos están completos y la descripción permite entender el alcance
+                            Todos los campos están completos y la descripción
+                            permite entender el alcance
                           </small>
                         </label>
                       </div>
@@ -507,13 +557,19 @@ const Revision = ({
                           className="form-check-input"
                           type="checkbox"
                           checked={checklist.justificacionClara}
-                          onChange={() => handleChecklistChange('justificacionClara')}
+                          onChange={() =>
+                            handleChecklistChange("justificacionClara")
+                          }
                           id="check2"
                         />
-                        <label className="form-check-label text-dark" htmlFor="check2">
+                        <label
+                          className="form-check-label text-dark"
+                          htmlFor="check2"
+                        >
                           <strong>Justificación adecuada del cambio</strong>
                           <small className="text-muted d-block mt-1">
-                            La razón del cambio está bien explicada y es apropiada
+                            La razón del cambio está bien explicada y es
+                            apropiada
                           </small>
                         </label>
                       </div>
@@ -525,13 +581,19 @@ const Revision = ({
                           className="form-check-input"
                           type="checkbox"
                           checked={checklist.impactoDocumentado}
-                          onChange={() => handleChecklistChange('impactoDocumentado')}
+                          onChange={() =>
+                            handleChecklistChange("impactoDocumentado")
+                          }
                           id="check3"
                         />
-                        <label className="form-check-label text-dark" htmlFor="check3">
+                        <label
+                          className="form-check-label text-dark"
+                          htmlFor="check3"
+                        >
                           <strong>Impacto del cambio documentado</strong>
                           <small className="text-muted d-block mt-1">
-                            Se especifica cómo afectará la modificación al activo y sus dependencias
+                            Se especifica cómo afectará la modificación al
+                            activo y sus dependencias
                           </small>
                         </label>
                       </div>
@@ -543,13 +605,19 @@ const Revision = ({
                           className="form-check-input"
                           type="checkbox"
                           checked={checklist.categoriaAdecuada}
-                          onChange={() => handleChecklistChange('categoriaAdecuada')}
+                          onChange={() =>
+                            handleChecklistChange("categoriaAdecuada")
+                          }
                           id="check4"
                         />
-                        <label className="form-check-label text-dark" htmlFor="check4">
+                        <label
+                          className="form-check-label text-dark"
+                          htmlFor="check4"
+                        >
                           <strong>Categorización apropiada</strong>
                           <small className="text-muted d-block mt-1">
-                            La categoría asignada corresponde con la naturaleza del activo
+                            La categoría asignada corresponde con la naturaleza
+                            del activo
                           </small>
                         </label>
                       </div>
@@ -559,7 +627,7 @@ const Revision = ({
               </Card>
 
               {/* Panel de Comentarios */}
-              <Card style={{ backgroundColor: '#FFEEEE' }} className="mt-3">
+              <Card style={{ backgroundColor: "#FFEEEE" }} className="mt-3">
                 <div className="card-body p-2 p-lg-3">
                   <div className="bg-info p-2 p-lg-3 rounded mb-2 mb-lg-3">
                     <h5 className="card-title fw-bold mb-0 text-white d-flex align-items-center h5-responsive">
@@ -567,7 +635,7 @@ const Revision = ({
                       Comentarios de Revisión
                     </h5>
                   </div>
-                  
+
                   <div className="mb-3">
                     <label className="form-label fw-semibold small text-dark">
                       <strong>Comentario Final de Revisión</strong>
@@ -580,12 +648,13 @@ const Revision = ({
                       onChange={handleCommentChange}
                     />
                     <div className="form-text text-dark">
-                      Este comentario será visible para el solicitante y formará parte del registro.
+                      Este comentario será visible para el solicitante y formará
+                      parte del registro.
                     </div>
                   </div>
 
                   <div className="d-flex gap-2 flex-wrap">
-                    <Button 
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={handleUseChecklistComment}
@@ -593,7 +662,7 @@ const Revision = ({
                       <FaEdit className="me-1" />
                       Usar Comentario del Checklist
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={handleClearComment}
@@ -601,58 +670,72 @@ const Revision = ({
                       Limpiar
                     </Button>
                   </div>
-              </div>
-            </Card>
-          </>
+                </div>
+              </Card>
+            </>
           )}
-          
+
           {/* Sección de revisión completada (si ya fue revisada) */}
-          {solicitud.estadoGeneral !== "Pendiente" && solicitud.responsableSeguridad && (
-            <Card style={{ backgroundColor: '#FFEEEE' }} className="mt-3">
-              <div className="card-body p-2 p-lg-3">
-                <div className="bg-secondary p-2 p-lg-3 rounded mb-2 mb-lg-3">
-                  <h5 className="card-title fw-bold mb-0 text-white d-flex align-items-center h5-responsive">
-                    <FaShieldAlt className="me-2" />
-                    Revisión Completada
-                  </h5>
-                </div>
-                
-                <div className="mb-2">
-                  <strong className="text-dark">Estado Final:</strong>
-                  <span className={`badge ms-2 ${
-                    solicitud.estadoGeneral === "Aprobado" ? "bg-success" :
-                    solicitud.estadoGeneral === "Rechazado" ? "bg-danger" : "bg-warning"
-                  }`}>
-                    {solicitud.estadoGeneral}
-                  </span>
-                </div>
-                
-                <div className="mb-2">
-                  <strong className="text-dark">Fecha de Revisión:</strong>
-                  <span className="ms-2 text-dark">{formatFecha(solicitud.fechaRevision)}</span>
-                </div>
-                
-                <div className="mb-2">
-                  <strong className="text-dark">Responsable de Seguridad:</strong>
-                  <span className="ms-2 text-dark">{solicitud.responsableSeguridad.nombreCompleto}</span>
-                </div>
-                
-                <div>
-                  <strong className="text-dark">Comentario de Revisión:</strong>
-                  <div className="mt-2 p-2 bg-light rounded">
-                    <small className="text-dark">
-                      {solicitud.comentarioSeguridad || 'Sin comentarios'}
-                    </small>
+          {solicitud.estadoGeneral !== "Pendiente" &&
+            solicitud.responsableSeguridad && (
+              <Card style={{ backgroundColor: "#FFEEEE" }} className="mt-3">
+                <div className="card-body p-2 p-lg-3">
+                  <div className="bg-secondary p-2 p-lg-3 rounded mb-2 mb-lg-3">
+                    <h5 className="card-title fw-bold mb-0 text-white d-flex align-items-center h5-responsive">
+                      <FaShieldAlt className="me-2" />
+                      Revisión Completada
+                    </h5>
+                  </div>
+
+                  <div className="mb-2">
+                    <strong className="text-dark">Estado Final:</strong>
+                    <span
+                      className={`badge ms-2 ${
+                        solicitud.estadoGeneral === "Aprobado"
+                          ? "bg-success"
+                          : solicitud.estadoGeneral === "Rechazado"
+                          ? "bg-danger"
+                          : "bg-warning"
+                      }`}
+                    >
+                      {solicitud.estadoGeneral}
+                    </span>
+                  </div>
+
+                  <div className="mb-2">
+                    <strong className="text-dark">Fecha de Revisión:</strong>
+                    <span className="ms-2 text-dark">
+                      {formatFecha(solicitud.fechaRevision)}
+                    </span>
+                  </div>
+
+                  <div className="mb-2">
+                    <strong className="text-dark">
+                      Responsable de Seguridad:
+                    </strong>
+                    <span className="ms-2 text-dark">
+                      {solicitud.responsableSeguridad.nombreCompleto}
+                    </span>
+                  </div>
+
+                  <div>
+                    <strong className="text-dark">
+                      Comentario de Revisión:
+                    </strong>
+                    <div className="mt-2 p-2 bg-light rounded">
+                      <small className="text-dark">
+                        {solicitud.comentarioSeguridad || "Sin comentarios"}
+                      </small>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          )}
+              </Card>
+            )}
         </div>
 
         {/* Columna derecha - INFORMACIÓN DE LA SOLICITUD */}
         <div className="col-12 col-lg-7">
-          <Card style={{ backgroundColor: '#FFEEEE' }}>
+          <Card style={{ backgroundColor: "#FFEEEE" }}>
             <div className="card-body p-2 p-lg-3">
               <div className="bg-primary p-2 p-lg-3 rounded mb-2 mb-lg-3">
                 <h5 className="card-title fw-bold mb-0 text-white d-flex align-items-center h5-responsive">
@@ -673,7 +756,9 @@ const Revision = ({
                   <div className="col-12 col-md-6">
                     <strong className="text-dark">Solicitante:</strong>
                     <span className="ms-2 text-dark d-block d-md-inline">
-                      {solicitud.nombreSolicitante || solicitud.solicitante || "No especificado"}
+                      {solicitud.nombreSolicitante ||
+                        solicitud.solicitante ||
+                        "No especificado"}
                     </span>
                   </div>
                 </div>
@@ -682,9 +767,11 @@ const Revision = ({
                     <strong className="text-dark">Tipo de Operación:</strong>
                     <span className="ms-2 text-dark d-block d-md-inline">
                       <span className="badge bg-info ms-1">
-                        {solicitud.tipoOperacion === 'creacion' ? 'Creación' :
-                         solicitud.tipoOperacion === 'modificacion' ? 'Modificación' :
-                         solicitud.tipoOperacion || 'No especificado'}
+                        {solicitud.tipoOperacion === "creacion"
+                          ? "Creación"
+                          : solicitud.tipoOperacion === "modificacion"
+                          ? "Modificación"
+                          : solicitud.tipoOperacion || "No especificado"}
                       </span>
                     </span>
                   </div>
@@ -694,7 +781,8 @@ const Revision = ({
                       {solicitud.nombreActivo}
                       {solicitud.activo && (
                         <small className="text-muted d-block">
-                          Código: {solicitud.activo.codigo} | Categoría: {solicitud.activo.categoria}
+                          Código: {solicitud.activo.codigo} | Categoría:{" "}
+                          {solicitud.activo.categoria}
                         </small>
                       )}
                     </span>
@@ -707,7 +795,7 @@ const Revision = ({
                 <h6 className="fw-bold mb-2 mb-lg-3 text-dark h6-responsive">
                   Justificación del Cambio
                 </h6>
-                <Card style={{ backgroundColor: '#FFEEEE' }}>
+                <Card style={{ backgroundColor: "#FFEEEE" }}>
                   <div className="card-body p-2 p-lg-3">
                     <p className="mb-0 text-dark">{solicitud.justificacion}</p>
                   </div>
@@ -716,7 +804,9 @@ const Revision = ({
 
               {/* Tabla de cambios realizados */}
               <div className="mb-3 mb-lg-4">
-                <h6 className="fw-bold mb-2 mb-lg-3 text-dark h6-responsive">Cambios Solicitados</h6>
+                <h6 className="fw-bold mb-2 mb-lg-3 text-dark h6-responsive">
+                  Cambios Solicitados
+                </h6>
                 {cambiosTableData.length > 0 ? (
                   <div className="table-responsive">
                     <Table
@@ -746,7 +836,13 @@ const Revision = ({
         question="¿Estás seguro de que deseas aprobar esta solicitud?"
         showValueBox={true}
         valueBoxTitle="Solicitud a aprobar:"
-        valueBoxSubtitle={solicitud ? `${solicitud.codigoSolicitud} - ${solicitud.nombreActivo || "Activo"}` : ""}
+        valueBoxSubtitle={
+          solicitud
+            ? `${solicitud.codigoSolicitud} - ${
+                solicitud.nombreActivo || "Activo"
+              }`
+            : ""
+        }
         informativeText="Esta acción cambiará el estado de la solicitud a 'Aprobado' en la base de datos y permitirá que continúe el flujo de aprobación. Los cambios serán permanentes."
         cancelText="Cancelar"
         acceptText="Aprobar"
@@ -764,7 +860,13 @@ const Revision = ({
         question="¿Estás seguro de que deseas rechazar esta solicitud?"
         showValueBox={true}
         valueBoxTitle="Solicitud a rechazar:"
-        valueBoxSubtitle={solicitud ? `${solicitud.codigoSolicitud} - ${solicitud.nombreActivo || "Activo"}` : ""}
+        valueBoxSubtitle={
+          solicitud
+            ? `${solicitud.codigoSolicitud} - ${
+                solicitud.nombreActivo || "Activo"
+              }`
+            : ""
+        }
         informativeText="Esta acción cambiará el estado de la solicitud a 'Rechazado' en la base de datos y notificará al solicitante. El comentario de revisión será visible para el solicitante y los cambios serán permanentes."
         cancelText="Cancelar"
         acceptText="Rechazar"

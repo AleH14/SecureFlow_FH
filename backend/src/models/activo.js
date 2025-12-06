@@ -28,7 +28,7 @@ const ActivoSchema = new mongoose.Schema({
     enum: [
       "Activo",
       "Inactivo",
-      "Mantenimiento",
+      "En Mantenimiento",
       "En Revision"
     ],
     default: "En Revision"

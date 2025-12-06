@@ -7,6 +7,7 @@ const Header = ({
   className = "", 
   showTitle = true,
   userName,
+  userRole,
   userIcon,
   showUser = false,
   ...props 
@@ -26,6 +27,7 @@ const Header = ({
         {showUser && userName && (
           <UserHeader 
             userName={userName}
+            userRole={userRole} 
             userIcon={userIcon}
           />
         )}

@@ -4,21 +4,22 @@ import { createPortal } from "react-dom";
 import { Table, Button } from "../ui";
 import { ActivoService } from "@/services";
 import { getCurrentUser } from "@/services/userService";
+import { HiOutlineSearch } from "react-icons/hi";
 
-const SCVBase = ({ 
-  onNavigateBack, 
+const SCVBase = ({
+  onNavigateBack,
   selectedActivo,
-  userRole = 'admin', // 'admin', 'auditor', 'security', 'user'
+  userRole = "admin", // 'admin', 'auditor', 'security', 'user'
   showActions = false,
   customColumns = null,
-  customDataTransform = null
+  customDataTransform = null,
 }) => {
   const [historialData, setHistorialData] = useState([]);
   const [activoInfo, setActivoInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  
+
   // Estados para modal de comentarios (auditor)
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -27,7 +28,7 @@ const SCVBase = ({
   // Cargar historial de cambios
   const loadHistorialCambios = useCallback(async () => {
     if (!selectedActivo?.id) {
-      setError('No se ha seleccionado un activo válido');
+      setError("No se ha seleccionado un activo válido");
       setLoading(false);
       return;
     }
@@ -35,10 +36,12 @@ const SCVBase = ({
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await ActivoService.historyCompleteRequestByActivoId(selectedActivo.id);
-      console.log('Historial de cambios:', response);
-      
+
+      const response = await ActivoService.historyCompleteRequestByActivoId(
+        selectedActivo.id
+      );
+      console.log("Historial de cambios:", response);
+
       if (response && response.data) {
         setActivoInfo(response.data.activo);
         setHistorialData(response.data.historial || []);
@@ -46,17 +49,17 @@ const SCVBase = ({
         setHistorialData([]);
       }
     } catch (error) {
-      console.error('Error cargando historial:', error);
-      
+      console.error("Error cargando historial:", error);
+
       // Manejar diferentes tipos de errores
       if (error.response?.status === 403) {
-        setError('No tienes permisos para ver el historial de este activo');
+        setError("No tienes permisos para ver el historial de este activo");
       } else if (error.response?.status === 404) {
-        setError('Activo no encontrado');
+        setError("Activo no encontrado");
       } else {
-        setError('Error al cargar el historial de cambios');
+        setError("Error al cargar el historial de cambios");
       }
-      
+
       setHistorialData([]);
     } finally {
       setLoading(false);
@@ -71,7 +74,7 @@ const SCVBase = ({
         setCurrentUser(userResponse.data);
       }
     } catch (error) {
-      console.error('Error cargando usuario actual:', error);
+      console.error("Error cargando usuario actual:", error);
     }
   }, []);
 
@@ -93,27 +96,27 @@ const SCVBase = ({
   // Función para obtener la clase del estado
   const getEstadoClass = (estado) => {
     switch (estado?.toLowerCase()) {
-      case 'aprobado':
-        return 'estado-aprobado';
-      case 'pendiente':
-        return 'estado-pendiente';
-      case 'rechazado':
-        return 'estado-rechazado';
-      case 'en revisión':
-      case 'en revision':
-        return 'estado-revision';
+      case "aprobado":
+        return "estado-aprobado";
+      case "pendiente":
+        return "estado-pendiente";
+      case "rechazado":
+        return "estado-rechazado";
+      case "en revisión":
+      case "en revision":
+        return "estado-revision";
       default:
-        return 'estado-default';
+        return "estado-default";
     }
   };
 
   // Función para formatear fecha
   const formatFecha = (fecha) => {
-    if (!fecha) return 'N/A';
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+    if (!fecha) return "N/A";
+    return new Date(fecha).toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
   };
 
@@ -127,7 +130,7 @@ const SCVBase = ({
 
   const handleSubmitComment = async () => {
     if (!comment.trim() || !selectedRecord?.id) {
-      console.error('Comentario vacío o solicitud inválida');
+      console.error("Comentario vacío o solicitud inválida");
       return;
     }
 
@@ -136,12 +139,14 @@ const SCVBase = ({
       console.log("Enviando comentario de auditoría:", {
         solicitudId: selectedRecord.id,
         comentario: comment.trim(),
-        auditor: currentUser?.nombreCompleto || "Auditor"
+        auditor: currentUser?.nombreCompleto || "Auditor",
       });
 
       // Importar el servicio dinámicamente para evitar problemas de dependencia circular
-      const { addCommentToRequestByAuditory } = await import('@/services/requestService');
-      
+      const { addCommentToRequestByAuditory } = await import(
+        "@/services/requestService"
+      );
+
       const response = await addCommentToRequestByAuditory(
         selectedRecord.id,
         comment.trim()
@@ -160,20 +165,20 @@ const SCVBase = ({
 
       // Mostrar mensaje de éxito (podrías agregar un toast aquí)
       console.log("Comentario de auditoría agregado exitosamente");
-
     } catch (error) {
-      console.error('Error agregando comentario de auditoría:', error);
-      
+      console.error("Error agregando comentario de auditoría:", error);
+
       // Manejar errores específicos
-      let errorMessage = 'Error al agregar el comentario de auditoría';
+      let errorMessage = "Error al agregar el comentario de auditoría";
       if (error.response?.status === 403) {
-        errorMessage = 'No tienes permisos para agregar comentarios de auditoría';
+        errorMessage =
+          "No tienes permisos para agregar comentarios de auditoría";
       } else if (error.response?.status === 404) {
-        errorMessage = 'Solicitud no encontrada';
+        errorMessage = "Solicitud no encontrada";
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
-      
+
       // Mostrar error al usuario (podrías usar un toast aquí)
       alert(errorMessage);
     } finally {
@@ -194,27 +199,62 @@ const SCVBase = ({
       fecha: formatFecha(item.fecha),
       solicitud_de_cambio: (
         <div className="scv-cell-content">
-          <span className="scv-label">Código:</span> <span className="scv-value">{item.solicitudCambio?.codigoSolicitud || 'N/A'}</span><br/>
-          <span className="scv-label">Tipo:</span> <span className="scv-value">{item.solicitudCambio?.tipoOperacion || 'N/A'}</span><br/>
-          <span className="scv-label">Nombre:</span> <span className="scv-value">{item.solicitudCambio?.nombreActivo || 'N/A'}</span><br/>
-          <span className="scv-label">Responsable:</span> <span className="scv-value">{item.solicitudCambio?.responsable?.nombreCompleto || 'N/A'}</span>
+          <span className="scv-label">Código:</span>{" "}
+          <span className="scv-value">
+            {item.solicitudCambio?.codigoSolicitud || "N/A"}
+          </span>
+          <br />
+          <span className="scv-label">Tipo:</span>{" "}
+          <span className="scv-value">
+            {item.solicitudCambio?.tipoOperacion || "N/A"}
+          </span>
+          <br />
+          <span className="scv-label">Nombre:</span>{" "}
+          <span className="scv-value">
+            {item.solicitudCambio?.nombreActivo || "N/A"}
+          </span>
+          <br />
+          <span className="scv-label">Responsable:</span>{" "}
+          <span className="scv-value">
+            {item.solicitudCambio?.responsable?.nombreCompleto || "N/A"}
+          </span>
         </div>
       ),
-      comentario: item.comentarioSolicitante || 'Sin comentarios',
+      comentario: item.comentarioSolicitante || "Sin comentarios",
       revision: item.revision ? (
         <div className="scv-cell-content">
-          <span className="scv-label">Responsable:</span> <span className="scv-value">{item.revision.responsableSeguridad?.nombreCompleto || 'N/A'}</span><br/>
-          <span className="scv-label">Fecha:</span> <span className="scv-value">{formatFecha(item.revision.fechaRevision)}</span><br/>
-          <span className="scv-label">Comentario:</span> <span className="scv-value">{item.revision.comentario || 'Sin comentarios'}</span>
+          <span className="scv-label">Responsable:</span>{" "}
+          <span className="scv-value">
+            {item.revision.responsableSeguridad?.nombreCompleto || "N/A"}
+          </span>
+          <br />
+          <span className="scv-label">Fecha:</span>{" "}
+          <span className="scv-value">
+            {formatFecha(item.revision.fechaRevision)}
+          </span>
+          <br />
+          <span className="scv-label">Comentario:</span>{" "}
+          <span className="scv-value">
+            {item.revision.comentario || "Sin comentarios"}
+          </span>
         </div>
       ) : (
         <span className="text-muted">Pendiente de revisión</span>
       ),
       auditoria: item.auditoria ? (
         <div className="scv-cell-content">
-          <span className="scv-label">Auditor:</span> <span className="scv-value">{item.auditoria.auditor?.nombreCompleto || 'N/A'}</span><br/>
-          <span className="scv-label">Fecha:</span> <span className="scv-value">{formatFecha(item.auditoria.fecha)}</span><br/>
-          <span className="scv-label">Comentario:</span> <span className="scv-value">{item.auditoria.comentario || 'Sin comentarios'}</span>
+          <span className="scv-label">Auditor:</span>{" "}
+          <span className="scv-value">
+            {item.auditoria.auditor?.nombreCompleto || "N/A"}
+          </span>
+          <br />
+          <span className="scv-label">Fecha:</span>{" "}
+          <span className="scv-value">{formatFecha(item.auditoria.fecha)}</span>
+          <br />
+          <span className="scv-label">Comentario:</span>{" "}
+          <span className="scv-value">
+            {item.auditoria.comentario || "Sin comentarios"}
+          </span>
         </div>
       ) : (
         <span className="text-muted">Pendiente de auditoría</span>
@@ -223,26 +263,24 @@ const SCVBase = ({
         <span className={`estado-badge ${getEstadoClass(item.estado)}`}>
           {item.estado}
         </span>
-      )
+      ),
     };
 
     // Agregar campos específicos según el rol
     switch (userRole) {
-      case 'user':
-        baseData.version = (
-          <span className="version-badge">
-            v1.0.{index}
-          </span>
-        );
+      case "user":
+        baseData.version = <span className="version-badge">v1.0.{index}</span>;
         break;
-      case 'auditor':
+      case "auditor":
         if (showActions) {
           baseData.accion = (
             <button
               className="comment-btn"
               onClick={() => handleComment(item)}
               title="Agregar comentario de auditoría"
-              aria-label={`Agregar comentario a ${item.solicitudCambio?.nombreActivo || 'registro'}`}
+              aria-label={`Agregar comentario a ${
+                item.solicitudCambio?.nombreActivo || "registro"
+              }`}
             >
               <FaCommentAlt className="comment-icon" />
               Comentar
@@ -258,7 +296,11 @@ const SCVBase = ({
   // Usar transformación personalizada o la por defecto
   const historialTableData = historialData.map((item, index) => {
     if (customDataTransform) {
-      return customDataTransform(item, index, { formatFecha, getEstadoClass, handleComment });
+      return customDataTransform(item, index, {
+        formatFecha,
+        getEstadoClass,
+        handleComment,
+      });
     }
     return defaultDataTransform(item, index);
   });
@@ -267,32 +309,44 @@ const SCVBase = ({
   const getDefaultColumns = () => {
     const baseColumns = [
       { key: "fecha", label: "Fecha", cellStyle: { minWidth: "100px" } },
-      { key: "solicitud_de_cambio", label: "Solicitud de cambio", cellStyle: { minWidth: "250px" } },
-      { key: "comentario", label: "Comentario", cellStyle: { minWidth: "150px" } },
+      {
+        key: "solicitud_de_cambio",
+        label: "Solicitud de cambio",
+        cellStyle: { minWidth: "250px" },
+      },
+      {
+        key: "comentario",
+        label: "Comentario",
+        cellStyle: { minWidth: "150px" },
+      },
       { key: "revision", label: "Revisión", cellStyle: { minWidth: "250px" } },
-      { key: "auditoria", label: "Auditoría", cellStyle: { minWidth: "250px" } },
+      {
+        key: "auditoria",
+        label: "Auditoría",
+        cellStyle: { minWidth: "250px" },
+      },
     ];
 
     // Agregar columnas específicas según el rol
-    if (userRole === 'user') {
-      baseColumns.unshift({ 
-        key: "version", 
+    if (userRole === "user") {
+      baseColumns.unshift({
+        key: "version",
         label: "Versión",
-        cellStyle: { minWidth: "100px", textAlign: "center" }
+        cellStyle: { minWidth: "100px", textAlign: "center" },
       });
     } else {
-      baseColumns.push({ 
-        key: "estado", 
+      baseColumns.push({
+        key: "estado",
         label: "Estado",
-        cellStyle: { minWidth: "120px", textAlign: "center" }
+        cellStyle: { minWidth: "120px", textAlign: "center" },
       });
     }
 
-    if (userRole === 'auditor' && showActions) {
-      baseColumns.push({ 
-        key: "accion", 
+    if (userRole === "auditor" && showActions) {
+      baseColumns.push({
+        key: "accion",
         label: "Acción",
-        cellStyle: { minWidth: "120px", textAlign: "center" }
+        cellStyle: { minWidth: "120px", textAlign: "center" },
       });
     }
 
@@ -302,11 +356,12 @@ const SCVBase = ({
   const tableColumns = customColumns || getDefaultColumns();
 
   // Información del activo para mostrar en el header
-  const displayActivoInfo = activoInfo || selectedActivo || {
-    nombre: 'Activo no encontrado',
-    codigo: 'N/A',
-    responsable: 'N/A'
-  };
+  const displayActivoInfo = activoInfo ||
+    selectedActivo || {
+      nombre: "Activo no encontrado",
+      codigo: "N/A",
+      responsable: "N/A",
+    };
 
   if (loading) {
     return (
@@ -318,7 +373,7 @@ const SCVBase = ({
               variant="outline"
               onClick={handleBack}
               className="me-3 d-flex align-items-center"
-              style={{ color: 'white' }}
+              style={{ color: "white" }}
             >
               <FaArrowLeft className="me-2" />
               Regresar
@@ -346,7 +401,7 @@ const SCVBase = ({
               variant="outline"
               onClick={handleBack}
               className="me-3 d-flex align-items-center"
-              style={{ color: 'white' }}
+              style={{ color: "white" }}
             >
               <FaArrowLeft className="me-2" />
               Regresar
@@ -357,8 +412,8 @@ const SCVBase = ({
         <div className="alert alert-danger text-center">
           <h5>Error al cargar el historial</h5>
           <p>{error}</p>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={loadHistorialCambios}
             className="mt-2"
           >
@@ -370,7 +425,7 @@ const SCVBase = ({
   }
 
   return (
-    <div className="scv-page">  
+    <div className="scv-page">
       <div className="scv-header">
         <div className="d-flex align-items-center mb-3">
           <Button
@@ -378,31 +433,36 @@ const SCVBase = ({
             variant="outline"
             onClick={handleBack}
             className="me-3 d-flex align-items-center"
-            style={{ color: 'white' }}
+            style={{ color: "white" }}
           >
             <FaArrowLeft className="me-2" />
             Regresar
           </Button>
         </div>
-        
+
         <h2>Historial de Cambios - {displayActivoInfo.nombre}</h2>
         <h6>Código: {displayActivoInfo.codigo}</h6>
         {historialData.length > 0 && (
-          <p className="text-muted">Total de cambios registrados: {historialData.length}</p>
+          <p>
+            Total de cambios registrados: {historialData.length}
+          </p>
         )}
       </div>
-      
+
       {historialData.length === 0 ? (
-        <div className="alert alert-info text-center">
-          <h5>Sin historial de cambios</h5>
-          {currentUser?.rol === 'usuario' ? (
-            <p>No se encontraron solicitudes de cambio para tus activos asignados.</p>
-          ) : (
-            <p>No se encontraron solicitudes de cambio para este activo.</p>
-          )}
+        <div className="empty-container text-center py-5 mt-4 bg-transparent rounded-4 mx-auto">
+          <HiOutlineSearch className="empty-icon fs-1 text-white mb-3" />
+          <p className="empty-title fs-4 fw-bold text-white mb-2">
+             Sin historial de cambios
+          </p>
+          <p className="empty-subtitle text-white">
+            {currentUser?.rol === "usuario"
+              ? "No se encontraron solicitudes de cambio para tus activos asignados."
+              : "No se encontraron solicitudes de cambio para este activo."}
+          </p>
         </div>
       ) : (
-        <Table 
+        <Table
           columns={tableColumns}
           data={historialTableData}
           hoverEffect={true}
@@ -437,7 +497,10 @@ const SCVBase = ({
                   <div className="valueBoxTitle">Registro seleccionado:</div>
                   <div className="valueBoxSubtitle">
                     {selectedRecord
-                      ? `${selectedRecord.solicitudCambio?.nombreActivo || 'Registro'} - ${formatFecha(selectedRecord.fecha)}`
+                      ? `${
+                          selectedRecord.solicitudCambio?.nombreActivo ||
+                          "Registro"
+                        } - ${formatFecha(selectedRecord.fecha)}`
                       : ""}
                   </div>
                 </div>
