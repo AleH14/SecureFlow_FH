@@ -9,6 +9,7 @@ import ModificarActivo from "./activo/ModificarActivo";
 import Solicitudes from "./solicitudes/Solicitudes";
 import SolicitudDetalles from "./solicitudes/SolicitudDetalles";
 import { getCurrentUser } from "../../services/userService";
+import ProtectedRoute from "../../middleware/ProtectedRoute";
 
 const UsuarioPage = () => {
   const [activeTab, setActiveTab] = useState("mis-activos");
@@ -271,19 +272,21 @@ const UsuarioPage = () => {
   };
 
   return (
-    <GradientLayout>
-      <Header 
-        showUser={true} 
-        userName={userData ? `${userData.nombre} ${userData.apellido}` : "Usuario"} 
-        userRole={userData ? userData.rol : ""}
-      />
-      <Sidebar
-        tabs={usuarioTabs}
-        defaultActiveTab={activeTab}
-        onTabChange={handleTabChange}
-      />
-      {renderContent()}
-    </GradientLayout>
+    <ProtectedRoute allowedRoles={['usuario']}>
+      <GradientLayout>
+        <Header 
+          showUser={true} 
+          userName={userData ? `${userData.nombre} ${userData.apellido}` : "Usuario"} 
+          userRole={userData ? userData.rol : ""}
+        />
+        <Sidebar
+          tabs={usuarioTabs}
+          defaultActiveTab={activeTab}
+          onTabChange={handleTabChange}
+        />
+        {renderContent()}
+      </GradientLayout>
+    </ProtectedRoute>
   );
 };
 

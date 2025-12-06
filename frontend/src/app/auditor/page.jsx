@@ -1,6 +1,7 @@
 "use client"
 import React,{ useState, useEffect } from "react";
 import{Header,Sidebar,GradientLayout}  from "../../components/ui"
+import ProtectedRoute from "../../middleware/ProtectedRoute";
 import Inventory from "./inventory/Inventory";
 import SCV from "./scv/SCV";
 import { getCurrentUser } from "../../services/userService"; // Importa la función para obtener el usuario actual
@@ -82,20 +83,22 @@ const AuditorPage = () => {
   
 
     return (  
-        <GradientLayout>
-            <Header
-                showUser={true}
-                 userName={userData ? `${userData.nombre} ${userData.apellido}` : "Auditor"}
-                 userRole={userData ? userData.rol : ""} // Pasar el rol
-            />  
-                  <Sidebar 
-                    tabs={adminTabs}
-                    defaultActiveTab="activos"
-                    onTabChange={handleTabChange}
-                  />
-                   {renderContent()}
+        <ProtectedRoute allowedRoles={['auditor']}>
+          <GradientLayout>
+              <Header
+                  showUser={true}
+                   userName={userData ? `${userData.nombre} ${userData.apellido}` : "Auditor"}
+                   userRole={userData ? userData.rol : ""} // Pasar el rol
+              />  
+                    <Sidebar 
+                      tabs={adminTabs}
+                      defaultActiveTab="activos"
+                      onTabChange={handleTabChange}
+                    />
+                     {renderContent()}
 
-        </GradientLayout>
+          </GradientLayout>
+        </ProtectedRoute>
     );
 }
 

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Header, Sidebar, GradientLayout } from "../../components/ui";
 import { FaUserCircle } from "react-icons/fa";
+import ProtectedRoute from "../../middleware/ProtectedRoute";
 
 import Inventory from "./inventory/Inventory";
 import SCV from "./scv/SCV";
@@ -200,22 +201,24 @@ const SeguridadPage = () => {
   };
 
   return (
-    <GradientLayout>
-      <Header
-        showUser={true}
-        userName={userData ? `${userData.nombre} ${userData.apellido}` : "Responsable de Seguridad"}
-        userRole="Responsable de Seguridad"
-        userIcon={FaUserCircle}
-      />
+    <ProtectedRoute allowedRoles={['responsable_seguridad']}>
+      <GradientLayout>
+        <Header
+          showUser={true}
+          userName={userData ? `${userData.nombre} ${userData.apellido}` : "Responsable de Seguridad"}
+          userRole="Responsable de Seguridad"
+          userIcon={FaUserCircle}
+        />
 
-      <Sidebar
-        tabs={seguridadTabs}
-        defaultActiveTab="panel-revision"
-        onTabChange={handleTabChange}
-      />
+        <Sidebar
+          tabs={seguridadTabs}
+          defaultActiveTab="panel-revision"
+          onTabChange={handleTabChange}
+        />
 
-      {renderContent()}
-    </GradientLayout>
+        {renderContent()}
+      </GradientLayout>
+    </ProtectedRoute>
   );
 };
 

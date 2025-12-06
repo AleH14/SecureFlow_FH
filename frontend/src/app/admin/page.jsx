@@ -5,7 +5,8 @@ import { FaUserCircle } from "react-icons/fa";
 import User from "./user/User";
 import Inventory from "./inventory/Inventory";
 import SCV from "./scv/SCV";
-import { getCurrentUser } from "../../services/userService"; // Importa la función para obtener el usuario actual
+import { getCurrentUser } from "../../services/userService";
+import ProtectedRoute from "../../middleware/ProtectedRoute";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("usuarios");
@@ -97,20 +98,22 @@ const AdminPage = () => {
   };
 
   return (
-    <GradientLayout>
-      <Header
-        showUser={true}
-        userName={userData ? `${userData.nombre} ${userData.apellido}` : "Administrador"}//pasar nombre
-        userRole={userData ? userData.rol : ""} // Pasar el rol
-        userIcon={FaUserCircle}
-      />
-      <Sidebar
-        tabs={adminTabs}
-        defaultActiveTab="usuarios"
-        onTabChange={handleTabChange}
-      />
-      {renderContent()}
-    </GradientLayout>
+    <ProtectedRoute allowedRoles={['administrador']}>
+      <GradientLayout>
+        <Header
+          showUser={true}
+          userName={userData ? `${userData.nombre} ${userData.apellido}` : "Administrador"}
+          userRole={userData ? userData.rol : ""}
+          userIcon={FaUserCircle}
+        />
+        <Sidebar
+          tabs={adminTabs}
+          defaultActiveTab="usuarios"
+          onTabChange={handleTabChange}
+        />
+        {renderContent()}
+      </GradientLayout>
+    </ProtectedRoute>
   );
 };
 
