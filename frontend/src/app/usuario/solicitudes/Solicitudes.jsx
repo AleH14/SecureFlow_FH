@@ -29,7 +29,6 @@ const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
         throw new Error('Formato de respuesta inesperado');
       }
     } catch (err) {
-      console.error('Error cargando solicitudes:', err);
       if (err.response?.status === 403) {
         setError('No tienes permisos para ver estas solicitudes.');
       } else {
@@ -59,7 +58,6 @@ const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
         throw new Error('Formato de respuesta inesperado');
       }
     } catch (err) {
-      console.error('Error cargando detalles de solicitud:', err);
       throw err;
     } finally {
       setLoadingDetalles(false);
@@ -76,7 +74,6 @@ const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
         onNavigateToDetalles(detallesCompletos);
       }
     } catch (error) {
-      console.error('Error al cargar detalles:', error);
       // Si hay error, mostrar alerta
       alert('Error al cargar los detalles de la solicitud. Por favor intenta de nuevo.');
     }

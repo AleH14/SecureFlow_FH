@@ -16,7 +16,6 @@ const SCVBase = ({
 }) => {
   const [historialData, setHistorialData] = useState([]);
   const [activoInfo, setActivoInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -57,18 +56,15 @@ const SCVBase = ({
   const loadHistorialCambios = useCallback(async () => {
     if (!selectedActivo?.id) {
       setError("No se ha seleccionado un activo válido");
-      setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
       setError(null);
 
       const response = await ActivoService.historyCompleteRequestByActivoId(
         selectedActivo.id
       );
-      console.log("Historial de cambios:", response);
 
       if (response && response.data) {
         setActivoInfo(response.data.activo);
@@ -80,7 +76,6 @@ const SCVBase = ({
         setHistorialData([]);
       }
     } catch (error) {
-      console.error("Error cargando historial:", error);
 
       // Manejar diferentes tipos de errores
       if (error.response?.status === 403) {
@@ -92,8 +87,6 @@ const SCVBase = ({
       }
 
       setHistorialData([]);
-    } finally {
-      setLoading(false);
     }
   }, [selectedActivo?.id]);
 
@@ -105,7 +98,6 @@ const SCVBase = ({
         setCurrentUser(userResponse.data);
       }
     } catch (error) {
-      console.error("Error cargando usuario actual:", error);
     }
   }, []);
 
@@ -161,18 +153,10 @@ const SCVBase = ({
 
   const handleSubmitComment = async () => {
     if (!comment.trim() || !selectedRecord?.id) {
-      console.error("Comentario vacío o solicitud inválida");
       return;
     }
 
     try {
-      setLoading(true);
-      console.log("Enviando comentario de auditoría:", {
-        solicitudId: selectedRecord.id,
-        comentario: comment.trim(),
-        auditor: currentUser?.nombreCompleto || "Auditor",
-      });
-
       // Importar el servicio dinámicamente para evitar problemas de dependencia circular
       const { addCommentToRequestByAuditory } = await import(
         "@/services/requestService"
@@ -183,8 +167,6 @@ const SCVBase = ({
         comment.trim()
       );
 
-      console.log("Respuesta del comentario de auditoría:", response);
-
       // Recargar el historial para mostrar el nuevo comentario
       await loadHistorialCambios();
 
@@ -194,11 +176,7 @@ const SCVBase = ({
       setComment("");
       document.body.classList.remove("modal-open");
 
-      // Mostrar mensaje de éxito (podrías agregar un toast aquí)
-      console.log("Comentario de auditoría agregado exitosamente");
     } catch (error) {
-      console.error("Error agregando comentario de auditoría:", error);
-
       // Manejar errores específicos
       let errorMessage = "Error al agregar el comentario de auditoría";
       if (error.response?.status === 403) {
@@ -212,8 +190,6 @@ const SCVBase = ({
 
       // Mostrar error al usuario (podrías usar un toast aquí)
       alert(errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -560,34 +536,6 @@ const defaultDataTransform = useCallback((item, index) => {
       codigo: "N/A",
       responsable: "N/A",
     };
-
-  if (loading) {
-    return (
-      <div className="scv-page">
-        <div className="scv-header">
-          <div className="d-flex align-items-center mb-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleBack}
-              className="me-3 d-flex align-items-center"
-              style={{ color: "white" }}
-            >
-              <FaArrowLeft className="me-2" />
-              Regresar
-            </Button>
-          </div>
-          <h2>Historial de Cambios</h2>
-        </div>
-        <div className="text-center p-4">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-          <p className="mt-2">Cargando historial de cambios...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (

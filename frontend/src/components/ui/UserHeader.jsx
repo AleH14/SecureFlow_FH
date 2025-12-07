@@ -38,7 +38,6 @@ const UserHeader = ({
       router.push("/login");
       router.refresh();
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
     }
   };
 

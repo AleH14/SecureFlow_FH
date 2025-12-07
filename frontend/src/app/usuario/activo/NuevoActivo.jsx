@@ -21,7 +21,6 @@ const NuevoActivo = ({ onNavigateBack, onRefreshSolicitudes }) => {
     estado: "En Revision", // Estado por defecto del backend
   });
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("success");
@@ -91,8 +90,6 @@ const NuevoActivo = ({ onNavigateBack, onRefreshSolicitudes }) => {
     if (Object.keys(newErrors).length > 0) {
       return;
     }
-
-    setLoading(true);
     setShowToast(false);
     setShouldRedirect(false);
 
@@ -107,8 +104,6 @@ const NuevoActivo = ({ onNavigateBack, onRefreshSolicitudes }) => {
 
       // Llamar al servicio para crear el activo
       const response = await ActivoService.createActivo(activoData);
-      
-      console.log('Activo creado exitosamente:', response);
       
       // El backend devuelve tanto el activo como la solicitud de cambio
       const codigoGenerado = response.activo?.codigo || 'Código no disponible';
@@ -137,9 +132,7 @@ const NuevoActivo = ({ onNavigateBack, onRefreshSolicitudes }) => {
       });
       setErrors({});
       
-    } catch (error) {
-      console.error('Error creando activo:', error);
-      
+    } catch (error) {      
       let errorMessage = "Error al crear el activo. Por favor intenta de nuevo.";
       
       if (error.response?.data?.message) {
@@ -155,8 +148,6 @@ const NuevoActivo = ({ onNavigateBack, onRefreshSolicitudes }) => {
       setErrors({
         general: errorMessage,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -377,7 +368,6 @@ const NuevoActivo = ({ onNavigateBack, onRefreshSolicitudes }) => {
                             variant="outline"
                             size="lg"
                             onClick={handleReset}
-                            disabled={loading}
                           >
                             Limpiar Formulario
                           </Button>
@@ -386,8 +376,6 @@ const NuevoActivo = ({ onNavigateBack, onRefreshSolicitudes }) => {
                             type="submit"
                             variant="primary"
                             size="lg"
-                            loading={loading}
-                            disabled={loading}
                           >
                             Crear Activo
                           </Button>

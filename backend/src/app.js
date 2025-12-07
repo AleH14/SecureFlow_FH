@@ -90,9 +90,6 @@ const startServer = async () => {
     // Start server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📋 Health check: http://localhost:${PORT}/health`);
-      console.log(`🔌 API base URL: http://localhost:${PORT}${process.env.API_PREFIX || '/api'}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);

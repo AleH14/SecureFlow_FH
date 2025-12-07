@@ -34,18 +34,15 @@ const CardActivo = ({
             case 'obsoleto':
                 return 'estado-obsoleto';
             default:
-                console.log('Estado no reconocido:', estado); // Para debug
                 return 'estado-default';
         }
     };
 
     const handleHistorialClick = () => {
-        console.log('Mostrando historial para:', activo.nombre);
         onHistorialClick(activo);
     };
 
     const handleModificarClick = () => {
-        console.log('Modificando activo:', activo.nombre);
         onModificarClick(activo);
     };
 

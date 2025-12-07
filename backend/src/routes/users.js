@@ -100,7 +100,6 @@ router.get(
         responseData
       );
     } catch (error) {
-      console.error("Error obteniendo usuarios:", error);
       return sendError(res, 500, "Error interno del servidor");
     }
   })
@@ -142,7 +141,6 @@ router.get(
 
       sendResponse(res, 200, "Usuario obtenido correctamente", userResponse);
     } catch (error) {
-      console.error("Error obteniendo usuario:", error);
       if (error.name === "CastError") {
         return sendError(res, 400, "ID de usuario inválido");
       }
@@ -213,7 +211,6 @@ router.get(
         statsResponse
       );
     } catch (error) {
-      console.error("Error obteniendo estadísticas:", error);
       return sendError(res, 500, "Error interno del servidor");
     }
   })
@@ -363,7 +360,6 @@ router.put(
 
       sendResponse(res, 200, "Usuario actualizado exitosamente", userResponse);
     } catch (error) {
-      console.error("Error actualizando usuario:", error);
       if (error.name === "ValidationError") {
         return sendError(res, 400, "Error de validación", error.message);
       }
@@ -421,7 +417,6 @@ router.delete(
 
       sendResponse(res, 200, "Usuario eliminado exitosamente", deletedUserInfo);
     } catch (error) {
-      console.error("Error eliminando usuario:", error);
       if (error.name === "CastError") {
         return sendError(res, 400, "ID de usuario inválido");
       }
@@ -465,7 +460,6 @@ router.put('/:id/reactivate', auth, admin, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Usuario reactivado exitosamente', reactivatedUserInfo);
 
   } catch (error) {
-    console.error('Error reactivando usuario:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de usuario inválido');
     }

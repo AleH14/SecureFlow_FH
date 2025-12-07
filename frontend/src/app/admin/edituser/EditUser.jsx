@@ -24,7 +24,6 @@ const EditUser = () => {
     codigo: ''
   });
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVariant, setToastVariant] = useState('success');
@@ -141,7 +140,7 @@ const EditUser = () => {
       [name]: value
     }));
     
-    // Limpiar errores cuando el usuario empieza a escribir
+    // Limpiar errores cuando el usuario empieza a escribir en telefono
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -232,8 +231,7 @@ const EditUser = () => {
     if (!validateForm()) {
       return;
     }
-    
-    setLoading(true);
+
     setEmailExistsError('');
     setShowToast(false);
     setShouldRedirect(false);
@@ -243,7 +241,6 @@ const EditUser = () => {
       
       if (!userId) {
         setErrors(prev => ({ ...prev, general: 'ID de usuario no encontrado.' }));
-        setLoading(false);
         return;
       }
       
@@ -277,7 +274,6 @@ const EditUser = () => {
       }
       
     } catch (error) {
-      // Manejo de errores SIN console.error
       let errorMessage = 'Error al actualizar el usuario. Por favor intenta de nuevo.';
       
       // Extraer información del error si está disponible
@@ -318,9 +314,7 @@ const EditUser = () => {
       } else {
         setErrors(prev => ({ ...prev, general: errorMessage }));
       }
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   const handleReset = () => {
@@ -536,7 +530,6 @@ const EditUser = () => {
                       variant="outline"
                       size="lg"
                       onClick={handleReset}
-                      disabled={loading}
                       className="me-3"
                     >
                       Restaurar Valores
@@ -546,8 +539,6 @@ const EditUser = () => {
                       type="submit"
                       variant="primary"
                       size="lg"
-                      loading={loading}
-                      disabled={loading}
                       className="flex-grow-1"
                     >
                       Actualizar Usuario
