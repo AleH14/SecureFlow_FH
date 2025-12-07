@@ -499,9 +499,32 @@ router.put('/:id', auth, asyncHandler(async (req, res) => {
       });
     }
 
-    // Solo crear solicitud si hay cambios reales
+    // Si no hay cambios reales, devolver respuesta exitosa sin hacer nada
     if (cambiosRealizados.length === 0) {
-      return sendError(res, 400, 'No se detectaron cambios en el activo');
+      const activoActualizado = await Activo.findById(id)
+        .populate('responsableId', 'nombre apellido email codigo');
+
+      return sendResponse(res, 200, 'No se detectaron cambios en el activo', {
+        activo: {
+          id: activoActualizado._id,
+          codigo: activoActualizado.codigo,
+          nombre: activoActualizado.nombre,
+          categoria: activoActualizado.categoria,
+          descripcion: activoActualizado.descripcion,
+          estado: activoActualizado.estado,
+          ubicacion: activoActualizado.ubicacion,
+          version: activoActualizado.version,
+          fechaCreacion: activoActualizado.fechaCreacion,
+          responsable: {
+            id: activoActualizado.responsableId._id,
+            codigo: activoActualizado.responsableId.codigo,
+            nombreCompleto: `${activoActualizado.responsableId.nombre} ${activoActualizado.responsableId.apellido}`,
+            email: activoActualizado.responsableId.email
+          }
+        },
+        solicitud: null,
+        sinCambios: true
+      });
     }
 
     // Generar código único para la solicitud

@@ -302,6 +302,14 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
 
       const response = await ActivoService.updateActivo(activo.id, updateData);
       
+      // Si no hubo cambios, mostrar mensaje informativo
+      if (response.data?.sinCambios) {
+        setErrors({
+          general: 'No se detectaron cambios en el activo',
+        });
+        return;
+      }
+      
       setShowToast(true);
       
       if (onRefreshSolicitudes) {
