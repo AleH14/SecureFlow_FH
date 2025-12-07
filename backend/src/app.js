@@ -8,6 +8,7 @@ require('dotenv').config();
 
 // Import database connection
 const { connectDB } = require('./config/database');
+const { initializeDatabase } = require('./config/initDatabase');
 
 // Import routes
 const apiRoutes = require('./routes');
@@ -86,6 +87,9 @@ const startServer = async () => {
   try {
     // Connect to database
     await connectDB();
+    
+    // Initialize database with default admin user if empty
+    await initializeDatabase();
     
     // Start server
     app.listen(PORT, () => {
