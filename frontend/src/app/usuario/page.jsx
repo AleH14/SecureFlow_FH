@@ -1,12 +1,15 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header, Sidebar, GradientLayout } from "../../components/ui";
+import { RequestService } from "../../services";
 import Inventory from "./inventory/Inventory";
 import SCV from "./scv/SCV";
 import NuevoActivo from "./activo/NuevoActivo";
 import ModificarActivo from "./activo/ModificarActivo";
 import Solicitudes from "./solicitudes/Solicitudes";
 import SolicitudDetalles from "./solicitudes/SolicitudDetalles";
+import { getCurrentUser } from "../../services/userService";
+import ProtectedRoute from "../../middleware/ProtectedRoute";
 
 const UsuarioPage = () => {
   const [activeTab, setActiveTab] = useState("mis-activos");
@@ -16,7 +19,36 @@ const UsuarioPage = () => {
   const [showModificarActivo, setShowModificarActivo] = useState(false);
   const [showSolicitudDetalles, setShowSolicitudDetalles] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState(null);
-  const [modificarActivoContext, setModificarActivoContext] = useState(null); // 'inventory' o 'solicitudes'
+  const [modificarActivoContext, setModificarActivoContext] = useState(null);
+  const [cambiosRechazados, setCambiosRechazados] = useState([]);
+  const [solicitudesCount, setSolicitudesCount] = useState(0);
+  const [userData, setUserData] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Función para refrescar el contador de solicitudes
+  const refreshSolicitudesCount = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  // Cargar el conteo de solicitudes pendientes al montar el componente
+  useEffect(() => {
+    const loadSolicitudesPendientesCount = async () => {
+      try {
+        const response = await RequestService.getRequests();
+        if (response && response.success && response.data) {
+          const solicitudesPendientes = response.data.solicitudes?.filter(
+            solicitud => solicitud.estado === 'Pendiente'
+          ) || [];
+          setSolicitudesCount(solicitudesPendientes.length);
+        }
+      } catch (error) {
+        console.error('Error cargando conteo de solicitudes pendientes:', error);
+        setSolicitudesCount(0);
+      }
+    };
+
+    loadSolicitudesPendientesCount();
+  }, [refreshTrigger]);
 
   const usuarioTabs = [
     {
@@ -28,34 +60,43 @@ const UsuarioPage = () => {
       id: "mis-solicitudes",
       name: "Mis Solicitudes",
       iconName: "FaFileAlt",
-      badgeCount: 3,
+      badgeCount: solicitudesCount > 0 ? solicitudesCount : ""
     },
   ];
 
+  // Obtener el usuario actual
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await getCurrentUser();
+        if (response.success && response.data) {
+          setUserData(response.data);
+          // Forzar actualización del contador cuando se obtiene el usuario
+          setRefreshTrigger(prev => prev + 1);
+        }
+      } catch (error) {
+        console.error("Error al obtener usuario:", error);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
   const handleTabChange = (tabId) => {
-    // Si es la misma pestaña actual, no hacer nada (evita resetear en re-renders)
-    if (tabId === activeTab) {
-      return;
-    }
+    if (tabId === activeTab) return;
     
-    // Limpiar detalles de solicitud si cambiamos de pestaña
     if (showSolicitudDetalles && tabId !== "mis-solicitudes") {
       setShowSolicitudDetalles(false);
       setSelectedSolicitud(null);
     }
 
-    // Siempre cambiar la pestaña activa
     setActiveTab(tabId);
 
-    // Resetear ModificarActivo cuando se cambia de pestaña manualmente
-    // Esto permite que el usuario navegue libremente entre pestañas
     if (showModificarActivo) {
       setShowModificarActivo(false);
       setSelectedActivo(null);
       setModificarActivoContext(null);
     }
 
-    // Resetear otros estados solo si no hay ModificarActivo activo
     if (!showModificarActivo) {
       if (showSCV) {
         setShowSCV(false);
@@ -65,6 +106,11 @@ const UsuarioPage = () => {
       if (showNuevoActivo) {
         setShowNuevoActivo(false);
       }
+    }
+
+    // Actualizar contador al cambiar a la pestaña de solicitudes (mayor seguridad)
+    if (tabId === "mis-solicitudes") {
+      refreshSolicitudesCount();
     }
   };
 
@@ -77,16 +123,12 @@ const UsuarioPage = () => {
   };
 
   const handleNavigateBack = () => {
-    // Si estamos regresando desde ModificarActivo, considerar el contexto
     if (showModificarActivo && modificarActivoContext === "solicitudes") {
-      // Regresar a la pestaña de solicitudes
       setActiveTab("mis-solicitudes");
     } else if (showModificarActivo && modificarActivoContext === "inventory") {
-      // Regresar a la pestaña de activos
       setActiveTab("mis-activos");
     }
     
-    // Limpiar todos los estados
     setShowSCV(false);
     setSelectedActivo(null);
     setShowNuevoActivo(false);
@@ -94,6 +136,7 @@ const UsuarioPage = () => {
     setShowSolicitudDetalles(false);
     setSelectedSolicitud(null);
     setModificarActivoContext(null);
+    setCambiosRechazados([]);
   };
 
   const handleNavigateToNuevoActivo = () => {
@@ -108,31 +151,27 @@ const UsuarioPage = () => {
     setShowNuevoActivo(false);
   };
 
-  const handleNavigateToModificarActivo = (activo, context = null) => {
+  const handleNavigateToModificarActivo = (activo, context = null, tipoSolicitud = null, cambios = []) => {
     setSelectedActivo(activo);
+    setCambiosRechazados(cambios);
     setShowModificarActivo(true);
     setShowSCV(false);
     setShowNuevoActivo(false);
     setShowSolicitudDetalles(false);
     setSelectedSolicitud(null);
     
-    // Recordar el contexto desde donde se navegó
     if (context) {
       setModificarActivoContext(context);
     } else {
-      // Si no se especifica contexto, inferirlo del estado actual
       if (showSolicitudDetalles || activeTab === "mis-solicitudes") {
         setModificarActivoContext("solicitudes");
       } else {
         setModificarActivoContext("inventory");
       }
     }
-    
-
   };
 
   const handleUpdateActivo = (activoActualizado) => {
-
     setShowModificarActivo(false);
     setSelectedActivo(null);
   };
@@ -145,17 +184,19 @@ const UsuarioPage = () => {
   const handleNavigateBackFromDetalles = () => {
     setShowSolicitudDetalles(false);
     setSelectedSolicitud(null);
+    refreshSolicitudesCount();
   };
 
   const renderContent = () => {
-    // MODIFICAR ACTIVO TIENE MÁXIMA PRIORIDAD ABSOLUTA - SE MUESTRA EN CUALQUIER TAB
     if (showModificarActivo && selectedActivo) {
       return (
         <div className="main-content">
           <ModificarActivo
             activo={selectedActivo}
+            cambiosRechazados={cambiosRechazados}
             onNavigateBack={handleNavigateBack}
             onUpdateActivo={handleUpdateActivo}
+            onRefreshSolicitudes={refreshSolicitudesCount}
           />
         </div>
       );
@@ -168,6 +209,7 @@ const UsuarioPage = () => {
             solicitud={selectedSolicitud}
             onNavigateBack={handleNavigateBackFromDetalles}
             onNavigateToModificarActivo={handleNavigateToModificarActivo}
+            onRefreshSolicitudes={refreshSolicitudesCount} 
           />
         </div>
       );
@@ -176,7 +218,10 @@ const UsuarioPage = () => {
     if (showNuevoActivo) {
       return (
         <div className="main-content">
-          <NuevoActivo onNavigateBack={handleNavigateBackFromNuevoActivo} />
+          <NuevoActivo 
+            onNavigateBack={handleNavigateBackFromNuevoActivo}
+            onRefreshSolicitudes={refreshSolicitudesCount}
+          />
         </div>
       );
     }
@@ -208,6 +253,7 @@ const UsuarioPage = () => {
           <div className="main-content">
             <Solicitudes
               onNavigateToDetalles={handleNavigateToSolicitudDetalles}
+              onRefreshCount={refreshSolicitudesCount}
             />
           </div>
         );
@@ -226,15 +272,21 @@ const UsuarioPage = () => {
   };
 
   return (
-    <GradientLayout>
-      <Header showUser={true} userName="Usuario" />
-      <Sidebar
-        tabs={usuarioTabs}
-        defaultActiveTab={activeTab}
-        onTabChange={handleTabChange}
-      />
-      {renderContent()}
-    </GradientLayout>
+    <ProtectedRoute allowedRoles={['usuario']}>
+      <GradientLayout>
+        <Header 
+          showUser={true} 
+          userName={userData ? `${userData.nombre} ${userData.apellido}` : "Usuario"} 
+          userRole={userData ? userData.rol : ""}
+        />
+        <Sidebar
+          tabs={usuarioTabs}
+          defaultActiveTab={activeTab}
+          onTabChange={handleTabChange}
+        />
+        {renderContent()}
+      </GradientLayout>
+    </ProtectedRoute>
   );
 };
 

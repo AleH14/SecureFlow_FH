@@ -118,7 +118,6 @@ router.get('/', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, `${formattedSolicitudes.length} solicitudes obtenidas correctamente`, responseData);
 
   } catch (error) {
-    console.error('Error obteniendo solicitudes:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -130,10 +129,19 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Obtener la solicitud con población básica
     const solicitud = await SolicitudCambio.findById(id)
       .populate('solicitanteId', 'nombre apellido email codigo')
       .populate('responsableSeguridadId', 'nombre apellido email codigo')
-      .populate('activoId', 'codigo nombre categoria estado ubicacion descripcion responsableId');
+      .populate({
+        path: 'activoId',
+        select: 'codigo nombre categoria estado ubicacion descripcion responsableId',
+        populate: {
+          path: 'responsableId',
+          select: 'nombre apellido email codigo'
+        }
+      })
+      .lean(); // Convertir a objeto plano para modificar
 
     if (!solicitud) {
       return sendError(res, 404, 'Solicitud no encontrada');
@@ -144,6 +152,41 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
         req.user.rol !== 'responsable_seguridad' && 
         req.user.rol !== 'administrador') {
       return sendError(res, 403, 'No tienes permisos para ver esta solicitud');
+    }
+
+    // Poblar información de responsables en cambios
+    if (solicitud.cambios && solicitud.cambios.length > 0) {
+      for (const cambio of solicitud.cambios) {
+        if (cambio.campo === 'responsableId') {
+          // Poblar responsable anterior
+          if (cambio.valorAnterior) {
+            const responsableAnterior = await User.findById(cambio.valorAnterior)
+              .select('nombre apellido email codigo');
+            if (responsableAnterior) {
+              cambio.responsableAnteriorInfo = {
+                id: responsableAnterior._id,
+                codigo: responsableAnterior.codigo,
+                nombreCompleto: `${responsableAnterior.nombre} ${responsableAnterior.apellido}`,
+                email: responsableAnterior.email
+              };
+            }
+          }
+          
+          // Poblar nuevo responsable
+          if (cambio.valorNuevo) {
+            const nuevoResponsable = await User.findById(cambio.valorNuevo)
+              .select('nombre apellido email codigo');
+            if (nuevoResponsable) {
+              cambio.responsableNuevoInfo = {
+                id: nuevoResponsable._id,
+                codigo: nuevoResponsable.codigo,
+                nombreCompleto: `${nuevoResponsable.nombre} ${nuevoResponsable.apellido}`,
+                email: nuevoResponsable.email
+              };
+            }
+          }
+        }
+      }
     }
 
     // Formatear respuesta completa
@@ -174,19 +217,23 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
         id: solicitud.activoId._id,
         codigo: solicitud.activoId.codigo,
         nombre: solicitud.activoId.nombre,
-        categoria: solicitud.activoId.categoria
+        categoria: solicitud.activoId.categoria,
+        estado: solicitud.activoId.estado,
+        ubicacion: solicitud.activoId.ubicacion,
+        descripcion: solicitud.activoId.descripcion,
+        responsableId: solicitud.activoId.responsableId ? {
+          id: solicitud.activoId.responsableId._id,
+          codigo: solicitud.activoId.responsableId.codigo,
+          nombreCompleto: `${solicitud.activoId.responsableId.nombre} ${solicitud.activoId.responsableId.apellido}`,
+          email: solicitud.activoId.responsableId.email
+        } : null
       },
-      cambios: solicitud.cambios.map(cambio => ({
-        campo: cambio.campo,
-        valorAnterior: cambio.valorAnterior,
-        valorNuevo: cambio.valorNuevo
-      }))
+      cambios: solicitud.cambios
     };
 
     sendResponse(res, 200, 'Solicitud obtenida correctamente', solicitudResponse);
 
   } catch (error) {
-    console.error('Error obteniendo solicitud:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de solicitud inválido');
     }
@@ -261,6 +308,11 @@ router.put('/:id/revisar', auth, responsableSeguridad, asyncHandler(async (req, 
         }
       });
 
+      // Si es una solicitud de creación, cambiar el estado a "Activo"
+      if (solicitud.tipoOperacion === 'creacion') {
+        updateData.estado = 'Activo';
+      }
+
       // Aplicar cambios al activo
       await Activo.findByIdAndUpdate(solicitud.activoId, updateData);
     }
@@ -274,7 +326,6 @@ router.put('/:id/revisar', auth, responsableSeguridad, asyncHandler(async (req, 
     });
 
   } catch (error) {
-    console.error('Error revisando solicitud:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -286,7 +337,7 @@ router.put('/:id/auditoria', auth, auditor, asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { comentario } = req.body;
-
+    
     // Validaciones
     if (!comentario || comentario.trim() === '') {
       return sendError(res, 400, 'El comentario de auditoría es requerido');
@@ -327,7 +378,133 @@ router.put('/:id/auditoria', auth, auditor, asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error agregando auditoría:', error);
+    return sendError(res, 500, 'Error interno del servidor');
+  }
+}));
+
+// @route   POST /api/solicitudes/reasignar
+// @desc    Create reassignment request for user deactivation (admin only)
+// @access  Private (Admin only)
+router.post('/reasignar', auth, asyncHandler(async (req, res) => {
+  try {
+    // Verificar que el usuario es administrador
+    if (req.user.rol !== 'administrador') {
+      return sendError(res, 403, 'No tienes permisos para realizar esta acción');
+    }
+
+    const { activoId, nuevoResponsableId, justificacion, solicitadoPorAdmin } = req.body;
+
+    // Validaciones
+    if (!activoId || !nuevoResponsableId || !justificacion) {
+      return sendError(res, 400, 'Todos los campos son requeridos: activoId, nuevoResponsableId, justificacion');
+    }
+
+    // Verificar que la justificación sea válida
+    if (justificacion.trim().length < 10) {
+      return sendError(res, 400, 'La justificación debe tener al menos 10 caracteres');
+    }
+
+    // Buscar el activo
+    const activo = await Activo.findById(activoId)
+      .populate('responsableId', 'nombre apellido email codigo');
+    
+    if (!activo) {
+      return sendError(res, 404, 'Activo no encontrado');
+    }
+
+    // Verificar que el nuevo responsable existe y es usuario (no admin)
+    const nuevoResponsable = await User.findOne({
+      _id: nuevoResponsableId,
+      rol: 'usuario',
+      estado: 'activo'
+    });
+
+    if (!nuevoResponsable) {
+      return sendError(res, 404, 'Nuevo responsable no encontrado o no es un usuario válido');
+    }
+
+    // Verificar que no sea el mismo responsable
+    if (activo.responsableId._id.toString() === nuevoResponsableId) {
+      return sendError(res, 400, 'El activo ya está asignado a este usuario');
+    }
+
+    // Generar código único para la solicitud
+    let codigoSolicitud;
+    let solicitudCodeExists = true;
+    
+    while (solicitudCodeExists) {
+      codigoSolicitud = generateSolicitudCode();
+      const solicitudWithCode = await SolicitudCambio.findOne({ codigoSolicitud });
+      if (!solicitudWithCode) {
+        solicitudCodeExists = false;
+      }
+    }
+
+    // Crear array de cambios
+    const cambiosRealizados = [{
+      campo: 'responsableId',
+      valorAnterior: activo.responsableId._id.toString(),
+      valorNuevo: nuevoResponsableId,
+      descripcion: `Reasignación de ${activo.responsableId.nombre} ${activo.responsableId.apellido} a ${nuevoResponsable.nombre} ${nuevoResponsable.apellido}`
+    }];
+
+    // Crear solicitud de cambio para reasignación
+    const nuevaSolicitud = new SolicitudCambio({
+      codigoSolicitud,
+      nombreActivo: activo.nombre,
+      codigoActivo: activo.codigo,
+      fechaSolicitud: new Date(),
+      solicitanteId: req.user._id, // Admin que solicita
+      estado: 'Pendiente',
+      tipoOperacion: 'reasignacion',
+      activoId: activo._id,
+      justificacion: sanitizeInput(justificacion),
+      cambios: cambiosRealizados,
+      solicitadoPorAdmin: solicitadoPorAdmin || false,
+      adminComentario: solicitadoPorAdmin ? `Reasignación solicitada por administrador: ${req.user.nombre} ${req.user.apellido}` : null
+    });
+
+    const savedSolicitud = await nuevaSolicitud.save();
+
+    // Agregar comentario al historial del activo
+    const comentarioReasignacion = {
+      comentario: `Solicitud de reasignación generada por administrador. Nuevo responsable propuesto: ${nuevoResponsable.nombre} ${nuevoResponsable.apellido}. Justificación: ${justificacion}`,
+      usuario: req.user._id,
+      fecha: new Date(),
+      tipoAccion: 'reasignacion_solicitada'
+    };
+
+    await Activo.findByIdAndUpdate(
+      activoId,
+      { $push: { historialComentarios: comentarioReasignacion } }
+    );
+
+    // Formatear respuesta
+    const respuesta = {
+      success: true,
+      solicitud: {
+        id: savedSolicitud._id,
+        codigoSolicitud: savedSolicitud.codigoSolicitud,
+        estado: savedSolicitud.estado,
+        tipoOperacion: savedSolicitud.tipoOperacion,
+        fechaSolicitud: savedSolicitud.fechaSolicitud
+      },
+      activo: {
+        id: activo._id,
+        codigo: activo.codigo,
+        nombre: activo.nombre
+      }
+    };
+
+    sendResponse(res, 201, 'Solicitud de reasignación creada exitosamente', respuesta);
+
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return sendError(res, 400, 'ID inválido');
+    }
+    if (error.name === 'ValidationError') {
+      return sendError(res, 400, 'Datos de validación incorrectos');
+    }
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));

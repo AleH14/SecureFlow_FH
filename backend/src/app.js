@@ -32,7 +32,13 @@ app.use(limiter);
 // CORS configuration
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true
+
+
+
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 
 // Body parsing middleware
@@ -84,9 +90,6 @@ const startServer = async () => {
     // Start server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📋 Health check: http://localhost:${PORT}/health`);
-      console.log(`🔌 API base URL: http://localhost:${PORT}${process.env.API_PREFIX || '/api'}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);

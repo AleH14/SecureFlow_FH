@@ -1,35 +1,53 @@
-
 "use client";
-import React, { useState } from "react";
-import{Header,Sidebar,GradientLayout}  from "../../components/ui"
+import React, { useState, useEffect } from "react";
+import { Header, Sidebar, GradientLayout } from "../../components/ui";
 import { FaUserCircle } from "react-icons/fa";
 import User from "./user/User";
 import Inventory from "./inventory/Inventory";
 import SCV from "./scv/SCV";
-
+import { getCurrentUser } from "../../services/userService";
+import ProtectedRoute from "../../middleware/ProtectedRoute";
 
 const AdminPage = () => {
-  const [activeTab, setActiveTab] = useState('usuarios');
+  const [activeTab, setActiveTab] = useState("usuarios");
   const [showSCV, setShowSCV] = useState(false);
   const [selectedActivo, setSelectedActivo] = useState(null);
+  const [userData, setUserData] = useState(null); //almacenar datos del usuario
 
   // Definir las pestañas dentro del componente usando iconNames
   const adminTabs = [
     {
-      id: 'usuarios',
-      name: 'Gestión de Usuarios',
-      iconName: 'FaUsers'
+      id: "usuarios",
+      name: "Gestión de Usuarios",
+      iconName: "FaUsers",
     },
     {
-      id: 'activos',
-      name: 'Inventario de Activos',
-      iconName: 'FaBoxes'
-    }
+      id: "activos",
+      name: "Inventario de Activos",
+      iconName: "FaBoxes",
+    },
   ];
+
+  // Obtener el usuario actual
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await getCurrentUser(); // Esto devuelve {success, message, data}
+
+        if (response.success && response.data) {
+          setUserData(response.data); // response.data contiene la info del usuario
+        }
+      } catch (error) {
+        console.error("Error al obtener usuario:", error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []); // El array vacío [] significa que se ejecuta solo una vez al montar el componente
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    if (tabId !== 'activos') {
+    if (tabId !== "activos") {
       setShowSCV(false);
       setSelectedActivo(null);
     }
@@ -47,17 +65,20 @@ const AdminPage = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'usuarios':
+      case "usuarios":
         return (
           <div className="main-content">
             <User />
           </div>
         );
-      case 'activos':
+      case "activos":
         if (showSCV) {
           return (
             <div className="main-content">
-              <SCV onNavigateBack={handleNavigateBack} selectedActivo={selectedActivo} />
+              <SCV
+                onNavigateBack={handleNavigateBack}
+                selectedActivo={selectedActivo}
+              />
             </div>
           );
         } else {
@@ -77,19 +98,23 @@ const AdminPage = () => {
   };
 
   return (
-    <GradientLayout>
-      <Header
-        showUser={true}
-        userName="Juan Pérez"
-        userIcon={FaUserCircle}
-      />
-      <Sidebar 
-        tabs={adminTabs}
-        defaultActiveTab="usuarios"
-        onTabChange={handleTabChange}
-      />
-      {renderContent()}
-    </GradientLayout>
-  );};
+    <ProtectedRoute allowedRoles={['administrador']}>
+      <GradientLayout>
+        <Header
+          showUser={true}
+          userName={userData ? `${userData.nombre} ${userData.apellido}` : "Administrador"}
+          userRole={userData ? userData.rol : ""}
+          userIcon={FaUserCircle}
+        />
+        <Sidebar
+          tabs={adminTabs}
+          defaultActiveTab="usuarios"
+          onTabChange={handleTabChange}
+        />
+        {renderContent()}
+      </GradientLayout>
+    </ProtectedRoute>
+  );
+};
 
 export default AdminPage;

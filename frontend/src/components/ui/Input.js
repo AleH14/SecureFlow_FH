@@ -12,7 +12,6 @@ const Input = forwardRef(({
   rightIcon,
   ...props 
 }, ref) => {
-  const { rightIcon: _, icon: __, ...inputProps } = props;
   
   return (
     <Form.Group className={`mb-3 ${className}`}>
@@ -31,9 +30,9 @@ const Input = forwardRef(({
           ref={ref}
           type={type}
           placeholder={placeholder}
-          isInvalid={!!error}
+          isInvalid={!!error}  
           className={`custom-input ${icon ? 'has-left-icon' : ''} ${rightIcon ? 'has-right-icon' : ''}`}
-          {...inputProps}
+          {...props}
         />
         {rightIcon && (
           <div className="input-icon-right">
@@ -42,7 +41,7 @@ const Input = forwardRef(({
         )}
       </div>
       {error && (
-        <Form.Control.Feedback type="invalid">
+        <Form.Control.Feedback type="invalid" className="d-block">
           {error}
         </Form.Control.Feedback>
       )}

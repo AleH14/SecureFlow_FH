@@ -127,8 +127,7 @@ const RegisterForm = () => {
       
       // Create user object without confirmPassword
       const { confirmPassword, ...userData } = formData;
-      console.log('User created:', userData);
-      
+   
       const roleLabel = userRoles.find(role => role.value === formData.userRole)?.label;
       setSuccessMessage(`El usuario ${formData.firstName} ${formData.lastName} ha sido creado exitosamente con el rol: ${roleLabel}`);
       
@@ -145,7 +144,6 @@ const RegisterForm = () => {
       });
       
     } catch (error) {
-      console.error('Registration error:', error);
       setErrors({ general: 'Error al crear el usuario. Por favor intenta de nuevo.' });
     } finally {
       setLoading(false);

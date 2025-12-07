@@ -13,12 +13,7 @@ export const validateActivoForm = (formData) => {
     }
   }
   
-  // Validación de código - formato ACT-AAA-000
-  if (!formData.codigo?.trim()) {
-    errors.codigo = 'El código del activo es requerido';
-  } else if (!/^ACT-[A-Z]{3}-\d{3}$/.test(formData.codigo)) {
-    errors.codigo = 'El código debe tener el formato: ACT-AAA-000';
-  }
+  // El código se genera automáticamente en el backend, no necesita validación frontend
   
   // Validación de categoría
   if (!formData.categoria) {
@@ -57,12 +52,10 @@ export const categoriasOptions = [
 ];
 
 export const estadosOptions = [
-  { value: 'activo', label: 'Activo' },
-  { value: 'inactivo', label: 'Inactivo' },
-  { value: 'en mantenimiento', label: 'En mantenimiento' },
-  { value: 'dado de baja', label: 'Dado de baja' },
-  { value: 'obsoleto', label: 'Obsoleto' },
-  { value: 'en evaluación', label: 'En evaluación' }
+  { value: 'Activo', label: 'Activo' },
+  { value: 'Inactivo', label: 'Inactivo' },
+  { value: 'Mantenimiento', label: 'En mantenimiento' },
+  { value: 'En Revision', label: 'En revision' }
 ];
 
 export const generateActivoCode = (nombre, categoria) => {

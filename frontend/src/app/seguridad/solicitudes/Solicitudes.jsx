@@ -2,165 +2,109 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { SearchBar, Table, Button } from "../../../components/ui";
 import { FaCheck, FaTimes, FaClock, FaUser } from "react-icons/fa";
+import { RequestService } from "../../../services";
 
-const Solicitudes = ({ onNavigateToDetalles }) => {
+const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [error, setError] = useState(null);
   const [filteredSolicitudes, setFilteredSolicitudes] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
   const tableRef = useRef(null);
 
-  // Datos 
-  const solicitudes = [
-    {
-      _id: "SOL-2025-001",
-      codigoSolicitud: "AAA-0001",
-      fechaCreacion: "2025-11-23T09:30:00Z",
-      estadoGeneral: "Aprobado",
-      activoId: "ACT-100",
-      solicitanteId: "USR-005",
-      solicitante: "Abigail Flores",
-      categoria: "Infraestructura",
-      nombreActivo: "Servidor Web Principal",
-      justificacion:
-        "El servidor requiere mantenimiento preventivo urgente debido a sobrecalentamiento detectado en los sensores de temperatura durante la última revisión rutinaria del sistema.",
-      cambios: [
-        {
-          campo: "estado",
-          valorAnterior: "Activo",
-          valorNuevo: "En Mantenimiento",
-        },
-        {
-          campo: "descripcion",
-          valorAnterior: "Servidor de la empresa",
-          valorNuevo: "Servidor en reparación por fallas térmicas",
-        },
-      ],
-      aprobaciones: {
-        seguridad: {
-          responsableId: "USR-008",
-          fecha: "2025-11-23T14:00:00Z",
-          estado: "Aprobado",
-          comentario:
-            "Se valida que el mantenimiento no afecta la seguridad perimetral.",
-        },
-        auditoria: {
-          responsableId: "USR-009",
-          fecha: "2025-11-24T09:00:00Z",
-          estado: "Aprobado",
-          comentario: "Proceso conforme a la normativa ISO.",
-        },
-      },
-    },
-    {
-      _id: "SOL-2025-002",
-      codigoSolicitud: "BBB-0002",
-      fechaCreacion: "2025-11-22T10:15:00Z",
-      estadoGeneral: "Pendiente",
-      activoId: "ACT-101",
-      solicitanteId: "USR-006",
-      solicitante: "Javier Orellana",
-      categoria: "Base de Datos",
-      nombreActivo: "Base de Datos MySQL",
-      justificacion:
-        "Actualización de configuración de seguridad requerida para compliance con nuevas regulaciones de protección de datos implementadas este trimestre, incluyendo encriptación avanzada y políticas de retención.",
-      cambios: [
-        {
-          campo: "configuracion",
-          valorAnterior: "Configuración estándar",
-          valorNuevo: "Configuración extendida con encriptación",
-        },
-      ],
-      aprobaciones: {
-        seguridad: {
-          responsableId: "USR-008",
-          fecha: "2025-11-22T16:30:00Z",
-          estado: "Aprobado",
-          comentario: "Configuración cumple con políticas de seguridad.",
-        },
-        auditoria: {
-          responsableId: "USR-009",
-          fecha: null,
-          estado: "Pendiente",
-          comentario: "",
-        },
-      },
-    },
-    {
-      _id: "SOL-2025-003",
-      codigoSolicitud: "CCC-0003",
-      fechaCreacion: "2025-11-21T08:45:00Z",
-      estadoGeneral: "Rechazado",
-      activoId: "ACT-102",
-      solicitanteId: "USR-007",
-      solicitante: "Andrés Aguilar",
-      categoria: "Seguridad",
-      nombreActivo: "Firewall Corporativo",
-      justificacion:
-        "Cambio en reglas de firewall para nuevo departamento de desarrollo que requiere acceso a puertos específicos para herramientas de integración continua y despliegue automático.",
-      cambios: [
-        {
-          campo: "reglas_firewall",
-          valorAnterior: "Reglas básicas",
-          valorNuevo: "Reglas extendidas para departamento nuevo",
-        },
-      ],
-      aprobaciones: {
-        seguridad: {
-          responsableId: "USR-008",
-          fecha: "2025-11-21T15:20:00Z",
-          estado: "Rechazado",
-          comentario:
-            "Las reglas propuestas presentan vulnerabilidades de seguridad.",
-        },
-        auditoria: {
-          responsableId: null,
-          fecha: null,
-          estado: "No Aplica",
-          comentario: "",
-        },
-      },
-    },
-    {
-      _id: "SOL-2025-004",
-      codigoSolicitud: "DDD-0004",
-      fechaCreacion: "2025-11-25T11:00:00Z",
-      estadoGeneral: "Pendiente",
-      activoId: "ACT-103",
-      solicitanteId: "USR-010",
-      solicitante: "Valeria Enriquez",
-      categoria: "Infraestructura",
-      nombreActivo: "Servidor de Aplicaciones",
-      justificacion:
-        "Migración a nueva versión del sistema operativo para mantener soporte técnico y recibir actualizaciones de seguridad críticas que ya no están disponibles en la versión actual.",
-      cambios: [
-        {
-          campo: "version_so",
-          valorAnterior: "Windows Server 2019",
-          valorNuevo: "Windows Server 2022",
-        },
-        {
-          campo: "estado",
-          valorAnterior: "Activo",
-          valorNuevo: "En Migración",
-        },
-      ],
-      aprobaciones: {
-        seguridad: {
-          responsableId: null,
-          fecha: null,
-          estado: "Pendiente",
-          comentario: "",
-        },
-        auditoria: {
-          responsableId: null,
-          fecha: null,
-          estado: "Pendiente",
-          comentario: "",
-        },
-      },
-    },
-  ];
+  // Función para cargar solicitudes desde la API
+  const loadSolicitudes = async () => {
+    try {
+      setError(null);
+      const response = await RequestService.getRequests();
+      
+      if (response && response.success && response.data) {
+        setSolicitudes(response.data.solicitudes || []);
+      } else {
+        throw new Error('Formato de respuesta inesperado');
+      }
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setError('No tienes permisos para ver estas solicitudes.');
+      } else {
+        setError('Error al cargar las solicitudes. Por favor intenta de nuevo.');
+      }
+      setSolicitudes([]);
+    }
+  };
 
-  const solicitudesToShow = isFiltered ? filteredSolicitudes : solicitudes;
+  // Cargar solicitudes al montar el componente
+  useEffect(() => {
+    loadSolicitudes();
+  }, []);
+
+  // Función para transformar solicitudes del backend al formato esperado por el frontend
+  const transformSolicitud = (solicitud) => {
+    // Inferir categoría basada en el nombre del activo para mantener compatibilidad
+    let categoria = "General";
+    const nombre = solicitud.nombreActivo.toLowerCase();
+    if (nombre.includes("servidor") || nombre.includes("infraestructura")) {
+      categoria = "Infraestructura";
+    } else if (nombre.includes("base") && nombre.includes("datos")) {
+      categoria = "Base de Datos";
+    } else if (nombre.includes("firewall") || nombre.includes("seguridad")) {
+      categoria = "Seguridad";
+    }
+
+    return {
+      _id: solicitud.id,
+      codigoSolicitud: solicitud.codigoSolicitud,
+      fechaCreacion: solicitud.fechaSolicitud,
+      estadoGeneral: solicitud.estado,
+      activoId: solicitud.codigoActivo,
+      solicitanteId: solicitud.solicitante?.id,
+      solicitante: solicitud.solicitante?.nombreCompleto || 'Usuario desconocido',
+      categoria: categoria,
+      nombreActivo: solicitud.nombreActivo,
+      tipoOperacion: solicitud.tipoOperacion, // Agregar el tipo de operación
+      justificacion: solicitud.justificacion || 'Sin justificación',
+      // Simular estructura de cambios si no existe
+      cambios: [
+        {
+          campo: 'solicitud',
+          valorAnterior: 'Estado anterior',
+          valorNuevo: `Operación: ${solicitud.tipoOperacion}`
+        }
+      ],
+      // Simular estructura de aprobaciones basada en los datos del backend
+      aprobaciones: {
+        seguridad: {
+          responsableId: solicitud.responsableSeguridad?.id,
+          fecha: solicitud.fechaRevision,
+          estado: solicitud.estado === 'Pendiente' ? 'Pendiente' : (solicitud.estado === 'Aprobado' ? 'Aprobado' : 'Rechazado'),
+          comentario: solicitud.comentarioSeguridad || ''
+        },
+        auditoria: {
+          responsableId: null,
+          fecha: null,
+          estado: 'Pendiente',
+          comentario: ''
+        }
+      }
+    };
+  };
+
+  // Transformar datos del backend si están disponibles, sino mostrar array vacío
+  const solicitudesTransformadas = React.useMemo(() => {
+    const transformed = solicitudes.length > 0 
+      ? solicitudes.map(transformSolicitud) 
+      : [];
+    
+    return transformed;
+  }, [solicitudes]);
+
+  // Notificar al componente padre sobre las solicitudes cargadas usando useEffect
+  useEffect(() => {
+    if (onSolicitudesLoaded && solicitudesTransformadas.length > 0) {
+      onSolicitudesLoaded(solicitudesTransformadas);
+    }
+  }, [solicitudesTransformadas, onSolicitudesLoaded]);
+
+  const solicitudesToShow = isFiltered ? filteredSolicitudes : solicitudesTransformadas;
 
   // Función para aplicar estilos a filas pendientes
   useEffect(() => {
@@ -201,7 +145,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       return;
     }
 
-    const filtered = solicitudes.filter((solicitud) => {
+    const filtered = solicitudesTransformadas.filter((solicitud) => {
       if (filters.name) {
         const searchTerm = filters.name.toLowerCase();
         const matchesNombre = solicitud.nombreActivo
@@ -231,19 +175,34 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
 
     setFilteredSolicitudes(filtered);
     setIsFiltered(true);
-  }, []);
+  }, [solicitudesTransformadas]);
 
   const handleRevisar = (solicitud) => {
-    console.log("CLICK en Revisar:", solicitud);
     if (onNavigateToDetalles) {
       onNavigateToDetalles(solicitud);
     }
   };
 
-  const handleVerDetalles = (solicitud) => {
-    console.log("CLICK en Ver Detalles:", solicitud);
-    if (onNavigateToDetalles) {
-      onNavigateToDetalles(solicitud);
+  const handleVerDetalles = async (solicitud) => {
+    try {
+      // Cargar los detalles completos de la solicitud con responsables poblados
+      const solicitudId = solicitud.id || solicitud._id;
+      const response = await RequestService.getRequestById(solicitudId);
+      
+      if (response && response.success && response.data) {
+        if (onNavigateToDetalles) {
+          onNavigateToDetalles(response.data);
+        }
+      } else {
+        if (onNavigateToDetalles) {
+          onNavigateToDetalles(solicitud);
+        }
+      }
+    } catch (error) {
+      // En caso de error, mostrar con los datos que tenemos
+      if (onNavigateToDetalles) {
+        onNavigateToDetalles(solicitud);
+      }
     }
   };
 
@@ -370,12 +329,26 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
     },
   ];
 
+  // Estado de carga
+  if (error) {
+    return (
+      <div className="solicitudes-page">
+        <div className="user-header">
+          <div className="user-header-text">
+            <h2>Panel de Revisión</h2>
+            <h6>Gestión de solicitudes de cambio de activos</h6>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="solicitudes-page">
       <div className="user-header">
         <div className="user-header-text">
           <h2>Panel de Revisión</h2>
-          <h6>Gestión de solicitudes de cambio de activos</h6>
+          <h6>Gestión de solicitudes de cambio de activos ({solicitudesTransformadas.length} solicitudes)</h6>
         </div>
       </div>
 

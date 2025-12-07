@@ -14,7 +14,9 @@ const CardActivo = ({
     }
 
     const getEstadoClass = (estado) => {
-        switch (estado?.toLowerCase()) {
+        if (!estado) return 'estado-default';
+        
+        switch (estado.toLowerCase().trim()) {
             case 'activo':
                 return 'estado-activo';
             case 'mantenimiento':
@@ -23,9 +25,11 @@ const CardActivo = ({
             case 'inactivo':
                 return 'estado-inactivo';
             case 'en revision':
-            case 'en evaluación':
+            case 'en revisión':
+            case 'revision':
                 return 'estado-revision';
             case 'dado de baja':
+            case 'baja':
                 return 'estado-baja';
             case 'obsoleto':
                 return 'estado-obsoleto';
@@ -35,12 +39,10 @@ const CardActivo = ({
     };
 
     const handleHistorialClick = () => {
-        console.log('Mostrando historial para:', activo.nombre);
         onHistorialClick(activo);
     };
 
     const handleModificarClick = () => {
-        console.log('Modificando activo:', activo.nombre);
         onModificarClick(activo);
     };
 
@@ -77,13 +79,6 @@ const CardActivo = ({
                     <div className="card-activo-field">
                         <span className="field-label">Responsable:</span>
                         <span className="field-value">{activo.responsable}</span>
-                    </div>
-                )}
-
-                {activo.version && (
-                    <div className="card-activo-field">
-                        <span className="field-label">Versión:</span>
-                        <span className="field-value">{activo.version}</span>
                     </div>
                 )}
 

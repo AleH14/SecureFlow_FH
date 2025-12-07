@@ -88,7 +88,7 @@ const SolicitudCambioSchema = new mongoose.Schema({
   // Tipo de operación
   tipoOperacion: {
     type: String,
-    enum: ["creacion", "modificacion"],
+    enum: ["creacion", "modificacion", "reasignacion"],
     required: true
   },
   // Relación con activo

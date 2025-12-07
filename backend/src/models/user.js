@@ -24,9 +24,8 @@ const UserSchema = new mongoose.Schema({
       "seguridad",
       "auditoria",
       "finanzas",
-        "operaciones",
-        "legal_y_cumplimiento"
-
+      "operaciones",
+      "legal_y_cumplimiento"
     ],
     default: "Tecnologia_de_la_Informacion",
   },
@@ -35,6 +34,11 @@ const UserSchema = new mongoose.Schema({
   solicitudes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'SolicitudCambio' }],
   contrasenaHash: { type: String, required: true },
   ubicacion: { type: String },
+   estado: {
+    type: String,
+    enum: ["activo", "inactivo"],
+    default: "activo"
+  }
 });
 
 

@@ -2,155 +2,96 @@
 import React, { useState, useCallback } from "react";
 import { SearchBar, Table, Button } from "../../../components/ui";
 import { FaCheck, FaTimes, FaClock } from "react-icons/fa";
+import { RequestService } from "@/services";
 
-const Solicitudes = ({ onNavigateToDetalles }) => {
+const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filteredSolicitudes, setFilteredSolicitudes] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
+  const [loadingDetalles, setLoadingDetalles] = useState(false);
 
-  // Datos
-  const solicitudes = [
-    {
-      "_id": "SOL-2025-001",
-      "codigoSolicitud": "AAA-0001",
-      "fechaCreacion": "2025-11-23T09:30:00Z",
-      "estadoGeneral": "Aprobado", 
-      "activoId": "ACT-100",        
-      "solicitanteId": "USR-005",   
-      "nombreActivo": "Servidor Web Principal",
-      "justificacion": "El servidor requiere mantenimiento preventivo urgente debido a sobrecalentamiento detectado en los sensores de temperatura durante la última revisión rutinaria del sistema.",
-      "cambios": [
-        {
-          "campo": "estado",
-          "valorAnterior": "Activo",
-          "valorNuevo": "En Mantenimiento"
-        },
-        {
-          "campo": "descripcion",
-          "valorAnterior": "Servidor de la empresa",
-          "valorNuevo": "Servidor en reparación por fallas térmicas"
+  // Función para cargar solicitudes desde la API
+  const loadSolicitudes = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await RequestService.getRequests();
+      
+      if (response && response.success && response.data) {
+        setSolicitudes(response.data.solicitudes || []);
+        // Actualizar el contador cuando se cargan las solicitudes
+        if (onRefreshCount) {
+          onRefreshCount();
         }
-      ],
-      "aprobaciones": {
-        "seguridad": {
-          "responsableId": "USR-008", 
-          "fecha": "2025-11-23T14:00:00Z",
-          "estado": "Aprobado",
-          "comentario": "Se valida que el mantenimiento no afecta la seguridad perimetral."
-        },
-        "auditoria": {
-          "responsableId": "USR-009",
-          "fecha": "2025-11-24T09:00:00Z",
-          "estado": "Aprobado",
-          "comentario": "Proceso conforme a la normativa ISO."
-        }
+      } else {
+        throw new Error('Formato de respuesta inesperado');
       }
-    },
-    {
-      "_id": "SOL-2025-002",
-      "codigoSolicitud": "BBB-0002",
-      "fechaCreacion": "2025-11-22T10:15:00Z",
-      "estadoGeneral": "Pendiente",
-      "activoId": "ACT-101",        
-      "solicitanteId": "USR-006",   
-      "nombreActivo": "Base de Datos MySQL",
-      "justificacion": "Actualización de configuración de seguridad requerida para compliance con nuevas regulaciones de protección de datos implementadas este trimestre, incluyendo encriptación avanzada y políticas de retención.",
-      "cambios": [
-        {
-          "campo": "configuracion",
-          "valorAnterior": "Configuración estándar",
-          "valorNuevo": "Configuración extendida con encriptación"
-        }
-      ],
-      "aprobaciones": {
-        "seguridad": {
-          "responsableId": "USR-008", 
-          "fecha": "2025-11-22T16:30:00Z",
-          "estado": "Aprobado",
-          "comentario": "Configuración cumple con políticas de seguridad."
-        },
-        "auditoria": {
-          "responsableId": "USR-009",
-          "fecha": null,
-          "estado": "Pendiente",
-          "comentario": ""
-        }
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setError('No tienes permisos para ver estas solicitudes.');
+      } else {
+        setError('Error al cargar las solicitudes. Por favor intenta de nuevo.');
       }
-    },
-    {
-      "_id": "SOL-2025-003",
-      "codigoSolicitud": "CCC-0003",
-      "fechaCreacion": "2025-11-21T08:45:00Z",
-      "estadoGeneral": "Rechazado", 
-      "activoId": "ACT-102",        
-      "solicitanteId": "USR-007",   
-      "nombreActivo": "Firewall Corporativo",
-      "justificacion": "Cambio en reglas de firewall para nuevo departamento de desarrollo que requiere acceso a puertos específicos para herramientas de integración continua y despliegue automático.",
-      "cambios": [
-        {
-          "campo": "reglas_firewall",
-          "valorAnterior": "Reglas básicas",
-          "valorNuevo": "Reglas extendidas para departamento nuevo"
-        }
-      ],
-      "aprobaciones": {
-        "seguridad": {
-          "responsableId": "USR-008", 
-          "fecha": "2025-11-21T15:20:00Z",
-          "estado": "Rechazado",
-          "comentario": "Las reglas propuestas presentan vulnerabilidades de seguridad."
-        },
-        "auditoria": {
-          "responsableId": null,
-          "fecha": null,
-          "estado": "No Aplica",
-          "comentario": ""
-        }
-      }
-    },
-    {
-      "_id": "SOL-2025-004",
-      "codigoSolicitud": "DDD-0004",
-      "fechaCreacion": "2025-11-25T11:00:00Z",
-      "estadoGeneral": "Pendiente", 
-      "activoId": "ACT-103",        
-      "solicitanteId": "USR-010",   
-      "nombreActivo": "Servidor de Aplicaciones",
-      "justificacion": "Migración a nueva versión del sistema operativo para mantener soporte técnico y recibir actualizaciones de seguridad críticas que ya no están disponibles en la versión actual.",
-      "cambios": [
-        {
-          "campo": "version_so",
-          "valorAnterior": "Windows Server 2019",
-          "valorNuevo": "Windows Server 2022"
-        },
-        {
-          "campo": "estado",
-          "valorAnterior": "Activo",
-          "valorNuevo": "En Migración"
-        }
-      ],
-      "aprobaciones": {
-        "seguridad": {
-          "responsableId": null,
-          "fecha": null,
-          "estado": "Pendiente",
-          "comentario": ""
-        },
-        "auditoria": {
-          "responsableId": null,
-          "fecha": null,
-          "estado": "Pendiente",
-          "comentario": ""
-        }
-      }
+      setSolicitudes([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Cargar solicitudes al montar el componente
+  React.useEffect(() => {
+    loadSolicitudes();
+  }, []);
+
+  // Función para cargar los detalles completos de una solicitud
+  const loadSolicitudDetalles = async (solicitudId) => {
+    try {
+      setLoadingDetalles(true);
+      
+      const response = await RequestService.getRequestById(solicitudId);
+      
+      if (response && response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error('Formato de respuesta inesperado');
+      }
+    } catch (err) {
+      throw err;
+    } finally {
+      setLoadingDetalles(false);
+    }
+  };
+
+  // Función para manejar el clic en "Ver Detalles"
+  const handleVerDetalles = async (solicitud) => {
+    try {
+      // Cargar los detalles completos de la solicitud
+      const detallesCompletos = await loadSolicitudDetalles(solicitud.id || solicitud._id);
+      
+      if (onNavigateToDetalles) {
+        onNavigateToDetalles(detallesCompletos);
+      }
+    } catch (error) {
+      // Si hay error, mostrar alerta
+      alert('Error al cargar los detalles de la solicitud. Por favor intenta de nuevo.');
+    }
+  };
 
   // Función para formatear fecha
   const formatFecha = (fechaISO) => {
     if (!fechaISO) return "No asignada";
-    return new Date(fechaISO).toLocaleDateString('es-ES');
+    return new Date(fechaISO).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
+  // Función para filtrar solicitudes
   const handleFilter = useCallback((filters) => {
     if (!filters.name && !filters.estado) {
       setFilteredSolicitudes([]);
@@ -161,18 +102,14 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
     const filtered = solicitudes.filter((solicitud) => {
       if (filters.name) {
         const searchTerm = filters.name.toLowerCase();
-        const matchesNombre = solicitud.nombreActivo
-          .toLowerCase()
-          .includes(searchTerm);
-        const matchesCodigo = solicitud.codigoSolicitud
-          .toLowerCase()
-          .includes(searchTerm);
+        const matchesNombre = solicitud.nombreActivo?.toLowerCase().includes(searchTerm) || false;
+        const matchesCodigo = solicitud.codigoSolicitud?.toLowerCase().includes(searchTerm) || false;
         if (!matchesNombre && !matchesCodigo) {
           return false;
         }
       }
 
-      if (filters.estado && solicitud.estadoGeneral !== filters.estado) {
+      if (filters.estado && solicitud.estado !== filters.estado) {
         return false;
       }
 
@@ -181,14 +118,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
 
     setFilteredSolicitudes(filtered);
     setIsFiltered(true);
-  }, []);
-
-  const handleVerDetalles = (solicitud) => {
-    console.log("CLICK en Ver Detalles:", solicitud);
-    if (onNavigateToDetalles) {
-      onNavigateToDetalles(solicitud);
-    }
-  };
+  }, [solicitudes]);
 
   const searchFields = [
     {
@@ -244,7 +174,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       render: (row) => (
         <div>
           <div className="fw-bold">{row.nombreActivo}</div>
-          <div className="text-muted small">Código: {row.codigoSolicitud}</div>
+          <div className="text-muted small">Código activo: {row.codigoActivo}</div>
         </div>
       ),
       cellStyle: { 
@@ -253,21 +183,21 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       }
     },
     {
-      key: "fechaCreacion",
+      key: "fechaSolicitud",
       label: "Fecha de Solicitud",
-      render: (row) => formatFecha(row.fechaCreacion),
+      render: (row) => formatFecha(row.fechaSolicitud),
       cellStyle: { 
-        minWidth: "150px",
-        maxWidth: "180px"
+        minWidth: "180px",
+        maxWidth: "220px"
       }
     },
     {
-      key: "estadoGeneral",
+      key: "estado",
       label: "Estado",
       render: (row) => (
-        <span className={getEstadoClass(row.estadoGeneral)}>
-          {getEstadoIcon(row.estadoGeneral)}
-          {row.estadoGeneral}
+        <span className={getEstadoClass(row.estado)}>
+          {getEstadoIcon(row.estado)}
+          {row.estado}
         </span>
       ),
       cellStyle: { 
@@ -281,7 +211,7 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
       label: "Justificación",
       render: (row) => (
         <div className="justificacion-cell">
-          {row.justificacion}
+          {row.justificacion || "Sin justificación"}
         </div>
       ),
       cellStyle: { 
@@ -303,24 +233,69 @@ const Solicitudes = ({ onNavigateToDetalles }) => {
           }}
           type="button"
           className="btn-ver-detalles"
+          disabled={loadingDetalles}
         >
-          Ver Detalles
+          {loadingDetalles ? "Cargando..." : "Ver Detalles"}
         </Button>
       ),
       cellStyle: { 
         minWidth: "120px",
-        maxWidth: "150px",
+        maxWidth: "140px",
         textAlign: "center"
       }
     },
   ];
+
+  // Estado de carga
+  if (loading) {
+    return (
+      <div className="solicitudes-page">
+        <div className="user-header">
+          <div className="user-header-text">
+            <h2>Control de Cambios - Mis Solicitudes</h2>
+            <h6>Seguimiento de solicitudes de cambio según ISO 27001</h6>
+          </div>
+        </div>
+        <div className="text-center p-4">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+          <p className="mt-2">Cargando solicitudes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Estado de error
+  if (error) {
+    return (
+      <div className="solicitudes-page">
+        <div className="user-header">
+          <div className="user-header-text">
+            <h2>Control de Cambios - Mis Solicitudes</h2>
+            <h6>Seguimiento de solicitudes de cambio según ISO 27001</h6>
+          </div>
+        </div>
+        <div className="alert alert-danger text-center">
+          <h5>Error al cargar solicitudes</h5>
+          <p>{error}</p>
+          <button 
+            className="btn btn-primary mt-2" 
+            onClick={loadSolicitudes}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="solicitudes-page">
       <div className="user-header">
         <div className="user-header-text">
           <h2>Control de Cambios - Mis Solicitudes</h2>
-          <h6>Seguimiento de solicitudes de cambio según ISO 27001</h6>
+          <h6>Seguimiento de solicitudes de cambio según ISO 27001 ({solicitudes.length} solicitudes)</h6>
         </div>
       </div>
 

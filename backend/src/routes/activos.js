@@ -13,10 +13,16 @@ const {
 const router = express.Router();
 
 // Función para generar código único de activo
-const generateActivoCode = () => {
-  const year = new Date().getFullYear();
-  const randomNum = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
-  return `ACT-${year}-${randomNum}`;
+const generateActivoCode = (nombreActivo) => {
+  // Tomar las primeras 3 letras del nombre del activo, limpiar espacios y convertir a mayúsculas
+  const nombreLimpio = nombreActivo.replace(/\s/g, '').replace(/[^a-zA-Z]/g, '');
+  const prefijo = nombreLimpio.substring(0, 3).toUpperCase().padEnd(3, 'X');
+  
+  // Generar correlativo de 3 dígitos
+  const correlativo = Math.floor(Math.random() * 999) + 1;
+  const correlativoStr = correlativo.toString().padStart(3, '0');
+  
+  return `ACT-${prefijo}-${correlativoStr}`;
 };
 
 // Función para generar código único de solicitud
@@ -62,7 +68,7 @@ router.post('/', auth, asyncHandler(async (req, res) => {
     let codigoExists = true;
     
     while (codigoExists) {
-      codigo = generateActivoCode();
+      codigo = generateActivoCode(sanitizedData.nombre);
       const activoWithCode = await Activo.findOne({ codigo });
       if (!activoWithCode) {
         codigoExists = false;
@@ -77,7 +83,7 @@ router.post('/', auth, asyncHandler(async (req, res) => {
       descripcion: sanitizedData.descripcion,
       ubicacion: sanitizedData.ubicacion,
       responsableId: req.user._id, // Usuario logueado como responsable
-      estado: 'En evaluacion', // Estado por defecto
+      estado: 'En Revision', // Estado por defecto
       version: 'v1.0.0', // Versión por defecto
       fechaCreacion: new Date(),
       historialComentarios: [{
@@ -119,7 +125,7 @@ router.post('/', auth, asyncHandler(async (req, res) => {
         { campo: 'descripcion', valorAnterior: null, valorNuevo: sanitizedData.descripcion },
         { campo: 'ubicacion', valorAnterior: null, valorNuevo: sanitizedData.ubicacion },
         { campo: 'responsableId', valorAnterior: null, valorNuevo: req.user._id.toString() },
-        { campo: 'estado', valorAnterior: null, valorNuevo: 'En evaluacion' }
+        { campo: 'estado', valorAnterior: null, valorNuevo: 'En Revision' }
       ]
     });
 
@@ -166,7 +172,6 @@ router.post('/', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 201, 'Activo creado y solicitud de aprobación generada', activoResponse);
 
   } catch (error) {
-    console.error('Error creando activo:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -186,6 +191,14 @@ router.get('/', auth, asyncHandler(async (req, res) => {
 
     // Construir filtro de búsqueda
     let filter = {};
+
+    // Aplicar filtros según el rol del usuario
+    const userRole = req.user.rol;
+    if (userRole === 'usuario') {
+      // Los usuarios solo pueden ver sus propios activos (donde son responsables)
+      filter.responsableId = req.user._id;
+    }
+    // Los roles admin, auditor y responsable_seguridad pueden ver todos los activos
     
     // Filtro por categoría
     if (categoria) {
@@ -266,7 +279,6 @@ router.get('/', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, `${formattedActivos.length} activos obtenidos correctamente`, responseData);
 
   } catch (error) {
-    console.error('Error obteniendo activos:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -286,6 +298,16 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
     if (!activo) {
       return sendError(res, 404, 'Activo no encontrado');
     }
+
+    // Verificar permisos según el rol del usuario
+    const userRole = req.user.rol;
+    if (userRole === 'usuario') {
+      // Los usuarios solo pueden ver sus propios activos
+      if (activo.responsableId._id.toString() !== req.user._id.toString()) {
+        return sendError(res, 403, 'No tienes permisos para ver este activo');
+      }
+    }
+    // Los roles admin, auditor y responsable_seguridad pueden ver todos los activos
 
     // Formatear respuesta
     const activoResponse = {
@@ -319,7 +341,6 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Activo obtenido correctamente', activoResponse);
 
   } catch (error) {
-    console.error('Error obteniendo activo:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de activo inválido');
     }
@@ -383,7 +404,7 @@ router.put('/:id', auth, asyncHandler(async (req, res) => {
     }
     
     if (estado !== undefined) {
-      const validStates = ['En evaluacion', 'Activo', 'Inactivo', 'Mantenimiento', 'En Revisión', 'Dado de Baja'];
+      const validStates = ['Activo', 'Inactivo', 'En Mantenimiento', 'En Revision'];
       if (!validStates.includes(estado)) {
         return sendError(res, 400, 'Estado inválido');
       }
@@ -475,9 +496,32 @@ router.put('/:id', auth, asyncHandler(async (req, res) => {
       });
     }
 
-    // Solo crear solicitud si hay cambios reales
+    // Si no hay cambios reales, devolver respuesta exitosa sin hacer nada
     if (cambiosRealizados.length === 0) {
-      return sendError(res, 400, 'No se detectaron cambios en el activo');
+      const activoActualizado = await Activo.findById(id)
+        .populate('responsableId', 'nombre apellido email codigo');
+
+      return sendResponse(res, 200, 'No se detectaron cambios en el activo', {
+        activo: {
+          id: activoActualizado._id,
+          codigo: activoActualizado.codigo,
+          nombre: activoActualizado.nombre,
+          categoria: activoActualizado.categoria,
+          descripcion: activoActualizado.descripcion,
+          estado: activoActualizado.estado,
+          ubicacion: activoActualizado.ubicacion,
+          version: activoActualizado.version,
+          fechaCreacion: activoActualizado.fechaCreacion,
+          responsable: {
+            id: activoActualizado.responsableId._id,
+            codigo: activoActualizado.responsableId.codigo,
+            nombreCompleto: `${activoActualizado.responsableId.nombre} ${activoActualizado.responsableId.apellido}`,
+            email: activoActualizado.responsableId.email
+          }
+        },
+        solicitud: null,
+        sinCambios: true
+      });
     }
 
     // Generar código único para la solicitud
@@ -550,7 +594,6 @@ router.put('/:id', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Solicitud de modificación creada exitosamente', activoResponse);
 
   } catch (error) {
-    console.error('Error actualizando activo:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de activo inválido');
     }
@@ -605,7 +648,6 @@ router.get('/:id/historial', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Historial obtenido correctamente', responseData);
 
   } catch (error) {
-    console.error('Error obteniendo historial:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de activo inválido');
     }
@@ -711,7 +753,6 @@ router.get('/stats/summary', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Estadísticas obtenidas correctamente', statsResponse);
 
   } catch (error) {
-    console.error('Error obteniendo estadísticas de activos:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -724,23 +765,89 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
     const { id } = req.params;
 
     // Verificar que el activo existe
-    const activo = await Activo.findById(id);
+    const activo = await Activo.findById(id).populate('responsableId', 'nombre apellido');
     if (!activo) {
       return sendError(res, 404, 'Activo no encontrado');
     }
 
+    // Verificar permisos según el rol del usuario
+    const userRole = req.user.rol;
+    if (userRole === 'usuario') {
+      // Los usuarios solo pueden ver el historial de sus propios activos
+      if (activo.responsableId._id.toString() !== req.user._id.toString()) {
+        return sendError(res, 403, 'No tienes permisos para ver el historial de este activo');
+      }
+    }
+    // Los roles admin, auditor y responsable_seguridad pueden ver todos los historiales
+
     // Obtener todas las solicitudes de cambio relacionadas con este activo
-    console.log('Buscando solicitudes para activo ID:', id);
     const solicitudes = await SolicitudCambio.find({ activoId: id })
       .populate('solicitanteId', 'nombre apellido email codigo')
       .populate('responsableSeguridadId', 'nombre apellido email codigo')
       .populate('auditorId', 'nombre apellido email codigo')
       .sort({ fechaSolicitud: -1 });
 
-    console.log('Solicitudes encontradas:', solicitudes.length);
+    // Obtener todos los IDs de responsables únicos para poblarlos de una vez
+    const responsableIds = new Set();
+    solicitudes.forEach(solicitud => {
+      const cambioResponsable = solicitud.cambios.find(c => c.campo === 'responsableId');
+      if (cambioResponsable && cambioResponsable.valorNuevo) {
+        responsableIds.add(cambioResponsable.valorNuevo);
+      }
+    });
+
+    // Poblar información de todos los responsables de una vez
+    const responsablesMap = new Map();
+    if (responsableIds.size > 0) {
+      const responsables = await User.find({ 
+        _id: { $in: Array.from(responsableIds) } 
+      }).select('nombre apellido email codigo');
+      
+      responsables.forEach(resp => {
+        responsablesMap.set(resp._id.toString(), {
+          id: resp._id,
+          codigo: resp.codigo,
+          nombreCompleto: `${resp.nombre} ${resp.apellido}`,
+          email: resp.email
+        });
+      });
+    }
 
     // Formatear el historial
     const historial = solicitudes.map(solicitud => {
+      // Determinar el responsable según el tipo de operación
+      let responsableInfo;
+      
+      if (solicitud.tipoOperacion === 'creacion') {
+        // Para creación, el responsable es el solicitante (quien creó el activo)
+        responsableInfo = {
+          id: solicitud.solicitanteId._id,
+          codigo: solicitud.solicitanteId.codigo,
+          nombreCompleto: `${solicitud.solicitanteId.nombre} ${solicitud.solicitanteId.apellido}`,
+          email: solicitud.solicitanteId.email
+        };
+      } else {
+        // Para modificaciones, verificar si hay cambio de responsable en esta solicitud
+        const cambioResponsable = solicitud.cambios.find(c => c.campo === 'responsableId');
+        if (cambioResponsable && cambioResponsable.valorNuevo) {
+          // Buscar el responsable en el mapa poblado
+          responsableInfo = responsablesMap.get(cambioResponsable.valorNuevo) || {
+            id: cambioResponsable.valorNuevo,
+            codigo: 'N/A',
+            nombreCompleto: 'Usuario no encontrado',
+            email: 'N/A'
+          };
+        } else {
+          // Si no hay cambio de responsable, usar el responsable actual del activo
+          responsableInfo = {
+            id: activo.responsableId._id,
+            codigo: activo.responsableId.codigo,
+            nombreCompleto: `${activo.responsableId.nombre} ${activo.responsableId.apellido}`,
+            email: activo.responsableId.email
+          };
+        }
+      }
+      
       return {
         id: solicitud._id,
         fecha: solicitud.fechaSolicitud,
@@ -751,10 +858,7 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
           categoriaActivo: activo.categoria,
           estadoActivo: activo.estado,
           descripcionActivo: activo.descripcion,
-          responsable: {
-            id: activo.responsableId,
-            // Se poblará después
-          },
+          responsable: responsableInfo,
           cambios: solicitud.cambios.map(cambio => ({
             campo: cambio.campo,
             valorAnterior: cambio.valorAnterior,
@@ -792,19 +896,8 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
       };
     });
 
-    // Poblar información del responsable actual del activo
-    const activoConResponsable = await Activo.findById(id)
-      .populate('responsableId', 'nombre apellido email codigo');
-
-    // Actualizar responsable en cada entrada del historial
-    historial.forEach(entry => {
-      entry.solicitudCambio.responsable = {
-        id: activoConResponsable.responsableId._id,
-        codigo: activoConResponsable.responsableId.codigo,
-        nombreCompleto: `${activoConResponsable.responsableId.nombre} ${activoConResponsable.responsableId.apellido}`,
-        email: activoConResponsable.responsableId.email
-      };
-    });
+    // Ya no necesitamos actualizar el responsable globalmente porque 
+    // cada entrada ya tiene su responsable correcto según el momento de la solicitud
 
     const responseData = {
       activo: {
@@ -820,14 +913,44 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
       historial
     };
 
-    console.log('Respuesta del historial:', JSON.stringify(responseData, null, 2));
     sendResponse(res, 200, `Historial de cambios obtenido correctamente`, responseData);
 
   } catch (error) {
-    console.error('Error obteniendo historial de activo:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de activo inválido');
     }
+    return sendError(res, 500, 'Error interno del servidor');
+  }
+}));
+
+// @route   GET /api/activos/responsables/disponibles
+// @desc    Get available users for asset responsibility (users with role "usuario")
+// @access  Private (All authenticated users)
+router.get('/responsables/disponibles', auth, asyncHandler(async (req, res) => {
+  try {
+    // Filtrar SOLO por rol "usuario" y estado "activo"
+    const filter = {
+      rol: 'usuario',
+      estado: 'activo'  
+    };
+
+    // Obtener usuarios con filtros
+    const users = await User.find(filter)
+      .select('_id nombre apellido email') //id, nombre, apellido, email
+      .sort({ nombre: 1, apellido: 1 })
+      .limit(100);
+
+    // Formatear respuesta - AHORA CON ID
+    const formattedUsers = users.map(user => ({
+      id: user._id, //Incluir el ID
+      nombreCompleto: `${user.nombre} ${user.apellido}`,
+      email: user.email,
+    }));
+    
+    // Enviar solo el array de usuarios
+    sendResponse(res, 200, `${formattedUsers.length} responsables disponibles obtenidos`, formattedUsers);
+
+  } catch (error) {
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
