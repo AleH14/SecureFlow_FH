@@ -85,13 +85,6 @@ const CardActivo = ({
                     </div>
                 )}
 
-                {activo.version && (
-                    <div className="card-activo-field">
-                        <span className="field-label">Versión:</span>
-                        <span className="field-value">{activo.version}</span>
-                    </div>
-                )}
-
                 {activo.ubicacion && (
                     <div className="card-activo-field">
                         <span className="field-label">Ubicación:</span>

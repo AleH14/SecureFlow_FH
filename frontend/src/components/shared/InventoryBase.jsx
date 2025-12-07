@@ -201,7 +201,6 @@ const InventoryBase = ({
       fecha_creacion: activo.fechaCreacion
         ? new Date(activo.fechaCreacion).toLocaleDateString("es-ES")
         : "N/A",
-      version: activo.version || "v1.0.0",
       acciones_disponibles: ["Historial de Versiones"],
     };
   };
