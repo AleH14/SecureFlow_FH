@@ -301,112 +301,161 @@ const SCVBase = ({
     [historialFiltrado, calcularVersionesParaHistorialMostrado]
   );
 
-  // Transformación de datos base
-  const defaultDataTransform = useCallback((item, index) => {
-    // Obtener versión SOLO si es aprobado y debemos mostrar versión
-    let versionDisplay = null;
-    if (debeMostrarVersion() && item.estado?.toLowerCase() === "aprobado") {
-      const version = versionesMap.get(item.id);
-      if (version) {
-        versionDisplay = (
-          <span className="version-badge">
-            {version}
-          </span>
-        );
-      }
-    }
-
-    const baseData = {
-      fecha: formatFecha(item.fecha),
-      ...(debeMostrarVersion() && { version: versionDisplay }),
-      solicitud_de_cambio: (
-        <div className="scv-cell-content">
-          <span className="scv-label">Código:</span>{" "}
-          <span className="scv-value">
-            {item.solicitudCambio?.codigoSolicitud || "N/A"}
-          </span>
-          <br />
-          <span className="scv-label">Tipo:</span>{" "}
-          <span className="scv-value">
-            {item.solicitudCambio?.tipoOperacion || "N/A"}
-          </span>
-          <br />
-          <span className="scv-label">Nombre:</span>{" "}
-          <span className="scv-value">
-            {item.solicitudCambio?.nombreActivo || "N/A"}
-          </span>
-          <br />
-          <span className="scv-label">Responsable:</span>{" "}
-          <span className="scv-value">
-            {item.solicitudCambio?.responsable?.nombreCompleto || "N/A"}
-          </span>
-        </div>
-      ),
-      comentario: item.comentarioSolicitante || "Sin comentarios",
-      revision: item.revision ? (
-        <div className="scv-cell-content">
-          <span className="scv-label">Responsable:</span>{" "}
-          <span className="scv-value">
-            {item.revision.responsableSeguridad?.nombreCompleto || "N/A"}
-          </span>
-          <br />
-          <span className="scv-label">Fecha:</span>{" "}
-          <span className="scv-value">
-            {formatFecha(item.revision.fechaRevision)}
-          </span>
-          <br />
-          <span className="scv-label">Comentario:</span>{" "}
-          <span className="scv-value">
-            {item.revision.comentario || "Sin comentarios"}
-          </span>
-        </div>
-      ) : (
-        <span className="text-muted">Pendiente de revisión</span>
-      ),
-      auditoria: item.auditoria ? (
-        <div className="scv-cell-content">
-          <span className="scv-label">Auditor:</span>{" "}
-          <span className="scv-value">
-            {item.auditoria.auditor?.nombreCompleto || "N/A"}
-          </span>
-          <br />
-          <span className="scv-label">Fecha:</span>{" "}
-          <span className="scv-value">{formatFecha(item.auditoria.fecha)}</span>
-          <br />
-          <span className="scv-label">Comentario:</span>{" "}
-          <span className="scv-value">
-            {item.auditoria.comentario || "Sin comentarios"}
-          </span>
-        </div>
-      ) : (
-        <span className="text-muted">Pendiente de auditoría</span>
-      ),
-      estado: (
-        <span className={`estado-badge ${getEstadoClass(item.estado)}`}>
-          {item.estado}
+// Transformación de datos base 
+const defaultDataTransform = useCallback((item, index) => {
+  // Obtener versión SOLO si es aprobado y debemos mostrar versión
+  let versionDisplay = null;
+  if (debeMostrarVersion() && item.estado?.toLowerCase() === "aprobado") {
+    const version = versionesMap.get(item.id);
+    if (version) {
+      versionDisplay = (
+        <span className="version-badge">
+          {version}
         </span>
-      ),
-    };
-
-    // Agregar campos específicos según el rol
-    if (userRole === "auditor" && showActions) {
-      baseData.accion = (
-        <button
-          className="comment-btn"
-          onClick={() => handleComment(item)}
-          title="Agregar comentario de auditoría"
-          aria-label={`Agregar comentario a ${
-            item.solicitudCambio?.nombreActivo || "registro"
-          }`}
-        >
-          <FaCommentAlt className="comment-icon" />
-          Comentar
-        </button>
       );
     }
+  }
 
-    return baseData;
-  }, [userRole, showActions, getEstadoClass, formatFecha, handleComment, debeMostrarVersion, versionesMap]);
+  // Obtener los cambios específicos de la solicitud
+  const cambios = item.solicitudCambio?.cambios || [];
+  
+  // Función para formatear el valor de un cambio
+  const formatearValor = (valor, esResponsable = false) => {
+    if (!valor || valor === "null" || valor.trim() === "") {
+      return "Vacío";
+    }
+    
+    // Si es responsableId y tenemos información poblada
+    if (esResponsable) {
+      // Buscar si hay información poblada del responsable
+      const responsableInfo = item.solicitudCambio?.responsable;
+      if (responsableInfo?.nombreCompleto) {
+        return responsableInfo.nombreCompleto;
+      }
+    }
+    
+    return valor;
+  };
+
+  // Crear el contenido de cambios
+  const contenidoCambios = cambios.map((cambio, idx) => {
+    const esResponsable = cambio.campo === "responsableId";
+    const valorAnterior = formatearValor(cambio.valorAnterior, esResponsable);
+    const valorNuevo = formatearValor(cambio.valorNuevo, esResponsable);
+    
+    // Para creación, mostrar solo el valor nuevo
+    if (item.solicitudCambio?.tipoOperacion === "creacion") {
+      return (
+        <React.Fragment key={idx}>
+          <span className="scv-label">{cambio.campo}:</span>{" "}
+          <span className="scv-value">{valorNuevo}</span>
+          <br />
+        </React.Fragment>
+      );
+    }
+    
+    // Para modificación, mostrar ambos
+    return (
+      <React.Fragment key={idx}>
+        <span className="scv-label">{cambio.campo}:</span>{" "}
+        <span className="scv-value">{valorNuevo}</span>
+        <br />
+      </React.Fragment>
+    );
+  });
+
+  const baseData = {
+    fecha: formatFecha(item.fecha),
+    ...(debeMostrarVersion() && { version: versionDisplay }),
+    solicitud_de_cambio: (
+      <div className="scv-cell-content">
+        <span className="scv-label">Código:</span>{" "}
+        <span className="scv-value">
+          {item.solicitudCambio?.codigoSolicitud || "N/A"}
+        </span>
+        <br />
+        <span className="scv-label">Tipo:</span>{" "}
+        <span className="scv-value">
+          {item.solicitudCambio?.tipoOperacion || "N/A"}
+        </span>
+        <br />
+        {/* Mostrar cambios específicos aquí */}
+        {contenidoCambios.length > 0 ? (
+          contenidoCambios
+        ) : (
+          <>
+            <span className="scv-label">Cambios:</span>{" "}
+            <span className="scv-value text-muted">No especificados</span>
+            <br />
+          </>
+        )}
+      </div>
+    ),
+    comentario: item.comentarioSolicitante || "Sin comentarios",
+    revision: item.revision ? (
+      <div className="scv-cell-content">
+        <span className="scv-label">Responsable:</span>{" "}
+        <span className="scv-value">
+          {item.revision.responsableSeguridad?.nombreCompleto || "N/A"}
+        </span>
+        <br />
+        <span className="scv-label">Fecha:</span>{" "}
+        <span className="scv-value">
+          {formatFecha(item.revision.fechaRevision)}
+        </span>
+        <br />
+        <span className="scv-label">Comentario:</span>{" "}
+        <span className="scv-value">
+          {item.revision.comentario || "Sin comentarios"}
+        </span>
+      </div>
+    ) : (
+      <span className="text-muted">Pendiente de revisión</span>
+    ),
+    auditoria: item.auditoria ? (
+      <div className="scv-cell-content">
+        <span className="scv-label">Auditor:</span>{" "}
+        <span className="scv-value">
+          {item.auditoria.auditor?.nombreCompleto || "N/A"}
+        </span>
+        <br />
+        <span className="scv-label">Fecha:</span>{" "}
+        <span className="scv-value">{formatFecha(item.auditoria.fecha)}</span>
+        <br />
+        <span className="scv-label">Comentario:</span>{" "}
+        <span className="scv-value">
+          {item.auditoria.comentario || "Sin comentarios"}
+        </span>
+      </div>
+    ) : (
+      <span className="text-muted">Pendiente de auditoría</span>
+    ),
+    estado: (
+      <span className={`estado-badge ${getEstadoClass(item.estado)}`}>
+        {item.estado}
+      </span>
+    ),
+  };
+
+  // Agregar campos específicos según el rol
+  if (userRole === "auditor" && showActions) {
+    baseData.accion = (
+      <button
+        className="comment-btn"
+        onClick={() => handleComment(item)}
+        title="Agregar comentario de auditoría"
+        aria-label={`Agregar comentario a ${
+          item.solicitudCambio?.nombreActivo || "registro"
+        }`}
+      >
+        <FaCommentAlt className="comment-icon" />
+        Comentar
+      </button>
+    );
+  }
+
+  return baseData;
+}, [userRole, showActions, getEstadoClass, formatFecha, handleComment, debeMostrarVersion, versionesMap]);
 
   // Usar transformación personalizada o la por defecto
   const historialTableData = useMemo(() => 

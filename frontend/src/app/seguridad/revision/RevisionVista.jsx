@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Table, Card, Button } from "../../../components/ui";
 import Toast from "../../../components/ui/Toast";
 import { FaInfoCircle, FaShieldAlt, FaArrowLeft } from "react-icons/fa";
@@ -11,26 +11,48 @@ const RevisionVista = ({
   onNavigateBack 
 }) => {
   const [solicitud, setSolicitud] = useState(initialSolicitud);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("info");
 
-  // Cargar datos detallados de la solicitud (misma lógica que en Revision)
+  // Función para obtener nombre del responsable
+  const getNombreResponsable = useCallback((responsableData) => {
+    if (!responsableData) return "No asignado";
+
+    // Si ya es un objeto con información poblada
+    if (typeof responsableData === "object") {
+      if (responsableData.nombreCompleto) {
+        return responsableData.nombreCompleto;
+      }
+      if (responsableData.nombre && responsableData.apellido) {
+        return `${responsableData.nombre} ${responsableData.apellido}`;
+      }
+      if (responsableData._id || responsableData.id) {
+        const id = responsableData._id || responsableData.id;
+        return `ID: ${id.substring(0, 8)}...`;
+      }
+    }
+
+    // Si es un string (ID), devolver ID truncado
+    if (typeof responsableData === "string") {
+      return `ID: ${responsableData.substring(0, 8)}...`;
+    }
+
+    return "No asignado";
+  }, []);
+
+  // Cargar datos detallados de la solicitud
   useEffect(() => {
     const loadSolicitudDetails = async () => {
       if (initialSolicitud && initialSolicitud._id) {
         try {
-          setLoading(true);
           setError(null);
           const response = await RequestService.getRequestById(initialSolicitud._id);
           
           if (response && response.success && response.data) {
-            // Transformar datos del backend al formato del frontend
             const detailedSolicitud = {
               ...initialSolicitud,
-              // Datos adicionales del backend
               activo: response.data.activo,
               cambios: response.data.cambios || [],
               solicitante: response.data.solicitante?.nombreCompleto || initialSolicitud.solicitante,
@@ -39,18 +61,13 @@ const RevisionVista = ({
               comentarioSeguridad: response.data.comentarioSeguridad,
               fechaRevision: response.data.fechaRevision,
               tipoOperacion: response.data.tipoOperacion || initialSolicitud.tipoOperacion,
-              // Aprobaciones del backend
               aprobaciones: response.data.aprobaciones || initialSolicitud.aprobaciones
             };
             setSolicitud(detailedSolicitud);
           }
         } catch (err) {
-          console.error('Error cargando detalles de solicitud (vista):', err);
           setError('Error al cargar los detalles de la solicitud');
-          // Mantener la solicitud inicial si falla la carga de detalles
           setSolicitud(initialSolicitud);
-        } finally {
-          setLoading(false);
         }
       } else {
         setSolicitud(initialSolicitud);
@@ -66,10 +83,28 @@ const RevisionVista = ({
     return new Date(fechaISO).toLocaleDateString("es-ES");
   };
 
-  // Datos para la tabla de cambios - MODIFICADO PARA CREACIONES
+  // Datos para la tabla de cambios
   const cambiosTableData = solicitud?.cambios?.map((cambio, index) => {
     let valorAnterior = cambio.valorAnterior;
-    
+    let valorModificado = cambio.valorNuevo;
+
+    // Si es responsableId, procesar nombres usando la información poblada
+    if (cambio.campo === "responsableId") {
+      // Para valor anterior - usar información poblada si existe
+      if (cambio.responsableAnteriorInfo) {
+        valorAnterior = cambio.responsableAnteriorInfo.nombreCompleto;
+      } else if (valorAnterior) {
+        valorAnterior = getNombreResponsable(valorAnterior);
+      }
+      
+      // Para valor nuevo - usar información poblada si existe
+      if (cambio.responsableNuevoInfo) {
+        valorModificado = cambio.responsableNuevoInfo.nombreCompleto;
+      } else if (valorModificado) {
+        valorModificado = getNombreResponsable(valorModificado);
+      }
+    }
+
     // Si es creación, mostrar "Sin valor anterior"
     if (solicitud.tipoOperacion === 'creacion') {
       valorAnterior = "Sin valor anterior";
@@ -81,9 +116,9 @@ const RevisionVista = ({
     
     return {
       id: index,
-      campo: cambio.campo,
-      valorAnterior: valorAnterior,
-      valorModificado: cambio.valorNuevo,
+      campo: cambio.campo === "responsableId" ? "Responsable" : cambio.campo,
+      valorAnterior: valorAnterior || "Vacío",
+      valorModificado: valorModificado || "No especificado",
     };
   }) || [];
 
@@ -92,7 +127,7 @@ const RevisionVista = ({
     {
       key: "campo",
       label: "Campo",
-      render: (row) => <strong className="text-dark">{row.campo}</strong>,
+      render: (row) => <span className="text-dark fw-bold">{row.campo}</span>,
       cellStyle: {
         minWidth: "150px",
         maxWidth: "200px"
@@ -102,11 +137,10 @@ const RevisionVista = ({
       key: "valorAnterior",
       label: "Valor anterior",
       render: (row) => {
-        // Si es "Sin valor anterior", mostrarlo en gris y cursiva
         if (row.valorAnterior === "Sin valor anterior" || row.valorAnterior === "Vacío") {
           return <span className="text-muted">{row.valorAnterior}</span>;
         }
-        return <span className="text-dark">{row.valorAnterior}</span>;
+        return <span className="text-dark">{row.valorModificado}</span>;
       },
       cellStyle: {
         minWidth: "200px",
@@ -124,34 +158,10 @@ const RevisionVista = ({
     },
   ];
 
-  // Resto del código se mantiene igual...
   // Cerrar toast
   const handleCloseToast = () => {
     setShowToast(false);
   };
-
-  // Estado de carga
-  if (loading) {
-    return (
-      <div className="revision-vista-container p-2 p-lg-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onNavigateBack}
-          className="mb-3 text-white border-white"
-        >
-          <FaArrowLeft className="me-2" />
-          Volver al panel de revisión
-        </Button>
-        <div className="text-center p-4">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-          <p className="mt-2 text-white">Cargando detalles de la solicitud...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Estado de error o solicitud no encontrada
   if (error || !solicitud) {
@@ -309,9 +319,20 @@ const RevisionVista = ({
                     <span className="ms-2 text-dark d-block d-md-inline">
                       {solicitud.nombreActivo}
                       {solicitud.activo && (
-                        <small className="text-muted d-block">
-                          Código: {solicitud.activo.codigo}
-                        </small>
+                        <div>
+                          <small className="text-muted d-block">
+                            Código: {solicitud.activo.codigo}
+                          </small>
+                          <small className="text-dark d-block">
+                            <strong>Responsable actual:</strong>{" "}
+                            {solicitud.activo.responsableId ? 
+                              (solicitud.activo.responsableId.nombreCompleto || 
+                               (solicitud.activo.responsableId.nombre && solicitud.activo.responsableId.apellido ? 
+                                `${solicitud.activo.responsableId.nombre} ${solicitud.activo.responsableId.apellido}` : 
+                                `ID: ${solicitud.activo.responsableId._id?.substring(0, 8) || solicitud.activo.responsableId.id?.substring(0, 8) || "Desconocido"}...`)) : 
+                              "No asignado"}
+                          </small>
+                        </div>
                       )}
                     </span>
                   </div>

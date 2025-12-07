@@ -130,10 +130,19 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Obtener la solicitud con población básica
     const solicitud = await SolicitudCambio.findById(id)
       .populate('solicitanteId', 'nombre apellido email codigo')
       .populate('responsableSeguridadId', 'nombre apellido email codigo')
-      .populate('activoId', 'codigo nombre categoria estado ubicacion descripcion responsableId');
+      .populate({
+        path: 'activoId',
+        select: 'codigo nombre categoria estado ubicacion descripcion responsableId',
+        populate: {
+          path: 'responsableId',
+          select: 'nombre apellido email codigo'
+        }
+      })
+      .lean(); // Convertir a objeto plano para modificar
 
     if (!solicitud) {
       return sendError(res, 404, 'Solicitud no encontrada');
@@ -144,6 +153,41 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
         req.user.rol !== 'responsable_seguridad' && 
         req.user.rol !== 'administrador') {
       return sendError(res, 403, 'No tienes permisos para ver esta solicitud');
+    }
+
+    // Poblar información de responsables en cambios
+    if (solicitud.cambios && solicitud.cambios.length > 0) {
+      for (const cambio of solicitud.cambios) {
+        if (cambio.campo === 'responsableId') {
+          // Poblar responsable anterior
+          if (cambio.valorAnterior) {
+            const responsableAnterior = await User.findById(cambio.valorAnterior)
+              .select('nombre apellido email codigo');
+            if (responsableAnterior) {
+              cambio.responsableAnteriorInfo = {
+                id: responsableAnterior._id,
+                codigo: responsableAnterior.codigo,
+                nombreCompleto: `${responsableAnterior.nombre} ${responsableAnterior.apellido}`,
+                email: responsableAnterior.email
+              };
+            }
+          }
+          
+          // Poblar nuevo responsable
+          if (cambio.valorNuevo) {
+            const nuevoResponsable = await User.findById(cambio.valorNuevo)
+              .select('nombre apellido email codigo');
+            if (nuevoResponsable) {
+              cambio.responsableNuevoInfo = {
+                id: nuevoResponsable._id,
+                codigo: nuevoResponsable.codigo,
+                nombreCompleto: `${nuevoResponsable.nombre} ${nuevoResponsable.apellido}`,
+                email: nuevoResponsable.email
+              };
+            }
+          }
+        }
+      }
     }
 
     // Formatear respuesta completa
@@ -174,13 +218,18 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
         id: solicitud.activoId._id,
         codigo: solicitud.activoId.codigo,
         nombre: solicitud.activoId.nombre,
-        categoria: solicitud.activoId.categoria
+        categoria: solicitud.activoId.categoria,
+        estado: solicitud.activoId.estado,
+        ubicacion: solicitud.activoId.ubicacion,
+        descripcion: solicitud.activoId.descripcion,
+        responsableId: solicitud.activoId.responsableId ? {
+          id: solicitud.activoId.responsableId._id,
+          codigo: solicitud.activoId.responsableId.codigo,
+          nombreCompleto: `${solicitud.activoId.responsableId.nombre} ${solicitud.activoId.responsableId.apellido}`,
+          email: solicitud.activoId.responsableId.email
+        } : null
       },
-      cambios: solicitud.cambios.map(cambio => ({
-        campo: cambio.campo,
-        valorAnterior: cambio.valorAnterior,
-        valorNuevo: cambio.valorNuevo
-      }))
+      cambios: solicitud.cambios
     };
 
     sendResponse(res, 200, 'Solicitud obtenida correctamente', solicitudResponse);

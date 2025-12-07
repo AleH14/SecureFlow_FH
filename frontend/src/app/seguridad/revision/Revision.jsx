@@ -17,7 +17,6 @@ const Revision = ({
   onChecklistChange: externalChecklistChange,
 }) => {
   const [solicitud, setSolicitud] = useState(initialSolicitud);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [revisionComment, setRevisionComment] = useState(externalComment || "");
@@ -35,68 +34,34 @@ const Revision = ({
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("info");
 
-  // Función para obtener nombre del responsable
- const getNombreResponsable = useCallback(
-  (responsableData) => {
+  // Función para obtener nombre del responsable 
+  const getNombreResponsable = useCallback((responsableData) => {
     if (!responsableData) return "No asignado";
 
-    // Si ya es un objeto con nombre completo
+    // Si ya es un objeto (como en la bd de mongo)
     if (typeof responsableData === "object") {
+      // Formato: { nombreCompleto: "..." }
       if (responsableData.nombreCompleto) {
         return responsableData.nombreCompleto;
       }
+      // Formato: { nombre: "...", apellido: "..." }
       if (responsableData.nombre && responsableData.apellido) {
         return `${responsableData.nombre} ${responsableData.apellido}`;
       }
-      // Si es un objeto pero no tiene nombre, podría ser el ID
-      if (responsableData._id) {
-        return responsableData._id;
+      // Formato: { _id: "...", id: "..." } sin nombre -no tendria que pasar
+      if (responsableData._id || responsableData.id) {
+        const id = responsableData._id || responsableData.id;
+        return `ID: ${id.substring(0, 8)}...`;
       }
     }
-
-    // Si es un string (ID), intentar buscar en los datos disponibles
-    if (typeof responsableData === "string") {
-      // Buscar en el responsable actual del activo
-      if (solicitud.activo?.responsableId) {
-        const responsable = solicitud.activo.responsableId;
-        if (responsable._id === responsableData || responsable.id === responsableData) {
-          return (
-            responsable.nombreCompleto ||
-            `${responsable.nombre} ${responsable.apellido}`
-          );
-        }
-      }
-
-      // Buscar en los cambios para ver si hay información del nuevo responsable
-      if (solicitud.cambios) {
-        for (const cambio of solicitud.cambios) {
-          if (cambio.campo === "responsableId") {
-            // Si este cambio contiene información de responsable
-            if (cambio.responsableInfo) {
-              return (
-                cambio.responsableInfo.nombreCompleto ||
-                `${cambio.responsableInfo.nombre} ${cambio.responsableInfo.apellido}`
-              );
-            }
-          }
-        }
-      }
-
-      // Si no se encuentra, mostrar ID truncado
-      return responsableData;
-    }
-
     return "No asignado";
-  },
-  [solicitud]
-);
+  }, []);
 
   // Cargar datos detallados de la solicitud
   useEffect(() => {
     const loadData = async () => {
       if (initialSolicitud && initialSolicitud._id) {
         try {
-          setLoading(true);
           setError(null);
 
           // Cargar detalles de la solicitud
@@ -125,11 +90,8 @@ const Revision = ({
             setSolicitud(detailedSolicitud);
           }
         } catch (err) {
-          console.error("Error cargando datos:", err);
           setError("Error al cargar los detalles de la solicitud");
           setSolicitud(initialSolicitud);
-        } finally {
-          setLoading(false);
         }
       } else {
         setSolicitud(initialSolicitud);
@@ -268,53 +230,50 @@ const Revision = ({
   };
 
   const handleCloseToast = () => setShowToast(false);
+
   const formatFecha = (fechaISO) =>
     fechaISO ? new Date(fechaISO).toLocaleDateString("es-ES") : "Pendiente";
 
-// Datos para la tabla de cambios
-const cambiosTableData =
-  solicitud.cambios?.map((cambio, index) => {
-    let valorAnterior = cambio.valorAnterior;
-    let valorModificado = cambio.valorNuevo;
+  // Datos para la tabla de cambios
+  const cambiosTableData =
+    solicitud.cambios?.map((cambio, index) => {
+      let valorAnterior = cambio.valorAnterior;
+      let valorModificado = cambio.valorNuevo;
 
-    // Si es responsableId, intentar mostrar nombre
-    if (cambio.campo === "responsableId") {
-      // Buscar información del responsable en los datos disponibles
-      let responsableAnteriorInfo = null;
-      let responsableNuevoInfo = null;
-      
-      // Buscar en los datos del activo si está disponible
-      if (solicitud.activo?.responsableId) {
-        if (typeof solicitud.activo.responsableId === 'object') {
-          // Si es un objeto poblado
-          if (solicitud.activo.responsableId._id === valorAnterior ||
-              solicitud.activo.responsableId.id === valorAnterior) {
-            responsableAnteriorInfo = solicitud.activo.responsableId;
-          }
+      // Si es responsableId, procesar nombres usando la información de back
+      if (cambio.campo === "responsableId") {
+
+        // Para valor anterior - usar información poblada si existe
+        if (cambio.responsableAnteriorInfo) {
+          valorAnterior = cambio.responsableAnteriorInfo.nombreCompleto;
+        } else if (valorAnterior) {
+          // Si no hay información poblada, usar la función genérica
+          valorAnterior = getNombreResponsable(valorAnterior);
+        }
+
+        // Para valor nuevo - usar información poblada si existe
+        if (cambio.responsableNuevoInfo) {
+          valorModificado = cambio.responsableNuevoInfo.nombreCompleto;
+        } else if (valorModificado) {
+          // Si no hay información poblada, usar la función genérica
+          valorModificado = getNombreResponsable(valorModificado);
         }
       }
-      
-      // Buscar información del nuevo responsable si está disponible
-      // Esto dependería de cómo obtienes los datos
-      
-      valorAnterior = getNombreResponsable(valorAnterior);
-      valorModificado = getNombreResponsable(valorModificado);
-    }
 
-    // Formatear valores especiales
-    if (solicitud.tipoOperacion === "creacion") {
-      valorAnterior = "Sin valor anterior";
-    } else if (!valorAnterior || valorAnterior.trim() === "") {
-      valorAnterior = "Vacío";
-    }
+      // Formatear valores especiales para creación
+      if (solicitud.tipoOperacion === "creacion") {
+        valorAnterior = "Sin valor anterior";
+      } else if (!valorAnterior || valorAnterior.trim() === "") {
+        valorAnterior = "Vacío";
+      }
 
-    return {
-      id: index,
-      campo: cambio.campo,
-      valorAnterior,
-      valorModificado,
-    };
-  }) || [];
+      return {
+        id: index,
+        campo: cambio.campo === "responsableId" ? "Responsable" : cambio.campo,
+        valorAnterior: valorAnterior || "Vacío",
+        valorModificado: valorModificado || "No especificado",
+      };
+    }) || [];
 
   // Columnas para la tabla de cambios
   const cambiosTableColumns = [
@@ -343,63 +302,11 @@ const cambiosTableData =
       key: "valorModificado",
       label: "Valor modificado",
       render: (row) => {
-        // Si es responsable y tiene nombre, mostrarlo diferente
-        if (
-          row.campo === "Responsable"
-        ) {
-          return (
-            <span className="text-success fw-semibold">
-              {row.valorModificado}
-            </span>
-          );
-        }
         return <span className="text-dark">{row.valorModificado}</span>;
       },
       cellStyle: { minWidth: "200px", maxWidth: "250px" },
     },
   ];
-
-  // Render de carga
-  if (loading) {
-    return (
-      <div className="revision-container p-2 p-lg-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onNavigateBack}
-          className="mb-3 text-white border-white"
-        >
-          <FaArrowLeft className="me-2" /> Volver al panel de revisión
-        </Button>
-        <div className="text-center p-4">
-          <div className="spinner-border text-primary" role="status" />
-          <p className="mt-2 text-white">
-            Cargando detalles de la solicitud...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Render de error
-  if (error || !solicitud) {
-    return (
-      <div className="revision-container p-2 p-lg-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onNavigateBack}
-          className="mb-3 text-white border-white"
-        >
-          <FaArrowLeft className="me-2" /> Volver al panel de revisión
-        </Button>
-        <div className="alert alert-warning">
-          <h5>Error al cargar la solicitud</h5>
-          <p>{error || "No se encontró la información de la solicitud"}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="revision-container p-2 p-lg-3">
@@ -446,7 +353,7 @@ const cambiosTableData =
                   Procesando...
                 </>
               ) : (
-                "Aprobar"
+                "Aprobado"
               )}
             </Button>
             <Button
@@ -666,9 +573,11 @@ const cambiosTableData =
                     <span className="ms-2 text-dark d-block d-md-inline">
                       {solicitud.nombreActivo}
                       {solicitud.activo && (
-                        <small className="text-muted d-block">
-                          Código: {solicitud.activo.codigo}
-                        </small>
+                        <div>
+                          <small className="text-muted d-block">
+                            Código: {solicitud.activo.codigo}
+                          </small>
+                        </div>
                       )}
                     </span>
                   </div>
