@@ -31,10 +31,8 @@ const SeguridadPage = () => {
           const solicitudes = response.data.solicitudes || [];
           const pendingCount = solicitudes.filter(solicitud => solicitud.estado === 'Pendiente').length;
           setPendingRequestsCount(pendingCount);
-          console.log(`Solicitudes pendientes encontradas: ${pendingCount}`);
         }
       } catch (error) {
-        console.error('Error cargando conteo de solicitudes pendientes:', error);
         setPendingRequestsCount(0);
       }
     };

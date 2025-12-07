@@ -6,8 +6,8 @@ import { ActivoService } from "@/services";
 
 const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarActivo }) => {
   const [usuariosOptions, setUsuariosOptions] = useState([]);
-  const [loadingUsuarios, setLoadingUsuarios] = useState(false);
-  const [loadingActivo, setLoadingActivo] = useState(false);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(false); //estado de carga de usuarios
+  const [loadingActivo, setLoadingActivo] = useState(false); //estado de carga de activo
 
   // Cargar responsables disponibles al montar el componente
   useEffect(() => {
@@ -40,7 +40,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
         setUsuariosOptions(responsablesFiltrados);
         
       } catch (error) {
-        console.error("Error cargando responsables:", error);
         setUsuariosOptions([]);
       } finally {
         setLoadingUsuarios(false);
@@ -184,7 +183,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
       return activoData;
       
     } catch (error) {
-      console.error("Error obteniendo datos del activo:", error);
       return null;
     } finally {
       setLoadingActivo(false);
@@ -363,7 +361,6 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
       );
       
     } catch (error) {
-      console.error("Error en handleCorregirSolicitud:", error);
       alert("Error al preparar los datos para modificar. Intente nuevamente.");
     }
   };

@@ -18,7 +18,6 @@ const InventoryBase = ({
 }) => {
   const router = useRouter();
   const [activos, setActivos] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filteredActivos, setFilteredActivos] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
@@ -41,7 +40,6 @@ const InventoryBase = ({
   // Función para cargar activos desde la API
   const loadActivos = async () => {
     try {
-      setLoading(true);
       setError(null);
       const response = await ActivoService.getActivos();
 
@@ -51,15 +49,12 @@ const InventoryBase = ({
         throw new Error("Formato de respuesta inesperado");
       }
     } catch (err) {
-      console.error(`Error cargando activos para ${role}:`, err);
       if (err.response?.status === 403) {
         setError(getErrorMessage(role));
       } else {
         setError("Error al cargar los activos. Por favor intenta de nuevo.");
       }
       setActivos([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -259,28 +254,6 @@ const InventoryBase = ({
   // Usar activos filtrados o todos los activos
   const activosToShow = isFiltered ? filteredActivos : activos;
 
-  // Estado de carga
-  if (loading) {
-    return (
-      <div className={`inventory-page ${className}`} {...props}>
-        <div className="user-header">
-          <div className="user-header-text">
-            <h2>{getRoleTitle()}</h2>
-            <h6>
-              {role === "usuario" ? "Mis activos asignados" : "Cargando..."}
-            </h6>
-          </div>
-        </div>
-        <div className="text-center p-4">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-          <p className="mt-2">Cargando activos...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Estado de error
   if (error) {
     return (
@@ -332,7 +305,7 @@ const InventoryBase = ({
       <SearchBar fields={getSearchFields()} onFilter={handleFilter} />
 
       {/* Mensaje cuando no hay activos o no hay coincidencias*/}
-      {activosToShow.length === 0 && !loading && !error && (
+      {activosToShow.length === 0 && !error && (
         <div className="empty-container text-center py-5 mt-4 bg-transparent rounded-4 mx-auto">
           <HiOutlineSearch className="empty-icon fs-1 text-white mb-3" />
           <p className="empty-title fs-4 fw-bold text-white mb-2">

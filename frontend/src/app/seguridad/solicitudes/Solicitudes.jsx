@@ -6,7 +6,6 @@ import { RequestService } from "../../../services";
 
 const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
   const [solicitudes, setSolicitudes] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filteredSolicitudes, setFilteredSolicitudes] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
@@ -15,26 +14,21 @@ const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
   // Función para cargar solicitudes desde la API
   const loadSolicitudes = async () => {
     try {
-      setLoading(true);
       setError(null);
       const response = await RequestService.getRequests();
       
       if (response && response.success && response.data) {
         setSolicitudes(response.data.solicitudes || []);
-        console.log(`Cargadas ${response.data.solicitudes?.length || 0} solicitudes de seguridad`);
       } else {
         throw new Error('Formato de respuesta inesperado');
       }
     } catch (err) {
-      console.error('Error cargando solicitudes:', err);
       if (err.response?.status === 403) {
         setError('No tienes permisos para ver estas solicitudes.');
       } else {
         setError('Error al cargar las solicitudes. Por favor intenta de nuevo.');
       }
       setSolicitudes([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -184,7 +178,6 @@ const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
   }, [solicitudesTransformadas]);
 
   const handleRevisar = (solicitud) => {
-    console.log("CLICK en Revisar:", solicitud);
     if (onNavigateToDetalles) {
       onNavigateToDetalles(solicitud);
     }
@@ -337,26 +330,6 @@ const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
   ];
 
   // Estado de carga
-  if (loading) {
-    return (
-      <div className="solicitudes-page">
-        <div className="user-header">
-          <div className="user-header-text">
-            <h2>Panel de Revisión</h2>
-            <h6>Gestión de solicitudes de cambio de activos</h6>
-          </div>
-        </div>
-        <div className="text-center p-4">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-          <p className="mt-2">Cargando solicitudes...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Estado de error
   if (error) {
     return (
       <div className="solicitudes-page">
@@ -365,16 +338,6 @@ const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
             <h2>Panel de Revisión</h2>
             <h6>Gestión de solicitudes de cambio de activos</h6>
           </div>
-        </div>
-        <div className="alert alert-danger text-center">
-          <h5>Error al cargar solicitudes</h5>
-          <p>{error}</p>
-          <button 
-            className="btn btn-primary mt-2" 
-            onClick={loadSolicitudes}
-          >
-            Reintentar
-          </button>
         </div>
       </div>
     );

@@ -31,10 +31,9 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
     justificacion: "",
   });
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
   const [usuariosOptions, setUsuariosOptions] = useState([]);
   const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
-  const [loadingUsuarios, setLoadingUsuarios] = useState(false);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(false); //carga de usuarios para lista desplegable
   const [showToast, setShowToast] = useState(false);
   const [showResponsablesList, setShowResponsablesList] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -270,8 +269,6 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
       setErrors(newErrors);
       return;
     }
-
-    setLoading(true);
     setErrors({});
 
     try {
@@ -342,8 +339,6 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
       setErrors({
         general: errorMessage,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -807,7 +802,7 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                             variant="outline"
                             size="lg"
                             onClick={handleReset}
-                            disabled={loading || loadingUsuarios}
+                            disabled={loadingUsuarios}
                           >
                             Restablecer Cambios
                           </Button>
@@ -816,10 +811,9 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
                             type="submit"
                             variant="primary"
                             size="lg"
-                            loading={loading}
-                            disabled={loading || loadingUsuarios}
+                            disabled={loadingUsuarios}
                           >
-                            {loading ? 'Enviando...' : 'Actualizar Activo'}
+                            Actualizar Activo
                           </Button>
                         </div>
                       </Col>

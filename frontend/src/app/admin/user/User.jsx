@@ -18,7 +18,6 @@ import api from "@/services/api";
 const User = ({ className = "", ...props }) => {
   const router = useRouter();
   const [usuarios, setUsuarios] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReactivateModal, setShowReactivateModal] = useState(false);
@@ -33,7 +32,6 @@ const User = ({ className = "", ...props }) => {
   const [activosDelUsuario, setActivosDelUsuario] = useState([]);
   const [nuevoResponsableId, setNuevoResponsableId] = useState("");
   const [responsablesDisponibles, setResponsablesDisponibles] = useState([]);
-  const [loadingReasignacion, setLoadingReasignacion] = useState(false);
   const [justificacion, setJustificacion] = useState("");
   const [errorsReasignacion, setErrorsReasignacion] = useState({});
   
@@ -52,7 +50,6 @@ const User = ({ className = "", ...props }) => {
   // Función para cargar usuarios desde la API
   const loadUsers = useCallback(async () => {
     try {
-      setLoading(true);
       setError(null);
 
       // Obtener ID del usuario actual
@@ -73,9 +70,7 @@ const User = ({ className = "", ...props }) => {
     } catch (err) {
       setError("Error al cargar los usuarios. Por favor intenta de nuevo.");
       setUsuarios([]);
-    } finally {
-      setLoading(false);
-    }
+    } 
   }, [showInactive]);
 
   // Cargar usuarios al montar y cuando cambie showInactive
@@ -88,7 +83,6 @@ const User = ({ className = "", ...props }) => {
     try {
       return await ActivoService.hasActivosAsignados(userId);
     } catch (error) {
-      console.error('Error verificando activos:', error);
       return false;
     }
   }, []);
@@ -99,7 +93,6 @@ const User = ({ className = "", ...props }) => {
       const response = await ActivoService.getActivosByResponsable(userId);
       return response.data?.activos || response.activos || [];
     } catch (error) {
-      console.error('Error cargando activos:', error);
       return [];
     }
   }, []);
@@ -125,7 +118,6 @@ const User = ({ className = "", ...props }) => {
       
       return responsablesFiltrados;
     } catch (error) {
-      console.error('Error cargando responsables:', error);
       return [];
     }
   }, []);
@@ -165,7 +157,6 @@ const User = ({ className = "", ...props }) => {
 
   // Función para editar usuario
     const handleEdit = (user) => {
-    console.log("Editar usuario:", user);
     // Navegar a EditUser con los datos del usuario
     const userId = user._id || user.id;
     router.push(
@@ -205,7 +196,6 @@ const User = ({ className = "", ...props }) => {
         setShowDeleteModal(true);
       }
     } catch (error) {
-      console.error('Error verificando activos:', error);
       showToastMessage('Error al verificar activos del usuario', 'danger');
     }
   }, [verificarActivosUsuario, cargarActivosUsuario, cargarResponsablesDisponibles, showToastMessage]);
@@ -222,7 +212,6 @@ const crearSolicitudReasignacion = useCallback(async (activo, nuevoResponsableId
     
     return response.data;
   } catch (error) {
-    console.error('Error creando solicitud:', error);
     throw error;
   }
 }, [api]); 
@@ -244,8 +233,6 @@ const crearSolicitudReasignacion = useCallback(async (activo, nuevoResponsableId
       setErrorsReasignacion(newErrors);
       return;
     }
-    
-    setLoadingReasignacion(true);
     
     try {
       // 1. Crear solicitudes de cambio para cada activo
@@ -273,15 +260,12 @@ const crearSolicitudReasignacion = useCallback(async (activo, nuevoResponsableId
       );
       
     } catch (error) {
-      console.error("Error en proceso de reasignación:", error);
       showToastMessage(
         error.message.includes('Error de validación') 
           ? error.message 
           : "Error en el proceso de reasignación",
         "danger"
       );
-    } finally {
-      setLoadingReasignacion(false);
     }
   }, [activosDelUsuario, nuevoResponsableId, justificacion, crearSolicitudReasignacion, userToDelete, loadUsers, showToastMessage]);
 
@@ -297,7 +281,6 @@ const crearSolicitudReasignacion = useCallback(async (activo, nuevoResponsableId
       setUserToDelete(null);
       showToastMessage("Usuario desactivado exitosamente", "success");
     } catch (error) {
-      console.error("Error desactivando usuario:", error);
       showToastMessage("Error al desactivar usuario", "danger");
     }
   }, [userToDelete, loadUsers, showToastMessage]);
@@ -318,7 +301,6 @@ const crearSolicitudReasignacion = useCallback(async (activo, nuevoResponsableId
       setUserToReactivate(null);
       showToastMessage("Usuario reactivado exitosamente", "success");
     } catch (error) {
-      console.error("Error reactivando usuario:", error);
       showToastMessage("Error al reactivar usuario", "danger");
     }
   }, [userToReactivate, loadUsers, showToastMessage]);
@@ -572,7 +554,6 @@ const crearSolicitudReasignacion = useCallback(async (activo, nuevoResponsableId
         onAccept={procesarReasignacion}
         headerBgColor="#ffc107"
         buttonColor="#ffc107"
-        acceptDisabled={loadingReasignacion}
       >
         <div className="p-3">
           {/* Lista simplificada de activos */}

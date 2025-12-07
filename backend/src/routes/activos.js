@@ -172,7 +172,6 @@ router.post('/', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 201, 'Activo creado y solicitud de aprobación generada', activoResponse);
 
   } catch (error) {
-    console.error('Error creando activo:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -280,7 +279,6 @@ router.get('/', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, `${formattedActivos.length} activos obtenidos correctamente`, responseData);
 
   } catch (error) {
-    console.error('Error obteniendo activos:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -343,7 +341,6 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Activo obtenido correctamente', activoResponse);
 
   } catch (error) {
-    console.error('Error obteniendo activo:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de activo inválido');
     }
@@ -597,7 +594,6 @@ router.put('/:id', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Solicitud de modificación creada exitosamente', activoResponse);
 
   } catch (error) {
-    console.error('Error actualizando activo:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de activo inválido');
     }
@@ -652,7 +648,6 @@ router.get('/:id/historial', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Historial obtenido correctamente', responseData);
 
   } catch (error) {
-    console.error('Error obteniendo historial:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de activo inválido');
     }
@@ -758,7 +753,6 @@ router.get('/stats/summary', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, 'Estadísticas obtenidas correctamente', statsResponse);
 
   } catch (error) {
-    console.error('Error obteniendo estadísticas de activos:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
@@ -787,14 +781,11 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
     // Los roles admin, auditor y responsable_seguridad pueden ver todos los historiales
 
     // Obtener todas las solicitudes de cambio relacionadas con este activo
-    console.log('Buscando solicitudes para activo ID:', id);
     const solicitudes = await SolicitudCambio.find({ activoId: id })
       .populate('solicitanteId', 'nombre apellido email codigo')
       .populate('responsableSeguridadId', 'nombre apellido email codigo')
       .populate('auditorId', 'nombre apellido email codigo')
       .sort({ fechaSolicitud: -1 });
-
-    console.log('Solicitudes encontradas:', solicitudes.length);
 
     // Obtener todos los IDs de responsables únicos para poblarlos de una vez
     const responsableIds = new Set();
@@ -922,11 +913,9 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
       historial
     };
 
-    console.log('Respuesta del historial:', JSON.stringify(responseData, null, 2));
     sendResponse(res, 200, `Historial de cambios obtenido correctamente`, responseData);
 
   } catch (error) {
-    console.error('Error obteniendo historial de activo:', error);
     if (error.name === 'CastError') {
       return sendError(res, 400, 'ID de activo inválido');
     }
@@ -962,7 +951,6 @@ router.get('/responsables/disponibles', auth, asyncHandler(async (req, res) => {
     sendResponse(res, 200, `${formattedUsers.length} responsables disponibles obtenidos`, formattedUsers);
 
   } catch (error) {
-    console.error('Error obteniendo responsables disponibles:', error);
     return sendError(res, 500, 'Error interno del servidor');
   }
 }));
