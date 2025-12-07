@@ -261,6 +261,11 @@ router.put('/:id/revisar', auth, responsableSeguridad, asyncHandler(async (req, 
         }
       });
 
+      // Si es una solicitud de creación, cambiar el estado a "Activo"
+      if (solicitud.tipoOperacion === 'creacion') {
+        updateData.estado = 'Activo';
+      }
+
       // Aplicar cambios al activo
       await Activo.findByIdAndUpdate(solicitud.activoId, updateData);
     }
