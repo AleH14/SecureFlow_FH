@@ -18,7 +18,7 @@ const initializeDatabase = async () => {
 
 
     // Generar hash de la contraseña "ntil10"
-    const contrasenaHash = await bcrypt.hash('ntil104', 10);
+    const contrasenaHash = await bcrypt.hash('nti104', 10);
 
     // Generar código único para el administrador
     const codigo = `ADM-${Date.now().toString().slice(-6)}`;
@@ -43,7 +43,7 @@ const initializeDatabase = async () => {
 
     console.log('✅ Usuario administrador creado exitosamente');
     console.log('📧 Email: administrador@gmail.com');
-    console.log('🔑 Contraseña: ntil104');
+    console.log('🔑 Contraseña: nti104');
     console.log('🆔 Código: ' + codigo);
     console.log('⚠️  IMPORTANTE: Cambia esta contraseña después del primer acceso');
 
