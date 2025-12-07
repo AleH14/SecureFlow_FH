@@ -25,8 +25,11 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const handleBack = () => {
+    // Prevenir navegación si está en proceso de redirección automática
+    if (isRedirecting) return;
     router.back();
   };
 
@@ -246,6 +249,7 @@ const RegisterPage = () => {
 
       setToastMessage(`Usuario creado exitosamente`);
       setShowToast(true);
+      setIsRedirecting(true);
 
       // Reset form
       setFormData({
@@ -261,6 +265,7 @@ const RegisterPage = () => {
 
       setTimeout(() => {
         handleBack();
+        setIsRedirecting(false);
       }, 3000);
     } catch (error) {
       // Manejar error 409 específicamente
@@ -282,6 +287,9 @@ const RegisterPage = () => {
   };
 
   const handleReset = () => {
+    // Prevenir limpieza si está en proceso de redirección
+    if (isRedirecting) return;
+    
     setFormData({
       firstName: "",
       lastName: "",
@@ -319,6 +327,7 @@ const RegisterPage = () => {
                       variant="outline"
                       onClick={handleBack}
                       className="me-3 d-flex align-items-center"
+                      disabled={isRedirecting}
                     >
                       <FaArrowLeft className="me-2" />
                       Regresar
@@ -481,7 +490,7 @@ const RegisterPage = () => {
                       variant="outline"
                       size="lg"
                       onClick={handleReset}
-                      disabled={loading}
+                      disabled={loading || isRedirecting}
                       className="me-3"
                     >
                       Limpiar Formulario
@@ -492,7 +501,7 @@ const RegisterPage = () => {
                       variant="primary"
                       size="lg"
                       loading={loading}
-                      disabled={loading}
+                      disabled={loading || isRedirecting}
                       className="flex-grow-1"
                     >
                       Crear Usuario
