@@ -339,4 +339,132 @@ router.put('/:id/auditoria', auth, auditor, asyncHandler(async (req, res) => {
   }
 }));
 
+// @route   POST /api/solicitudes/reasignar
+// @desc    Create reassignment request for user deactivation (admin only)
+// @access  Private (Admin only)
+router.post('/reasignar', auth, asyncHandler(async (req, res) => {
+  try {
+    // Verificar que el usuario es administrador
+    if (req.user.rol !== 'administrador') {
+      return sendError(res, 403, 'No tienes permisos para realizar esta acción');
+    }
+
+    const { activoId, nuevoResponsableId, justificacion, solicitadoPorAdmin } = req.body;
+
+    // Validaciones
+    if (!activoId || !nuevoResponsableId || !justificacion) {
+      return sendError(res, 400, 'Todos los campos son requeridos: activoId, nuevoResponsableId, justificacion');
+    }
+
+    // Verificar que la justificación sea válida
+    if (justificacion.trim().length < 10) {
+      return sendError(res, 400, 'La justificación debe tener al menos 10 caracteres');
+    }
+
+    // Buscar el activo
+    const activo = await Activo.findById(activoId)
+      .populate('responsableId', 'nombre apellido email codigo');
+    
+    if (!activo) {
+      return sendError(res, 404, 'Activo no encontrado');
+    }
+
+    // Verificar que el nuevo responsable existe y es usuario (no admin)
+    const nuevoResponsable = await User.findOne({
+      _id: nuevoResponsableId,
+      rol: 'usuario',
+      estado: 'activo'
+    });
+
+    if (!nuevoResponsable) {
+      return sendError(res, 404, 'Nuevo responsable no encontrado o no es un usuario válido');
+    }
+
+    // Verificar que no sea el mismo responsable
+    if (activo.responsableId._id.toString() === nuevoResponsableId) {
+      return sendError(res, 400, 'El activo ya está asignado a este usuario');
+    }
+
+    // Generar código único para la solicitud
+    let codigoSolicitud;
+    let solicitudCodeExists = true;
+    
+    while (solicitudCodeExists) {
+      codigoSolicitud = generateSolicitudCode();
+      const solicitudWithCode = await SolicitudCambio.findOne({ codigoSolicitud });
+      if (!solicitudWithCode) {
+        solicitudCodeExists = false;
+      }
+    }
+
+    // Crear array de cambios
+    const cambiosRealizados = [{
+      campo: 'responsableId',
+      valorAnterior: activo.responsableId._id.toString(),
+      valorNuevo: nuevoResponsableId,
+      descripcion: `Reasignación de ${activo.responsableId.nombre} ${activo.responsableId.apellido} a ${nuevoResponsable.nombre} ${nuevoResponsable.apellido}`
+    }];
+
+    // Crear solicitud de cambio para reasignación
+    const nuevaSolicitud = new SolicitudCambio({
+      codigoSolicitud,
+      nombreActivo: activo.nombre,
+      codigoActivo: activo.codigo,
+      fechaSolicitud: new Date(),
+      solicitanteId: req.user._id, // Admin que solicita
+      estado: 'Pendiente',
+      tipoOperacion: 'reasignacion',
+      activoId: activo._id,
+      justificacion: sanitizeInput(justificacion),
+      cambios: cambiosRealizados,
+      solicitadoPorAdmin: solicitadoPorAdmin || false,
+      adminComentario: solicitadoPorAdmin ? `Reasignación solicitada por administrador: ${req.user.nombre} ${req.user.apellido}` : null
+    });
+
+    const savedSolicitud = await nuevaSolicitud.save();
+
+    // Agregar comentario al historial del activo
+    const comentarioReasignacion = {
+      comentario: `Solicitud de reasignación generada por administrador. Nuevo responsable propuesto: ${nuevoResponsable.nombre} ${nuevoResponsable.apellido}. Justificación: ${justificacion}`,
+      usuario: req.user._id,
+      fecha: new Date(),
+      tipoAccion: 'reasignacion_solicitada'
+    };
+
+    await Activo.findByIdAndUpdate(
+      activoId,
+      { $push: { historialComentarios: comentarioReasignacion } }
+    );
+
+    // Formatear respuesta
+    const respuesta = {
+      success: true,
+      solicitud: {
+        id: savedSolicitud._id,
+        codigoSolicitud: savedSolicitud.codigoSolicitud,
+        estado: savedSolicitud.estado,
+        tipoOperacion: savedSolicitud.tipoOperacion,
+        fechaSolicitud: savedSolicitud.fechaSolicitud
+      },
+      activo: {
+        id: activo._id,
+        codigo: activo.codigo,
+        nombre: activo.nombre
+      }
+    };
+
+    sendResponse(res, 201, 'Solicitud de reasignación creada exitosamente', respuesta);
+
+  } catch (error) {
+    console.error('Error creando solicitud de reasignación:', error);
+    if (error.name === 'CastError') {
+      return sendError(res, 400, 'ID inválido');
+    }
+    if (error.name === 'ValidationError') {
+      return sendError(res, 400, 'Datos de validación incorrectos');
+    }
+    return sendError(res, 500, 'Error interno del servidor');
+  }
+}));
+
 module.exports = router;

@@ -1,4 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+"use client";
+
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
   FaUserPlus, 
@@ -6,11 +8,12 @@ import {
   FaTrash, 
   FaUndo,
   FaEye,
-  FaEyeSlash 
+  FaEyeSlash,
 } from "react-icons/fa";
-import { SearchBar, Table, Modal, Button } from "../../../components/ui";
+import { SearchBar, Table, Modal, Button, Select } from "../../../components/ui";
 import Toast from "../../../components/ui/Toast"; 
-import { UserService } from "@/services";
+import { UserService, ActivoService } from "@/services";
+import api from "@/services/api";
 
 const User = ({ className = "", ...props }) => {
   const router = useRouter();
@@ -19,61 +22,53 @@ const User = ({ className = "", ...props }) => {
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReactivateModal, setShowReactivateModal] = useState(false);
+  const [showReasignacionModal, setShowReasignacionModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [userToReactivate, setUserToReactivate] = useState(null);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   
+  // Estados para la reasignación
+  const [activosDelUsuario, setActivosDelUsuario] = useState([]);
+  const [nuevoResponsableId, setNuevoResponsableId] = useState("");
+  const [responsablesDisponibles, setResponsablesDisponibles] = useState([]);
+  const [loadingReasignacion, setLoadingReasignacion] = useState(false);
+  const [justificacion, setJustificacion] = useState("");
+  const [errorsReasignacion, setErrorsReasignacion] = useState({});
+  
   // Estados para Toast
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("info");
 
-  const handleAddUser = () => {
-    console.log("Navegando a crear usuario");
-    router.push("/admin/register");
-  };
-
   // Función para mostrar toast
-  const showToastMessage = (message, variant = "info") => {
+  const showToastMessage = useCallback((message, variant = "info") => {
     setToastMessage(message);
     setToastVariant(variant);
     setShowToast(true);
-  };
+  }, []);
 
-  // Función para cargar usuarios desde la API (excluyendo al usuario actual)
-  const loadUsers = async () => {
+  // Función para cargar usuarios desde la API
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Obtener el ID del usuario actual
-      let currentUserId = null;
-      try {
-        const currentUserResponse = await UserService.getCurrentUser();
-        if (currentUserResponse?.success && currentUserResponse.data) {
-          currentUserId =
-            currentUserResponse.data._id || currentUserResponse.data.id;
-        }
-      } catch {
-        // Si falla, continuamos sin filtrar
-      }
+      // Obtener ID del usuario actual
+      const currentUserResponse = await UserService.getCurrentUser();
+      const currentUserId = currentUserResponse?.data?.id || currentUserResponse?.data?._id;
 
-      // Obtener todos los usuarios (activos o todos según showInactive)
+      // Obtener todos los usuarios
       const response = await UserService.getUsers(showInactive);
 
       if (response?.success && response.data?.users) {
-        const allUsers = response.data.users;
+        // Filtrar para excluir al usuario actual si existe
+        const usuariosFiltrados = currentUserId
+          ? response.data.users.filter(user => user.id !== currentUserId && user._id !== currentUserId)
+          : response.data.users;
 
-        // Filtrar para excluir al usuario actual si tenemos su ID
-        const usuariosSinActual = currentUserId
-          ? allUsers.filter((user) => (user._id || user.id) !== currentUserId)
-          : allUsers;
-
-        setUsuarios(usuariosSinActual);
-      } else {
-        throw new Error("Formato de respuesta inesperado");
+        setUsuarios(usuariosFiltrados);
       }
     } catch (err) {
       setError("Error al cargar los usuarios. Por favor intenta de nuevo.");
@@ -81,55 +76,95 @@ const User = ({ className = "", ...props }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Cargar usuarios al montar el componente y cuando cambie showInactive
-  useEffect(() => {
-    loadUsers();
   }, [showInactive]);
 
-  const handleFilter = useCallback(
-    (filters) => {
-      console.log("Filtros aplicados:", filters);
+  // Cargar usuarios al montar y cuando cambie showInactive
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
-      // Si no hay filtros, mostrar todos los usuarios
-      if (!filters.name && !filters.role) {
-        setFilteredUsers([]);
-        setIsFiltered(false);
-        return;
-      }
+  // Función para verificar si el usuario tiene activos asignados
+  const verificarActivosUsuario = useCallback(async (userId) => {
+    try {
+      return await ActivoService.hasActivosAsignados(userId);
+    } catch (error) {
+      console.error('Error verificando activos:', error);
+      return false;
+    }
+  }, []);
 
-      // Aplicar filtros
-      const filtered = usuarios.filter((usuario) => {
-        // Filtro por nombre, código o email
-        if (filters.name) {
-          const searchTerm = filters.name.toLowerCase();
-          const matchesName = usuario.nombreCompleto
-            .toLowerCase()
-            .includes(searchTerm);
-          const matchesCode = usuario.codigo.toLowerCase().includes(searchTerm);
-          const matchesEmail = usuario.email.toLowerCase().includes(searchTerm);
+  // Función para cargar activos del usuario
+  const cargarActivosUsuario = useCallback(async (userId) => {
+    try {
+      const response = await ActivoService.getActivosByResponsable(userId);
+      return response.data?.activos || response.activos || [];
+    } catch (error) {
+      console.error('Error cargando activos:', error);
+      return [];
+    }
+  }, []);
 
-          if (!matchesName && !matchesCode && !matchesEmail) {
-            return false;
-          }
-        }
+  // Función para cargar responsables disponibles
+  const cargarResponsablesDisponibles = useCallback(async (usuarioExcluidoId) => {
+    try {
+      const response = await ActivoService.getResponsablesDisponibles();
+      
+      let responsablesData = Array.isArray(response) 
+        ? response 
+        : response?.data || [];
+      
+      // Filtrar y formatear responsables
+      const responsablesFiltrados = responsablesData
+        .filter(user => user.id !== usuarioExcluidoId && user._id !== usuarioExcluidoId)
+        .map(user => ({
+          id: user.id || user._id,
+          label: user.nombreCompleto || `${user.nombre} ${user.apellido}`,
+          value: user.id || user._id
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+      
+      return responsablesFiltrados;
+    } catch (error) {
+      console.error('Error cargando responsables:', error);
+      return [];
+    }
+  }, []);
 
-        // Filtro por rol
-        if (filters.role && usuario.rol !== filters.role) {
+  // Función para manejar filtros
+  const handleFilter = useCallback((filters) => {
+    if (!filters.name && !filters.role) {
+      setFilteredUsers([]);
+      setIsFiltered(false);
+      return;
+    }
+
+    const searchTerm = filters.name?.toLowerCase() || '';
+    const filtered = usuarios.filter((usuario) => {
+      // Filtro por nombre, código o email
+      if (filters.name) {
+        const matchesName = usuario.nombreCompleto?.toLowerCase().includes(searchTerm);
+        const matchesCode = usuario.codigo?.toLowerCase().includes(searchTerm);
+        const matchesEmail = usuario.email?.toLowerCase().includes(searchTerm);
+
+        if (!matchesName && !matchesCode && !matchesEmail) {
           return false;
         }
+      }
 
-        return true;
-      });
+      // Filtro por rol
+      if (filters.role && usuario.rol !== filters.role) {
+        return false;
+      }
 
-      setFilteredUsers(filtered);
-      setIsFiltered(true);
-    },
-    [usuarios]
-  );
+      return true;
+    });
 
-  const handleEdit = (user) => {
+    setFilteredUsers(filtered);
+    setIsFiltered(true);
+  }, [usuarios]);
+
+  // Función para editar usuario
+    const handleEdit = (user) => {
     console.log("Editar usuario:", user);
     // Navegar a EditUser con los datos del usuario
     const userId = user._id || user.id;
@@ -146,158 +181,192 @@ const User = ({ className = "", ...props }) => {
     );
   };
 
-  const handleDelete = (user) => {
-    setUserToDelete(user);
-    setShowDeleteModal(true);
-  };
+  // Función para manejar desactivación de usuario
+  const handleDelete = useCallback(async (user) => {
+    const userId = user._id || user.id;
+    
+    try {
+      const tieneActivos = await verificarActivosUsuario(userId);
+      
+      if (tieneActivos) {
+        // Si tiene activos, mostrar modal de reasignación
+        const [activos, responsables] = await Promise.all([
+          cargarActivosUsuario(userId),
+          cargarResponsablesDisponibles(userId)
+        ]);
+        
+        setActivosDelUsuario(activos);
+        setResponsablesDisponibles(responsables);
+        setUserToDelete(user);
+        setShowReasignacionModal(true);
+      } else {
+        // Si no tiene activos, proceder con desactivación normal
+        setUserToDelete(user);
+        setShowDeleteModal(true);
+      }
+    } catch (error) {
+      console.error('Error verificando activos:', error);
+      showToastMessage('Error al verificar activos del usuario', 'danger');
+    }
+  }, [verificarActivosUsuario, cargarActivosUsuario, cargarResponsablesDisponibles, showToastMessage]);
 
-  const confirmDelete = async () => {
+ // Función para crear solicitud de reasignación
+const crearSolicitudReasignacion = useCallback(async (activo, nuevoResponsableId, justificacion) => {
+  try {
+    // Usar api directamente importándolo
+    const response = await api.post('/solicitudes/reasignar', {
+      activoId: activo.id || activo._id,
+      nuevoResponsableId,
+      justificacion
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error creando solicitud:', error);
+    throw error;
+  }
+}, [api]); 
+
+  // Función para procesar la reasignación
+  const procesarReasignacion = useCallback(async () => {
+    // Validaciones
+    const newErrors = {};
+    
+    if (!nuevoResponsableId) {
+      newErrors.nuevoResponsable = "Debe seleccionar un nuevo responsable";
+    }
+    
+    if (!justificacion || justificacion.trim().length < 10) {
+      newErrors.justificacion = "La justificación debe tener al menos 10 caracteres";
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrorsReasignacion(newErrors);
+      return;
+    }
+    
+    setLoadingReasignacion(true);
+    
+    try {
+      // 1. Crear solicitudes de cambio para cada activo
+      const solicitudesPromesas = activosDelUsuario.map(activo => 
+        crearSolicitudReasignacion(activo, nuevoResponsableId, justificacion)
+      );
+      
+      await Promise.all(solicitudesPromesas);
+      
+      // 2. Desactivar al usuario
+      await UserService.deleteUser(userToDelete._id || userToDelete.id);
+      
+      // 3. Recargar usuarios y limpiar estado
+      await loadUsers();
+      setShowReasignacionModal(false);
+      setUserToDelete(null);
+      setNuevoResponsableId("");
+      setJustificacion("");
+      setErrorsReasignacion({});
+      
+      // 4. Mostrar mensaje de éxito
+      showToastMessage(
+        `Usuario desactivado y ${activosDelUsuario.length} activo(s) reasignado(s) exitosamente`,
+        "success"
+      );
+      
+    } catch (error) {
+      console.error("Error en proceso de reasignación:", error);
+      showToastMessage(
+        error.message.includes('Error de validación') 
+          ? error.message 
+          : "Error en el proceso de reasignación",
+        "danger"
+      );
+    } finally {
+      setLoadingReasignacion(false);
+    }
+  }, [activosDelUsuario, nuevoResponsableId, justificacion, crearSolicitudReasignacion, userToDelete, loadUsers, showToastMessage]);
+
+  // Funciones de confirmación y cancelación
+  const confirmDelete = useCallback(async () => {
     if (!userToDelete) return;
 
     try {
       await UserService.deleteUser(userToDelete._id || userToDelete.id);
-
-      // Recargar la lista de usuarios
       await loadUsers();
-
+      
       setShowDeleteModal(false);
       setUserToDelete(null);
-
-      // Mostrar toast de éxito
       showToastMessage("Usuario desactivado exitosamente", "success");
-      
-      console.log("Usuario desactivado exitosamente");
     } catch (error) {
       console.error("Error desactivando usuario:", error);
-      setError("Error al desactivar el usuario. Por favor intenta de nuevo.");
-      // Mostrar toast de error
       showToastMessage("Error al desactivar usuario", "danger");
     }
-  };
+  }, [userToDelete, loadUsers, showToastMessage]);
 
-  const cancelDelete = () => {
-    setShowDeleteModal(false);
-    setUserToDelete(null);
-  };
-
-  // Nueva función para manejar reactivación
-  const handleReactivate = (user) => {
+  const handleReactivate = useCallback((user) => {
     setUserToReactivate(user);
     setShowReactivateModal(true);
-  };
+  }, []);
 
-  const confirmReactivate = async () => {
+  const confirmReactivate = useCallback(async () => {
     if (!userToReactivate) return;
 
     try {
       await UserService.reactivateUser(userToReactivate._id || userToReactivate.id);
-
-      // Recargar la lista de usuarios
       await loadUsers();
-
+      
       setShowReactivateModal(false);
       setUserToReactivate(null);
-
-      // Mostrar toast de éxito
       showToastMessage("Usuario reactivado exitosamente", "success");
-      
-      console.log("Usuario reactivado exitosamente");
     } catch (error) {
       console.error("Error reactivando usuario:", error);
-      setError("Error al reactivar el usuario. Por favor intenta de nuevo.");
-      // Mostrar toast de error
       showToastMessage("Error al reactivar usuario", "danger");
     }
-  };
+  }, [userToReactivate, loadUsers, showToastMessage]);
 
-  const cancelReactivate = () => {
-    setShowReactivateModal(false);
-    setUserToReactivate(null);
-  };
+  // Funciones auxiliares para formatear datos
+  const getRoleClass = useCallback((role) => {
+    const roleClasses = {
+      "usuario": "role-usuario-lector",
+      "administrador": "role-administrador",
+      "responsable_seguridad": "role-responsable-seguridad",
+      "auditor": "role-auditor"
+    };
+    return roleClasses[role] || "role-usuario-lector";
+  }, []);
 
-  // Usar usuarios filtrados o todos los usuarios
-  const usersToShow = isFiltered ? filteredUsers : usuarios;
+  const getRoleDisplayText = useCallback((role) => {
+    const roleTexts = {
+      "usuario": "Usuario Lector",
+      "administrador": "Administrador",
+      "responsable_seguridad": "Responsable de Seguridad",
+      "auditor": "Auditor"
+    };
+    return roleTexts[role] || "Usuario Lector";
+  }, []);
 
-  // Función para obtener clase CSS del rol
-  const getRoleClass = (role) => {
-    switch (role) {
-      case "usuario":
-        return "role-usuario-lector";
-      case "administrador":
-        return "role-administrador";
-      case "responsable_seguridad":
-        return "role-responsable-seguridad";
-      case "auditor":
-        return "role-auditor";
-      default:
-        return "role-usuario-lector";
-    }
-  };
+  const getDepartmentDisplayText = useCallback((department) => {
+    const departments = {
+      "Tecnologia_de_la_Informacion": "TI",
+      "recursos_humanos": "Recursos Humanos",
+      "seguridad": "Seguridad",
+      "auditoria": "Auditoría",
+      "finanzas": "Finanzas",
+      "operaciones": "Operaciones",
+      "legal_y_cumplimiento": "Legal y Cumplimiento"
+    };
+    return departments[department] || department;
+  }, []);
 
-  // Función para obtener el texto amigable del rol
-  const getRoleDisplayText = (role) => {
-    switch (role) {
-      case "usuario":
-        return "Usuario Lector";
-      case "administrador":
-        return "Administrador";
-      case "responsable_seguridad":
-        return "Responsable de Seguridad";
-      case "auditor":
-        return "Auditor";
-      default:
-        return "Usuario Lector";
-    }
-  };
+  const getStatusClass = useCallback((estado) => {
+    return estado === "activo" ? "status-active" : "status-inactive";
+  }, []);
 
-  // Función para obtener el texto amigable del departamento
-  const getDepartmentDisplayText = (department) => {
-    switch (department) {
-      case "Tecnologia_de_la_Informacion":
-        return "TI";
-      case "recursos_humanos":
-        return "Recursos Humanos";
-      case "seguridad":
-        return "Seguridad";
-      case "auditoria":
-        return "Auditoría";
-      case "finanzas":
-        return "Finanzas";
-      case "operaciones":
-        return "Operaciones";
-      case "legal_y_cumplimiento":
-        return "Legal y Cumplimiento";
-      default:
-        return department;
-    }
-  };
+  const getStatusDisplayText = useCallback((estado) => {
+    return estado === "activo" ? "Activo" : "Inactivo";
+  }, []);
 
-  // Función para obtener clase CSS del estado
-  const getStatusClass = (estado) => {
-    switch (estado) {
-      case "activo":
-        return "status-active";
-      case "inactivo":
-        return "status-inactive";
-      default:
-        return "";
-    }
-  };
-
-  // Función para obtener texto amigable del estado
-  const getStatusDisplayText = (estado) => {
-    switch (estado) {
-      case "activo":
-        return "Activo";
-      case "inactivo":
-        return "Inactivo";
-      default:
-        return estado;
-    }
-  };
-
-  // Definir columnas de la tabla
-  const tableColumns = [
+  // Columnas de la tabla
+  const tableColumns = useMemo(() => [
     { key: "codigo", label: "Código" },
     { key: "nombreCompleto", label: "Nombre Completo" },
     { key: "email", label: "Email" },
@@ -364,10 +433,10 @@ const User = ({ className = "", ...props }) => {
         </div>
       ),
     },
-  ];
+  ], [getStatusClass, getStatusDisplayText, getDepartmentDisplayText, getRoleClass, getRoleDisplayText, handleEdit, handleDelete, handleReactivate]);
 
-  // Definir los campos de búsqueda
-  const searchFields = [
+  // Campos de búsqueda
+  const searchFields = useMemo(() => [
     {
       name: "name",
       label: "Nombre",
@@ -385,7 +454,31 @@ const User = ({ className = "", ...props }) => {
         { value: "auditor", label: "Auditor" },
       ],
     },
-  ];
+  ], []);
+
+  // Usuarios a mostrar
+  const usersToShow = isFiltered ? filteredUsers : usuarios;
+
+  // Funciones de cancelación
+  const cancelDelete = useCallback(() => {
+    setShowDeleteModal(false);
+    setUserToDelete(null);
+  }, []);
+
+  const cancelReasignacion = useCallback(() => {
+    setShowReasignacionModal(false);
+    setUserToDelete(null);
+    setNuevoResponsableId("");
+    setJustificacion("");
+    setErrorsReasignacion({});
+    setActivosDelUsuario([]);
+    setResponsablesDisponibles([]);
+  }, []);
+
+  const cancelReactivate = useCallback(() => {
+    setShowReactivateModal(false);
+    setUserToReactivate(null);
+  }, []);
 
   return (
     <div className={`user-page ${className}`} {...props}>
@@ -395,7 +488,6 @@ const User = ({ className = "", ...props }) => {
           <h6>{usersToShow.length} usuarios en total</h6>
         </div>
         <div className="d-flex gap-3">
-          {/* Botón para mostrar/ocultar*/}
           <Button
             variant="secondary"
             onClick={() => setShowInactive(!showInactive)}
@@ -414,7 +506,7 @@ const User = ({ className = "", ...props }) => {
             )}
           </Button>
           
-          <button className="add-user-btn" onClick={handleAddUser}>
+          <button className="add-user-btn" onClick={() => router.push("/admin/register")}>
             <FaUserPlus className="add-user-icon" />
             Crear Nuevo Usuario
           </button>
@@ -435,7 +527,6 @@ const User = ({ className = "", ...props }) => {
       )}
 
       <SearchBar fields={searchFields} onFilter={handleFilter} />
-
       <Table columns={tableColumns} data={usersToShow} />
 
       {/* Toast para notificaciones */}
@@ -448,7 +539,7 @@ const User = ({ className = "", ...props }) => {
         delay={3000}
       />
 
-      {/* Modal de confirmación para desactivar */}
+      {/* Modal de desactivación simple */}
       <Modal
         isOpen={showDeleteModal}
         onClose={cancelDelete}
@@ -456,11 +547,7 @@ const User = ({ className = "", ...props }) => {
         question="¿Estás seguro de que deseas desactivar este usuario?"
         showValueBox={true}
         valueBoxTitle="Usuario a desactivar:"
-        valueBoxSubtitle={
-          userToDelete
-            ? `${userToDelete.nombreCompleto} (${userToDelete.codigo})`
-            : ""
-        }
+        valueBoxSubtitle={userToDelete ? `${userToDelete.nombreCompleto} (${userToDelete.codigo})` : ""}
         informativeText="El usuario será marcado como inactivo. Podrás reactivarlo más tarde si es necesario."
         cancelText="Cancelar"
         acceptText="Desactivar"
@@ -470,7 +557,82 @@ const User = ({ className = "", ...props }) => {
         buttonColor="#dc3545"
       />
 
-      {/* Modal de confirmación para reactivar */}
+      {/* Modal de reasignación */}
+      <Modal
+        isOpen={showReasignacionModal}
+        onClose={cancelReasignacion}
+        title="Reasignar Activos y Desactivar Usuario"
+        size="lg"
+        showValueBox={true}
+        valueBoxTitle={`Usuario a desactivar: ${userToDelete?.nombreCompleto || ''}`}
+        valueBoxSubtitle={`Tiene ${activosDelUsuario.length} activo(s) asignado(s)`}
+        cancelText="Cancelar"
+        acceptText="Procesar Reasignación"
+        onCancel={cancelReasignacion}
+        onAccept={procesarReasignacion}
+        headerBgColor="#ffc107"
+        buttonColor="#ffc107"
+        acceptDisabled={loadingReasignacion}
+      >
+        <div className="p-3">
+          {/* Lista simplificada de activos */}
+          <div className="mb-3">
+            <div className="list-group mb-3" style={{ maxHeight: '150px', overflowY: 'auto' }}>
+              {activosDelUsuario.map((activo) => (
+                <div key={activo.id || activo._id} className="list-group-item py-2 small">
+                  <strong>{activo.codigo}</strong> - {activo.nombre}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Selección de nuevo responsable */}
+          <div className="mb-3">
+            <label className="form-label fw-bold text-dark">
+              Nuevo Responsable <span className="text-danger">*</span>
+            </label>
+            <Select
+              options={responsablesDisponibles}
+              value={nuevoResponsableId}
+              onChange={(e) => {
+                setNuevoResponsableId(e.target.value);
+                if (errorsReasignacion.nuevoResponsable) {
+                  setErrorsReasignacion(prev => ({ ...prev, nuevoResponsable: '' }));
+                }
+              }}
+              error={errorsReasignacion.nuevoResponsable}
+              placeholder="Seleccione un nuevo responsable"
+            />
+          </div>
+          
+          {/* Justificación */}
+          <div className="mb-3">
+            <label className="form-label fw-bold text-dark">
+              Justificación <span className="text-danger">*</span>
+            </label>
+            <textarea
+              className={`form-control ${errorsReasignacion.justificacion ? 'is-invalid' : ''}`}
+              value={justificacion}
+              onChange={(e) => {
+                setJustificacion(e.target.value);
+                if (errorsReasignacion.justificacion) {
+                  setErrorsReasignacion(prev => ({ ...prev, justificacion: '' }));
+                }
+              }}
+              rows="3"
+              placeholder="Explique por qué necesita reasignar los activos..."
+            />
+            {errorsReasignacion.justificacion && (
+              <div className="invalid-feedback">{errorsReasignacion.justificacion}</div>
+            )}
+            <small className="text-muted">
+              Mínimo 10 caracteres
+            </small>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal de reactivación */}
       <Modal
         isOpen={showReactivateModal}
         onClose={cancelReactivate}
@@ -478,11 +640,7 @@ const User = ({ className = "", ...props }) => {
         question="¿Estás seguro de que deseas reactivar este usuario?"
         showValueBox={true}
         valueBoxTitle="Usuario a reactivar:"
-        valueBoxSubtitle={
-          userToReactivate
-            ? `${userToReactivate.nombreCompleto} (${userToReactivate.codigo})`
-            : ""
-        }
+        valueBoxSubtitle={userToReactivate ? `${userToReactivate.nombreCompleto} (${userToReactivate.codigo})` : ""}
         informativeText="El usuario volverá a tener acceso al sistema con sus permisos anteriores."
         cancelText="Cancelar"
         acceptText="Reactivar"

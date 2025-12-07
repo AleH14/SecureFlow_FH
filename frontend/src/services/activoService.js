@@ -99,3 +99,29 @@ export const getResponsablesDisponibles = async () => {
     throw error;
   }
 };
+
+// para reasignacion desde admin
+export const getActivosByResponsable = async (responsableId, params = {}) => {
+    try {
+        const queryParams = new URLSearchParams({
+            responsable: responsableId,
+            ...params
+        }).toString();
+        
+        const response = await api.get(`/activos?${queryParams}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error obteniendo activos por responsable:', error);
+        throw error;
+    }
+};
+
+export const hasActivosAsignados = async (responsableId) => {
+    try {
+        const response = await getActivosByResponsable(responsableId, { limit: 1 });
+        return response.data?.activos?.length > 0 || response.activos?.length > 0;
+    } catch (error) {
+        console.error('Error verificando activos asignados:', error);
+        return false;
+    }
+};

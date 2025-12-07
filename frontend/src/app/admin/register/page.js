@@ -1,60 +1,63 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { FaArrowLeft } from 'react-icons/fa';
-import { Input, Button, Card, Select, Alert } from '../../../components/ui';
-import Toast from '../../../components/ui/Toast';
-import { AuthService } from '@/services';
+import React, { useState, useMemo } from "react";
+import { Container, Row, Col } from "react-bootstrap";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { FaArrowLeft } from "react-icons/fa";
+import { Input, Button, Card, Select, Alert } from "../../../components/ui";
+import Toast from "../../../components/ui/Toast";
+import { AuthService } from "@/services";
 
 const RegisterPage = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
-    department: '',
-    userRole: '',
-    password: '',
-    confirmPassword: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    department: "",
+    userRole: "",
+    password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState("");
 
   const handleBack = () => {
     router.back();
   };
 
   const userRoles = [
-    { value: 'administrador', label: 'Administrador' },
-    { value: 'usuario', label: 'Usuario Lector' },
-    { value: 'responsable_seguridad', label: 'Responsable de Seguridad' },
-    { value: 'auditor', label: 'Auditor' }
+    { value: "administrador", label: "Administrador" },
+    { value: "usuario", label: "Usuario Lector" },
+    { value: "responsable_seguridad", label: "Responsable de Seguridad" },
+    { value: "auditor", label: "Auditor" },
   ];
 
   const departments = [
-    { value: 'Tecnologia_de_la_Informacion', label: 'Tecnología de la Información' },
-    { value: 'recursos_humanos', label: 'Recursos Humanos' },
-    { value: 'seguridad', label: 'Seguridad' },
-    { value: 'auditoria', label: 'Auditoría' },
-    { value: 'finanzas', label: 'Finanzas' },
-    { value: 'operaciones', label: 'Operaciones' },
-    { value: 'legal_y_cumplimiento', label: 'Legal y Cumplimiento' }
+    {
+      value: "Tecnologia_de_la_Informacion",
+      label: "Tecnología de la Información",
+    },
+    { value: "recursos_humanos", label: "Recursos Humanos" },
+    { value: "seguridad", label: "Seguridad" },
+    { value: "auditoria", label: "Auditoría" },
+    { value: "finanzas", label: "Finanzas" },
+    { value: "operaciones", label: "Operaciones" },
+    { value: "legal_y_cumplimiento", label: "Legal y Cumplimiento" },
   ];
 
   // Función para aplicar la máscara de teléfono
   const formatPhoneNumber = (value) => {
     // Eliminar todos los caracteres no numéricos
-    const numbers = value.replace(/\D/g, '');
-    
+    const numbers = value.replace(/\D/g, "");
+
     // Limitar a 8 dígitos máximo
     const limitedNumbers = numbers.slice(0, 8);
-    
+
     // Aplicar formato 0000-0000
     if (limitedNumbers.length <= 4) {
       return limitedNumbers;
@@ -65,20 +68,20 @@ const RegisterPage = () => {
 
   const handlePhoneChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Aplicar la máscara
     const formattedValue = formatPhoneNumber(value);
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: formattedValue
+      [name]: formattedValue,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
     // Clear toast when form is modified
@@ -87,29 +90,53 @@ const RegisterPage = () => {
     }
     // Clear general error
     if (errors.general) {
-      setErrors(prev => ({ ...prev, general: '' }));
+      setErrors((prev) => ({ ...prev, general: "" }));
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Si es el campo de teléfono, usar la función especial
-    if (name === 'phoneNumber') {
+    if (name === "phoneNumber") {
       handlePhoneChange(e);
       return;
     }
-    
-    setFormData(prev => ({
+
+    // Si se selecciona responsable de seguridad, forzar departamento de seguridad
+    if (name === "userRole" && value === "responsable_seguridad") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        department: "seguridad",
+      }));
+      return;
+    }
+
+    // Si se cambia de responsable de seguridad a otro rol, limpiar departamento
+    if (
+      name === "userRole" &&
+      formData.userRole === "responsable_seguridad" &&
+      value !== "responsable_seguridad"
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        department: "",
+      }));
+      return;
+    }
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
     // Clear toast when form is modified
@@ -118,140 +145,152 @@ const RegisterPage = () => {
     }
     // Clear general error
     if (errors.general) {
-      setErrors(prev => ({ ...prev, general: '' }));
+      setErrors((prev) => ({ ...prev, general: "" }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'El nombre es requerido';
+      newErrors.firstName = "El nombre es requerido";
     } else if (formData.firstName.length < 2) {
-      newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
+      newErrors.firstName = "El nombre debe tener al menos 2 caracteres";
     }
-    
+
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'El apellido es requerido';
+      newErrors.lastName = "El apellido es requerido";
     } else if (formData.lastName.length < 2) {
-      newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
+      newErrors.lastName = "El apellido debe tener al menos 2 caracteres";
     }
-    
+
     if (!formData.email) {
-      newErrors.email = 'El correo electrónico es requerido';
+      newErrors.email = "El correo electrónico es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Por favor ingresa un correo electrónico válido';
+      newErrors.email = "Por favor ingresa un correo electrónico válido";
     }
-    
+
     if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = 'El número de teléfono es requerido';
+      newErrors.phoneNumber = "El número de teléfono es requerido";
     } else {
       // Validar formato 0000-0000 (8 dígitos con guión)
       const phoneRegex = /^\d{4}-\d{4}$/;
       if (!phoneRegex.test(formData.phoneNumber)) {
-        newErrors.phoneNumber = 'Por favor ingresa un número válido (formato: 0000-0000)';
+        newErrors.phoneNumber =
+          "Por favor ingresa un número válido (formato: 0000-0000)";
       }
     }
-    
+
     if (!formData.department) {
-      newErrors.department = 'El departamento es requerido';
+      newErrors.department = "El departamento es requerido";
     }
-    
+
     if (!formData.userRole) {
-      newErrors.userRole = 'El rol de usuario es requerido';
+      newErrors.userRole = "El rol de usuario es requerido";
     }
-    
+
     if (!formData.password) {
-      newErrors.password = 'La contraseña es requerida';
+      newErrors.password = "La contraseña es requerida";
     } else if (formData.password.length < 8) {
-      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres";
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'La contraseña debe contener mayúscula, minúscula y número';
+      newErrors.password =
+        "La contraseña debe contener mayúscula, minúscula y número";
     }
-    
+
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Por favor confirma tu contraseña';
+      newErrors.confirmPassword = "Por favor confirma tu contraseña";
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+      newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
-    
+
+    // Validación específica para Responsable de Seguridad
+    if (
+      formData.userRole === "responsable_seguridad" &&
+      formData.department !== "seguridad"
+    ) {
+      newErrors.department =
+        "El Responsable de Seguridad debe pertenecer al departamento de Seguridad";
+    }
+
     return newErrors;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  const newErrors = validateForm();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const newErrors = validateForm();
 
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    return;
-  }
-  
-  setLoading(true);
-  setErrors({});
-  setShowToast(false);
-  
-  try {
-    const response = await AuthService.register(
-      formData.firstName,
-      formData.lastName,  
-      formData.email,
-      formData.phoneNumber,
-      formData.department,
-      formData.password,
-      formData.confirmPassword,
-      formData.userRole
-    );
-    
-    // Si llegamos aquí, la respuesta fue exitosa
-    const usuarioCreado = response.data;
-    
-    setToastMessage(`Usuario creado exitosamente`);
-    setShowToast(true);
-    
-    // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phoneNumber: '',
-      department: '',
-      userRole: '',
-      password: '',
-      confirmPassword: ''
-    });
-    
-    setTimeout(() => {
-      handleBack();
-    }, 3000);
-    
-  } catch (error) {
-    // Manejar error 409 específicamente
-    if (error.response?.status === 409) {
-      setErrors({ 
-        general: 'El correo electrónico ya está registrado. Por favor usa otro correo.' 
-      });
-    } else {
-      // Para otros errores
-      const errorMessage = error.response?.data?.message || 
-                          'Error al crear el usuario. Por favor intenta de nuevo.';
-      setErrors({ general: errorMessage });
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
-  } finally {
-    setLoading(false);
-  }
-};
+
+    setLoading(true);
+    setErrors({});
+    setShowToast(false);
+
+    try {
+      const response = await AuthService.register(
+        formData.firstName,
+        formData.lastName,
+        formData.email,
+        formData.phoneNumber,
+        formData.department,
+        formData.password,
+        formData.confirmPassword,
+        formData.userRole
+      );
+
+      // Si llegamos aquí, la respuesta fue exitosa
+      const usuarioCreado = response.data;
+
+      setToastMessage(`Usuario creado exitosamente`);
+      setShowToast(true);
+
+      // Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phoneNumber: "",
+        department: "",
+        userRole: "",
+        password: "",
+        confirmPassword: "",
+      });
+
+      setTimeout(() => {
+        handleBack();
+      }, 3000);
+    } catch (error) {
+      // Manejar error 409 específicamente
+      if (error.response?.status === 409) {
+        setErrors({
+          general:
+            "El correo electrónico ya está registrado. Por favor usa otro correo.",
+        });
+      } else {
+        // Para otros errores
+        const errorMessage =
+          error.response?.data?.message ||
+          "Error al crear el usuario. Por favor intenta de nuevo.";
+        setErrors({ general: errorMessage });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleReset = () => {
     setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phoneNumber: '',
-      department: '',
-      userRole: '',
-      password: '',
-      confirmPassword: ''
+      firstName: "",
+      lastName: "",
+      email: "",
+      phoneNumber: "",
+      department: "",
+      userRole: "",
+      password: "",
+      confirmPassword: "",
     });
     setErrors({});
     setShowToast(false);
@@ -267,7 +306,7 @@ const handleSubmit = async (e) => {
         delay={5000}
         onClose={() => setShowToast(false)}
       />
-      
+
       <Container fluid className="auth-gradient-container register-container">
         <Row className="justify-content-center align-items-center min-vh-100 py-4">
           <Col xs={12} sm={11} md={10} lg={8} xl={6}>
@@ -285,7 +324,7 @@ const handleSubmit = async (e) => {
                       Regresar
                     </Button>
                   </div>
-                  
+
                   <div className="text-center">
                     <Image
                       src="/icons/JPG/logo_without_name.jpg"
@@ -298,19 +337,29 @@ const handleSubmit = async (e) => {
                     <h1 className="text-navy fw-bold mb-3 app-title-small">
                       SecureFlow FH
                     </h1>
-                    <h2 className="text-navy fw-bold mb-2">Crear Nuevo Usuario</h2>
-                    <p className="text-muted">Panel de Administrador - Registro de Usuario</p>
+                    <h2 className="text-navy fw-bold mb-2">
+                      Crear Nuevo Usuario
+                    </h2>
+                    <p className="text-muted">
+                      Panel de Administrador - Registro de Usuario
+                    </p>
                   </div>
                 </div>
 
                 {/* Mostrar error general con Alert */}
                 {errors.general && (
-                  <Alert variant="danger" dismissible onClose={() => setErrors(prev => ({ ...prev, general: '' }))}>
+                  <Alert
+                    variant="danger"
+                    dismissible
+                    onClose={() =>
+                      setErrors((prev) => ({ ...prev, general: "" }))
+                    }
+                  >
                     <i className="bi bi-exclamation-triangle-fill me-2"></i>
                     {errors.general}
                   </Alert>
                 )}
-                
+
                 <form onSubmit={handleSubmit}>
                   <Row>
                     <Col md={6}>
@@ -378,6 +427,7 @@ const handleSubmit = async (e) => {
                         onChange={handleChange}
                         error={errors.department}
                         required
+                        disabled={formData.userRole === 'responsable_seguridad'}
                       />
                     </Col>
                     <Col md={6}>
@@ -407,7 +457,8 @@ const handleSubmit = async (e) => {
                         required
                       />
                       <small className="text-muted">
-                        La contraseña debe contener mayúscula, minúscula y número (mín 8 caracteres)
+                        La contraseña debe contener mayúscula, minúscula y
+                        número (mín 8 caracteres)
                       </small>
                     </Col>
                     <Col md={6}>
@@ -423,7 +474,7 @@ const handleSubmit = async (e) => {
                       />
                     </Col>
                   </Row>
-                  
+
                   <div className="d-flex justify-content-between align-items-center mt-4">
                     <Button
                       type="button"
@@ -435,7 +486,7 @@ const handleSubmit = async (e) => {
                     >
                       Limpiar Formulario
                     </Button>
-                    
+
                     <Button
                       type="submit"
                       variant="primary"
@@ -447,9 +498,8 @@ const handleSubmit = async (e) => {
                       Crear Usuario
                     </Button>
                   </div>
-                  
-                  <div className="text-center mt-4">
-                  </div>
+
+                  <div className="text-center mt-4"></div>
                 </form>
               </Card.Body>
             </Card>

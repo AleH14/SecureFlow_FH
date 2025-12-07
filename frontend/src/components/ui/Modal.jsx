@@ -16,7 +16,10 @@ const Modal = ({
   onCancel,
   onAccept,
   headerBgColor = "var(--color-navy)",
-  buttonColor = "var(--color-navy)"
+  buttonColor = "var(--color-navy)",
+  children, // <-- AGREGAR PARA CONTENIDO EXTRA
+  modalClassName = "", // <-- AGREGAR PARA CLASES PERSONALIZADAS
+  maxHeight = "auto" // <-- AGREGAR PARA CONTROLAR ALTURA
 }) => {
 
   if (!isOpen) return null;
@@ -39,15 +42,34 @@ const Modal = ({
 
   const modalContent = (
     <div
-      className="modalOverlay"
+      className={`modalOverlay ${modalClassName}`}
       onClick={handleBackdropClick}
-      style={{ zIndex: 99999 }} // Muy alto para sobreponerse a header/sidebar
+      style={{ 
+        zIndex: 99999,
+        // Fuerza alinear desde arriba cuando hay mucho contenido
+        alignItems: modalClassName.includes('top-aligned') ? 'flex-start' : 'center',
+        paddingTop: modalClassName.includes('top-aligned') ? '40px' : '0',
+        overflowY: 'auto' // Permite scroll en toda la pantalla si es necesario
+      }}
     >
-      <div className="modalContainer" onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="modalContainer" 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          maxHeight: maxHeight !== "auto" ? maxHeight : '85vh',
+          margin: modalClassName.includes('top-aligned') ? '20px auto' : 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}
+      >
         {/* Header */}
         <div 
           className="modalHeader"
-          style={{ backgroundColor: headerBgColor }}
+          style={{ 
+            backgroundColor: headerBgColor,
+            flexShrink: 0 // No se encoge
+          }}
         >
           <h3 className="modalTitle">{title}</h3>
           <button 
@@ -58,8 +80,18 @@ const Modal = ({
           </button>
         </div>
 
-        {/* Body */}
-        <div className="modalBody">
+        {/* Body - HACER SCROLLABLE */}
+        <div 
+          className="modalBody"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '20px',
+            maxHeight: maxHeight !== "auto" 
+              ? `calc(${maxHeight} - 120px)` 
+              : 'calc(85vh - 120px)'
+          }}
+        >
           <p className="modalQuestion">{question}</p>
 
           {showValueBox && (
@@ -72,10 +104,23 @@ const Modal = ({
           {informativeText && (
             <p className="modalInformativeText">{informativeText}</p>
           )}
+
+          {/* CONTENIDO ADICIONAL */}
+          {children && (
+            <div className="modal-children">
+              {children}
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="modalFooter">
+        {/* Footer - FIJO EN LA PARTE INFERIOR */}
+        <div 
+          className="modalFooter"
+          style={{
+            flexShrink: 0, // No se encoge
+            marginTop: 'auto' // Se queda abajo
+          }}
+        >
           <button 
             className="modalBtn modalCancelBtn"
             onClick={handleCancel}

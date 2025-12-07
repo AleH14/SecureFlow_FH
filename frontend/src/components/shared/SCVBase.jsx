@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FaArrowLeft, FaCommentAlt } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import { Table, Button } from "../ui";
@@ -25,6 +25,34 @@ const SCVBase = ({
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [comment, setComment] = useState("");
 
+  // Función para determinar el tipo de versión (PATCH, MINOR, MAJOR)
+  const getTipoVersion = (cambios) => {
+    if (!cambios || cambios.length === 0) return "PATCH";
+    
+    let tipo = "PATCH"; // Por defecto
+    
+    cambios.forEach(cambio => {
+      const campo = cambio.campo?.toLowerCase();
+      
+      // Cambios MAJOR: Nombre, categoría
+      if (["nombre", "categoria"].includes(campo)) {
+        tipo = "MAJOR";
+      }
+      // Cambios MINOR: Estado, responsable, descripción importante
+      else if (["estado", "responsableid", "descripcion"].includes(campo)) {
+        if (tipo !== "MAJOR") {
+          tipo = "MINOR";
+        }
+      }
+      // Cambios PATCH: Ubicación, código, fechas menores
+      else if (["ubicacion", "codigo", "fechacreacion"].includes(campo)) {
+        // Ya es PATCH por defecto
+      }
+    });
+    
+    return tipo;
+  };
+
   // Cargar historial de cambios
   const loadHistorialCambios = useCallback(async () => {
     if (!selectedActivo?.id) {
@@ -44,7 +72,10 @@ const SCVBase = ({
 
       if (response && response.data) {
         setActivoInfo(response.data.activo);
-        setHistorialData(response.data.historial || []);
+        // Ordenar por fecha ascendente (más antiguo primero) para cálculo correcto
+        const historialOrdenado = (response.data.historial || [])
+          .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        setHistorialData(historialOrdenado);
       } else {
         setHistorialData([]);
       }
@@ -193,10 +224,101 @@ const SCVBase = ({
     document.body.classList.remove("modal-open");
   };
 
+  // Determinar qué historial mostrar según el rol
+  const getHistorialFiltrado = () => {
+    // Security y Auditor ven TODOS los cambios
+    if (userRole === "security" || userRole === "auditor") {
+      return historialData;
+    }
+    // Admin y User solo ven APROBADOS
+    else {
+      return historialData.filter(item => 
+        item.estado?.toLowerCase() === "aprobado"
+      );
+    }
+  };
+
+  // Función para saber si debemos mostrar versión
+  const debeMostrarVersion = () => {
+    // Solo Admin y User muestran versión
+    return userRole === "admin" || userRole === "user";
+  };
+
+  // Función para calcular versiones SOLO sobre los cambios aprobados que se están mostrando
+  const calcularVersionesParaHistorialMostrado = useCallback((historialMostrado) => {
+    // Si no debemos mostrar versión o no hay historial, retornar mapa vacío
+    if (!debeMostrarVersion() || !historialMostrado || historialMostrado.length === 0) {
+      return new Map();
+    }
+    
+    const versionesMap = new Map();
+    
+    // Para Admin/User, el historialMostrado ya está filtrado a solo aprobados
+    if (userRole === "admin" || userRole === "user") {
+      // Iniciar en v1.0.0
+      let major = 1;
+      let minor = 0;
+      let patch = 0;
+      
+      // Recorrer el historial mostrado en orden cronológico (ya está ordenado)
+      for (let i = 0; i < historialMostrado.length; i++) {
+        const registro = historialMostrado[i];
+        const cambiosRegistro = registro.solicitudCambio?.cambios || [];
+        const tipoVersion = getTipoVersion(cambiosRegistro);
+        
+        // Para la creación, siempre es v1.0.0
+        if (i === 0 && registro.solicitudCambio?.tipoOperacion === "creacion") {
+          versionesMap.set(registro.id, "v1.0.0");
+          continue;
+        }
+        
+        // Aplicar reglas de semver basadas en el tipo de cambio
+        if (tipoVersion === "MAJOR") {
+          major++;
+          minor = 0;
+          patch = 0;
+        } else if (tipoVersion === "MINOR") {
+          minor++;
+          patch = 0;
+        } else if (tipoVersion === "PATCH") {
+          patch++;
+        }
+        
+        // Guardar la versión calculada para este registro
+        versionesMap.set(registro.id, `v${major}.${minor}.${patch}`);
+      }
+    }
+    
+    return versionesMap;
+  }, [userRole, debeMostrarVersion]);
+
+  // Obtener historial filtrado según rol
+  const historialFiltrado = useMemo(() => getHistorialFiltrado(), [historialData, userRole]);
+
+  // Calcular versiones SOLO para el historial que se está mostrando
+  const versionesMap = useMemo(() => 
+    calcularVersionesParaHistorialMostrado(historialFiltrado),
+    [historialFiltrado, calcularVersionesParaHistorialMostrado]
+  );
+
   // Transformación de datos base
-  const defaultDataTransform = (item, index) => {
+  const defaultDataTransform = useCallback((item, index) => {
+    // Obtener versión SOLO si es aprobado y debemos mostrar versión
+    let versionDisplay = null;
+    if (debeMostrarVersion() && item.estado?.toLowerCase() === "aprobado") {
+      const version = versionesMap.get(item.id);
+      if (version) {
+        versionDisplay = (
+          <span className="version-badge">
+            {version}
+          </span>
+        );
+      }
+    }
+
     const baseData = {
       fecha: formatFecha(item.fecha),
+      ...(debeMostrarVersion() && { version: versionDisplay }),
       solicitud_de_cambio: (
         <div className="scv-cell-content">
           <span className="scv-label">Código:</span>{" "}
@@ -267,47 +389,61 @@ const SCVBase = ({
     };
 
     // Agregar campos específicos según el rol
-    switch (userRole) {
-      case "user":
-        baseData.version = <span className="version-badge">v1.0.{index}</span>;
-        break;
-      case "auditor":
-        if (showActions) {
-          baseData.accion = (
-            <button
-              className="comment-btn"
-              onClick={() => handleComment(item)}
-              title="Agregar comentario de auditoría"
-              aria-label={`Agregar comentario a ${
-                item.solicitudCambio?.nombreActivo || "registro"
-              }`}
-            >
-              <FaCommentAlt className="comment-icon" />
-              Comentar
-            </button>
-          );
-        }
-        break;
+    if (userRole === "auditor" && showActions) {
+      baseData.accion = (
+        <button
+          className="comment-btn"
+          onClick={() => handleComment(item)}
+          title="Agregar comentario de auditoría"
+          aria-label={`Agregar comentario a ${
+            item.solicitudCambio?.nombreActivo || "registro"
+          }`}
+        >
+          <FaCommentAlt className="comment-icon" />
+          Comentar
+        </button>
+      );
     }
 
     return baseData;
-  };
+  }, [userRole, showActions, getEstadoClass, formatFecha, handleComment, debeMostrarVersion, versionesMap]);
 
   // Usar transformación personalizada o la por defecto
-  const historialTableData = historialData.map((item, index) => {
-    if (customDataTransform) {
-      return customDataTransform(item, index, {
-        formatFecha,
-        getEstadoClass,
-        handleComment,
+  const historialTableData = useMemo(() => 
+    historialFiltrado.map((item, index) => {
+      if (customDataTransform) {
+        return customDataTransform(item, index, {
+          formatFecha,
+          getEstadoClass,
+          handleComment,
+        });
+      }
+      return defaultDataTransform(item, index);
+    }),
+    [historialFiltrado, customDataTransform, defaultDataTransform, formatFecha, getEstadoClass, handleComment]
+  );
+
+  // Invertir el orden para mostrar más reciente primero
+  const historialTableDataOrdenado = useMemo(() => 
+    [...historialTableData].reverse(),
+    [historialTableData]
+  );
+
+  // Columnas base - ajustar según si se muestra versión
+  const getDefaultColumns = () => {
+    const baseColumns = [];
+    
+    // Solo agregar columna de versión si corresponde
+    if (debeMostrarVersion()) {
+      baseColumns.unshift({
+        key: "version",
+        label: "Versión",
+        cellStyle: { minWidth: "100px", textAlign: "center" },
       });
     }
-    return defaultDataTransform(item, index);
-  });
-
-  // Columnas base
-  const getDefaultColumns = () => {
-    const baseColumns = [
+    
+    // Columnas comunes
+    baseColumns.push(
       { key: "fecha", label: "Fecha", cellStyle: { minWidth: "100px" } },
       {
         key: "solicitud_de_cambio",
@@ -324,17 +460,11 @@ const SCVBase = ({
         key: "auditoria",
         label: "Auditoría",
         cellStyle: { minWidth: "250px" },
-      },
-    ];
+      }
+    );
 
-    // Agregar columnas específicas según el rol
-    if (userRole === "user") {
-      baseColumns.unshift({
-        key: "version",
-        label: "Versión",
-        cellStyle: { minWidth: "100px", textAlign: "center" },
-      });
-    } else {
+    // Agregar columna de estado (excepto para usuarios que ven solo aprobados)
+    if (userRole !== "admin" && userRole !== "user") {
       baseColumns.push({
         key: "estado",
         label: "Estado",
@@ -442,29 +572,31 @@ const SCVBase = ({
 
         <h2>Historial de Cambios - {displayActivoInfo.nombre}</h2>
         <h6>Código: {displayActivoInfo.codigo}</h6>
-        {historialData.length > 0 && (
+        {historialFiltrado.length > 0 && (
           <p>
-            Total de cambios registrados: {historialData.length}
+            Total de cambios: {historialFiltrado.length}
           </p>
         )}
       </div>
 
-      {historialData.length === 0 ? (
+      {historialFiltrado.length === 0 ? (
         <div className="empty-container text-center py-5 mt-4 bg-transparent rounded-4 mx-auto">
           <HiOutlineSearch className="empty-icon fs-1 text-white mb-3" />
           <p className="empty-title fs-4 fw-bold text-white mb-2">
-             Sin historial de cambios
+            {userRole === "admin" || userRole === "user" 
+              ? "Sin cambios aprobados" 
+              : "Sin historial de cambios"}
           </p>
           <p className="empty-subtitle text-white">
-            {currentUser?.rol === "usuario"
-              ? "No se encontraron solicitudes de cambio para tus activos asignados."
-              : "No se encontraron solicitudes de cambio para este activo."}
+            {userRole === "admin" || userRole === "user" 
+              ? "No se encontraron cambios aprobados para este activo."
+              : "No se encontraron cambios registrados para este activo."}
           </p>
         </div>
       ) : (
         <Table
           columns={tableColumns}
-          data={historialTableData}
+          data={historialTableDataOrdenado}
           hoverEffect={true}
           bordered={true}
         />
