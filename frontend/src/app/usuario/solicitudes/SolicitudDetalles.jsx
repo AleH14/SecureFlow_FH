@@ -448,12 +448,30 @@ const SolicitudDetalles = ({ solicitud, onNavigateBack, onNavigateToModificarAct
           break;
         case 'responsableid':
           campoNombre = 'Responsable';
-          valorAnterior = getNombreResponsableById(valorAnterior);
-          valorNuevo = getNombreResponsableById(valorNuevo);
-          valorAnterior = !valorAnterior || valorAnterior === 'undefined' || valorAnterior === 'null' ? 
-            "(sin valor anterior)" : valorAnterior;
-          valorNuevo = !valorNuevo || valorNuevo === 'undefined' || valorNuevo === 'null' ? 
-            "(sin valor nuevo)" : valorNuevo;
+          
+          // Usar EXCLUSIVAMENTE la información poblada del backend
+          // El backend ya resuelve los IDs correctamente cuando se consulta la solicitud
+          if (cambio.responsableAnteriorInfo) {
+            valorAnterior = cambio.responsableAnteriorInfo.nombreCompleto;
+          } else {
+            // Si no hay info poblada, mostrar el ID tal cual (no buscar)
+            valorAnterior = valorAnterior || "(sin valor anterior)";
+          }
+          
+          if (cambio.responsableNuevoInfo) {
+            valorNuevo = cambio.responsableNuevoInfo.nombreCompleto;
+          } else {
+            // Si no hay info poblada, mostrar el ID tal cual (no buscar)
+            valorNuevo = valorNuevo || "(sin valor nuevo)";
+          }
+          
+          // Validación final de valores nulos
+          if (!valorAnterior || valorAnterior === 'undefined' || valorAnterior === 'null') {
+            valorAnterior = "(sin valor anterior)";
+          }
+          if (!valorNuevo || valorNuevo === 'undefined' || valorNuevo === 'null') {
+            valorNuevo = "(sin valor nuevo)";
+          }
           break;
         case 'version':
           campoNombre = 'Versión';

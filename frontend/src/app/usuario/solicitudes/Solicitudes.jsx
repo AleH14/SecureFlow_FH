@@ -70,7 +70,7 @@ const Solicitudes = ({ onNavigateToDetalles, onRefreshCount }) => {
   const handleVerDetalles = async (solicitud) => {
     try {
       // Cargar los detalles completos de la solicitud
-      const detallesCompletos = await loadSolicitudDetalles(solicitud.id);
+      const detallesCompletos = await loadSolicitudDetalles(solicitud.id || solicitud._id);
       
       if (onNavigateToDetalles) {
         onNavigateToDetalles(detallesCompletos);

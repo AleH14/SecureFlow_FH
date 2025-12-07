@@ -796,8 +796,67 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
 
     console.log('Solicitudes encontradas:', solicitudes.length);
 
+    // Obtener todos los IDs de responsables únicos para poblarlos de una vez
+    const responsableIds = new Set();
+    solicitudes.forEach(solicitud => {
+      const cambioResponsable = solicitud.cambios.find(c => c.campo === 'responsableId');
+      if (cambioResponsable && cambioResponsable.valorNuevo) {
+        responsableIds.add(cambioResponsable.valorNuevo);
+      }
+    });
+
+    // Poblar información de todos los responsables de una vez
+    const responsablesMap = new Map();
+    if (responsableIds.size > 0) {
+      const responsables = await User.find({ 
+        _id: { $in: Array.from(responsableIds) } 
+      }).select('nombre apellido email codigo');
+      
+      responsables.forEach(resp => {
+        responsablesMap.set(resp._id.toString(), {
+          id: resp._id,
+          codigo: resp.codigo,
+          nombreCompleto: `${resp.nombre} ${resp.apellido}`,
+          email: resp.email
+        });
+      });
+    }
+
     // Formatear el historial
     const historial = solicitudes.map(solicitud => {
+      // Determinar el responsable según el tipo de operación
+      let responsableInfo;
+      
+      if (solicitud.tipoOperacion === 'creacion') {
+        // Para creación, el responsable es el solicitante (quien creó el activo)
+        responsableInfo = {
+          id: solicitud.solicitanteId._id,
+          codigo: solicitud.solicitanteId.codigo,
+          nombreCompleto: `${solicitud.solicitanteId.nombre} ${solicitud.solicitanteId.apellido}`,
+          email: solicitud.solicitanteId.email
+        };
+      } else {
+        // Para modificaciones, verificar si hay cambio de responsable en esta solicitud
+        const cambioResponsable = solicitud.cambios.find(c => c.campo === 'responsableId');
+        if (cambioResponsable && cambioResponsable.valorNuevo) {
+          // Buscar el responsable en el mapa poblado
+          responsableInfo = responsablesMap.get(cambioResponsable.valorNuevo) || {
+            id: cambioResponsable.valorNuevo,
+            codigo: 'N/A',
+            nombreCompleto: 'Usuario no encontrado',
+            email: 'N/A'
+          };
+        } else {
+          // Si no hay cambio de responsable, usar el responsable actual del activo
+          responsableInfo = {
+            id: activo.responsableId._id,
+            codigo: activo.responsableId.codigo,
+            nombreCompleto: `${activo.responsableId.nombre} ${activo.responsableId.apellido}`,
+            email: activo.responsableId.email
+          };
+        }
+      }
+      
       return {
         id: solicitud._id,
         fecha: solicitud.fechaSolicitud,
@@ -808,10 +867,7 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
           categoriaActivo: activo.categoria,
           estadoActivo: activo.estado,
           descripcionActivo: activo.descripcion,
-          responsable: {
-            id: activo.responsableId,
-            // Se poblará después
-          },
+          responsable: responsableInfo,
           cambios: solicitud.cambios.map(cambio => ({
             campo: cambio.campo,
             valorAnterior: cambio.valorAnterior,
@@ -849,19 +905,8 @@ router.get('/:id/solicitudes-historial', auth, asyncHandler(async (req, res) => 
       };
     });
 
-    // Poblar información del responsable actual del activo
-    const activoConResponsable = await Activo.findById(id)
-      .populate('responsableId', 'nombre apellido email codigo');
-
-    // Actualizar responsable en cada entrada del historial
-    historial.forEach(entry => {
-      entry.solicitudCambio.responsable = {
-        id: activoConResponsable.responsableId._id,
-        codigo: activoConResponsable.responsableId.codigo,
-        nombreCompleto: `${activoConResponsable.responsableId.nombre} ${activoConResponsable.responsableId.apellido}`,
-        email: activoConResponsable.responsableId.email
-      };
-    });
+    // Ya no necesitamos actualizar el responsable globalmente porque 
+    // cada entrada ya tiene su responsable correcto según el momento de la solicitud
 
     const responseData = {
       activo: {

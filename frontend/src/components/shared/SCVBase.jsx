@@ -319,18 +319,38 @@ const defaultDataTransform = useCallback((item, index) => {
   // Obtener los cambios específicos de la solicitud
   const cambios = item.solicitudCambio?.cambios || [];
   
+  // Función para formatear el nombre del campo
+  const formatearNombreCampo = (campo) => {
+    if (campo === "responsableId") return "Responsable";
+    return campo;
+  };
+  
   // Función para formatear el valor de un cambio
-  const formatearValor = (valor, esResponsable = false) => {
+  const formatearValor = (valor, campo) => {
     if (!valor || valor === "null" || valor.trim() === "") {
       return "Vacío";
     }
     
-    // Si es responsableId y tenemos información poblada
-    if (esResponsable) {
-      // Buscar si hay información poblada del responsable
+    // Si es un cambio de responsable
+    if (campo === "responsableId") {
+      // Para creación, usar el responsable de la solicitud
+      if (item.solicitudCambio?.tipoOperacion === "creacion") {
+        const responsableInfo = item.solicitudCambio?.responsable;
+        if (responsableInfo?.nombreCompleto) {
+          return responsableInfo.nombreCompleto;
+        }
+      }
+      
+      // Para modificación/reasignación, buscar en los datos poblados
+      // El backend debería enviar información del nuevo responsable
       const responsableInfo = item.solicitudCambio?.responsable;
       if (responsableInfo?.nombreCompleto) {
         return responsableInfo.nombreCompleto;
+      }
+      
+      // Si el valor coincide con el ID del solicitante, usar su nombre
+      if (valor === item.solicitante?.id) {
+        return item.solicitante?.nombreCompleto || valor;
       }
     }
     
@@ -339,15 +359,14 @@ const defaultDataTransform = useCallback((item, index) => {
 
   // Crear el contenido de cambios
   const contenidoCambios = cambios.map((cambio, idx) => {
-    const esResponsable = cambio.campo === "responsableId";
-    const valorAnterior = formatearValor(cambio.valorAnterior, esResponsable);
-    const valorNuevo = formatearValor(cambio.valorNuevo, esResponsable);
+    const nombreCampo = formatearNombreCampo(cambio.campo);
+    const valorNuevo = formatearValor(cambio.valorNuevo, cambio.campo);
     
     // Para creación, mostrar solo el valor nuevo
     if (item.solicitudCambio?.tipoOperacion === "creacion") {
       return (
         <React.Fragment key={idx}>
-          <span className="scv-label">{cambio.campo}:</span>{" "}
+          <span className="scv-label">{nombreCampo}:</span>{" "}
           <span className="scv-value">{valorNuevo}</span>
           <br />
         </React.Fragment>
@@ -357,7 +376,7 @@ const defaultDataTransform = useCallback((item, index) => {
     // Para modificación, mostrar ambos
     return (
       <React.Fragment key={idx}>
-        <span className="scv-label">{cambio.campo}:</span>{" "}
+        <span className="scv-label">{nombreCampo}:</span>{" "}
         <span className="scv-value">{valorNuevo}</span>
         <br />
       </React.Fragment>

@@ -190,10 +190,26 @@ const Solicitudes = ({ onNavigateToDetalles, onSolicitudesLoaded }) => {
     }
   };
 
-  const handleVerDetalles = (solicitud) => {
-    console.log("CLICK en Ver Detalles:", solicitud);
-    if (onNavigateToDetalles) {
-      onNavigateToDetalles(solicitud);
+  const handleVerDetalles = async (solicitud) => {
+    try {
+      // Cargar los detalles completos de la solicitud con responsables poblados
+      const solicitudId = solicitud.id || solicitud._id;
+      const response = await RequestService.getRequestById(solicitudId);
+      
+      if (response && response.success && response.data) {
+        if (onNavigateToDetalles) {
+          onNavigateToDetalles(response.data);
+        }
+      } else {
+        if (onNavigateToDetalles) {
+          onNavigateToDetalles(solicitud);
+        }
+      }
+    } catch (error) {
+      // En caso de error, mostrar con los datos que tenemos
+      if (onNavigateToDetalles) {
+        onNavigateToDetalles(solicitud);
+      }
     }
   };
 

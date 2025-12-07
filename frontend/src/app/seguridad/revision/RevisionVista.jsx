@@ -55,8 +55,14 @@ const RevisionVista = ({
               ...initialSolicitud,
               activo: response.data.activo,
               cambios: response.data.cambios || [],
-              solicitante: response.data.solicitante?.nombreCompleto || initialSolicitud.solicitante,
-              nombreSolicitante: response.data.solicitante?.nombreCompleto || initialSolicitud.solicitante,
+              solicitante: response.data.solicitante?.nombreCompleto || 
+                          (typeof initialSolicitud.solicitante === 'object' ? 
+                            initialSolicitud.solicitante?.nombreCompleto : 
+                            initialSolicitud.solicitante),
+              nombreSolicitante: response.data.solicitante?.nombreCompleto || 
+                                (typeof initialSolicitud.solicitante === 'object' ? 
+                                  initialSolicitud.solicitante?.nombreCompleto : 
+                                  initialSolicitud.solicitante),
               responsableSeguridad: response.data.responsableSeguridad,
               comentarioSeguridad: response.data.comentarioSeguridad,
               fechaRevision: response.data.fechaRevision,
@@ -67,10 +73,30 @@ const RevisionVista = ({
           }
         } catch (err) {
           setError('Error al cargar los detalles de la solicitud');
-          setSolicitud(initialSolicitud);
+          // Normalizar el objeto solicitante si es necesario
+          const normalizedSolicitud = {
+            ...initialSolicitud,
+            solicitante: typeof initialSolicitud.solicitante === 'object' ? 
+              initialSolicitud.solicitante?.nombreCompleto : 
+              initialSolicitud.solicitante,
+            nombreSolicitante: typeof initialSolicitud.solicitante === 'object' ? 
+              initialSolicitud.solicitante?.nombreCompleto : 
+              initialSolicitud.solicitante
+          };
+          setSolicitud(normalizedSolicitud);
         }
       } else {
-        setSolicitud(initialSolicitud);
+        // Normalizar el objeto solicitante si es necesario
+        const normalizedSolicitud = initialSolicitud ? {
+          ...initialSolicitud,
+          solicitante: typeof initialSolicitud.solicitante === 'object' ? 
+            initialSolicitud.solicitante?.nombreCompleto : 
+            initialSolicitud.solicitante,
+          nombreSolicitante: typeof initialSolicitud.solicitante === 'object' ? 
+            initialSolicitud.solicitante?.nombreCompleto : 
+            initialSolicitud.solicitante
+        } : initialSolicitud;
+        setSolicitud(normalizedSolicitud);
       }
     };
 
@@ -140,7 +166,7 @@ const RevisionVista = ({
         if (row.valorAnterior === "Sin valor anterior" || row.valorAnterior === "Vacío") {
           return <span className="text-muted">{row.valorAnterior}</span>;
         }
-        return <span className="text-dark">{row.valorModificado}</span>;
+        return <span className="text-dark">{row.valorAnterior}</span>;
       },
       cellStyle: {
         minWidth: "200px",
@@ -299,7 +325,11 @@ const RevisionVista = ({
                   <div className="col-12 col-md-6">
                     <strong className="text-dark">Solicitante:</strong>
                     <span className="ms-2 text-dark d-block d-md-inline">
-                      {solicitud.nombreSolicitante || solicitud.solicitante || "No especificado"}
+                      {solicitud.nombreSolicitante || 
+                       (typeof solicitud.solicitante === 'object' ? 
+                         solicitud.solicitante?.nombreCompleto : 
+                         solicitud.solicitante) || 
+                       "No especificado"}
                     </span>
                   </div>
                 </div>

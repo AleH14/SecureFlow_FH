@@ -410,9 +410,6 @@ const ModificarActivo = ({ activo, onNavigateBack, onUpdateActivo, onRefreshSoli
               <span style={{ fontSize: "1.1rem", fontWeight: "bold" }}>
                 Código: {activo.codigo}
               </span>
-              <span style={{ fontSize: "1rem", marginLeft: "1rem" }}>
-                Versión: {activo.version || "v1.0.0"}
-              </span>
             </div>
           </div>
         </div>
