@@ -281,7 +281,7 @@ Este proyecto fue desarrollado por:
   <tr>
     <td align="center">
       <a href="https://github.com/MelissaFloresA">
-        <img src="https://github.com/MelissaFloresA" width="100px;" alt="Melissa FLores"/><br />
+        <img src="https://github.com/MelissaFloresA.png" width="100px;" alt="Melissa FLores"/><br />
         <sub><b>Melissa FLores</b></sub>
       </a><br />
       <a href="https://github.com/MelissaFloresA">@MelissaFloresA</a>
