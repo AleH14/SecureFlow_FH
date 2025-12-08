@@ -7,10 +7,27 @@
 ![Express](https://img.shields.io/badge/Express-000?logo=express&logoColor=fff&style=for-the-badge)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=fff&style=for-the-badge)
 ![JWT](https://img.shields.io/badge/JWT-000?logo=jsonwebtokens&logoColor=fff&style=for-the-badge)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff&style=for-the-badge)
 
 **Sistema de Gestión de Seguridad de la Información · Control de Cambios · Gestión de Activos**
 
-</div>
+---
+
+## 🚀 Inicio Rápido con Docker
+
+**¿Primera vez instalando?** Usa Docker para iniciar en **3 comandos**:
+
+```bash
+git clone https://github.com/AleH14/SecureFlow_FH.git
+cd SecureFlow_FH
+docker-compose up -d
+```
+
+✅ **Listo!** Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+
+📖 **Guía completa:** [QUICK_START.md](./QUICK_START.md)
+
+---
 
 ## 📋 DESCRIPCIÓN GENERAL
 
