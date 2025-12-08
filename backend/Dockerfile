@@ -17,12 +17,8 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 # Cambiar propietario de archivos
 RUN chown -R nodejs:nodejs /app
 
-# Cambiar a usuario no-root
-USER nodejs
-
 # Exponer el puerto
 EXPOSE 5000
 
-# Comando para desarrollo con nodemon (hot reload)
-# -L flag para usar legacy watch mode (mejor para Docker en Windows)
-CMD ["npx", "nodemon", "-L", "src/app.js"]
+# Script de inicio que verifica e instala dependencias si es necesario
+CMD sh -c "if [ ! -d 'node_modules' ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ]; then echo '📦 Installing dependencies...'; npm install; fi && echo '🚀 Starting backend...' && npx nodemon -L src/app.js"

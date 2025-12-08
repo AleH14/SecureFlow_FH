@@ -17,12 +17,8 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 # Crear directorios necesarios con permisos correctos
 RUN mkdir -p .next && chown -R nodejs:nodejs /app
 
-# Cambiar a usuario no-root
-USER nodejs
-
 # Exponer el puerto
 EXPOSE 3000
 
-# Comando para desarrollo con Next.js (hot reload)
-# Usar webpack en lugar de turbopack para mejor compatibilidad con Docker en Windows
-CMD ["npm", "run", "dev", "--", "--webpack", "-H", "0.0.0.0"]
+# Script de inicio que verifica e instala dependencias si es necesario
+CMD sh -c "if [ ! -d 'node_modules' ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ]; then echo '📦 Installing dependencies...'; npm install; fi && echo '🚀 Starting frontend...' && npm run dev -- --webpack -H 0.0.0.0"
