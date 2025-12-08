@@ -5,15 +5,20 @@ WORKDIR /app
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm install
+# Instalar dependencias (incluye npm ci para instalación limpia)
+RUN npm ci --only=production=false && npm cache clean --force
 
 # Copiar el resto del código
 COPY . .
 
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
+# Cambiar propietario de archivos
+RUN chown -R nodejs:nodejs /app
+
 # Exponer el puerto
 EXPOSE 5000
 
-# Comando para desarrollo con nodemon (hot reload)
-# -L flag para usar legacy watch mode (mejor para Docker en Windows)
-CMD ["npx", "nodemon", "-L", "src/app.js"]
+# Script de inicio que verifica e instala dependencias si es necesario
+CMD sh -c "if [ ! -d 'node_modules' ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ]; then echo '📦 Installing dependencies...'; npm install; fi && echo '🚀 Starting backend...' && npx nodemon -L src/app.js"
