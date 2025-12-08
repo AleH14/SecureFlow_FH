@@ -270,3 +270,30 @@ EVIDENCIA GENERADA
 - Historial completo de cada activo
 - Trazabilidad usuario → responsable → cambios
 
+
+---
+
+## 👨‍💻 Desarrolladores
+
+Este proyecto fue desarrollado por:
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/MelissaFloresA">
+        <img src="https://github.com/MelissaFloresA" width="100px;" alt="Melissa FLores"/><br />
+        <sub><b>Melissa FLores</b></sub>
+      </a><br />
+      <a href="https://github.com/MelissaFloresA">@MelissaFloresA</a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/AleH14">
+        <img src="https://github.com/AleH14.png" width="100px;" alt="Alejandro Hernandez"/><br />
+        <sub><b>Alejandro Hernandez</b></sub>
+      </a><br />
+      <a href="https://github.com/AleH14">@AleH14</a>
+    </td>
+  </tr>
+</table>
+
+---
